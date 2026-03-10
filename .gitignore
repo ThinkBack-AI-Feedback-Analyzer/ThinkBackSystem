@@ -1,0 +1,25 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Docker
+*.log
+
+# VS Code
+.vscode/
+
+# AI Models (too large for git)
+ai_model/models/
+*.bin
+*.pt
+*.safetensors
