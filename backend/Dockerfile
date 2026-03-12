@@ -2,14 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# ✅ Copy ONLY requirements first
 COPY requirements.txt .
+
+# ✅ This layer gets CACHED unless requirements.txt changes
 RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cpu \
-    torch torchvision
+    torch
 
-# Then install everything else
 RUN pip install --no-cache-dir -r requirements.txt
 
+# ✅ Copy your actual code LAST
 COPY . .
 
 EXPOSE 8000

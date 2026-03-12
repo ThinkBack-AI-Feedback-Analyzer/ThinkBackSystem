@@ -5,3 +5,4 @@ python-dotenv
 django-cors-headers
 transformers
 numpy
+djangorestframework-simplejwt

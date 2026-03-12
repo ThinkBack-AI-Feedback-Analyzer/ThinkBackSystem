@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+import warnings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +28,12 @@ SECRET_KEY = 'django-insecure-z-cg5nz^*=y-r)4p9mt%_0u(=sze9fy*sp$w3h68w_7h@9tz8a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Enable Python warnings
+if DEBUG or os.environ.get('SHOW_WARNINGS', 'False').lower() == 'true':
+    warnings.filterwarnings('default')
+else:
+    warnings.filterwarnings('ignore')
+
 ALLOWED_HOSTS = []
 
 
@@ -37,6 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework_simplejwt.token_blacklist',
+    'users',
+    'feedback'
 ]
 
 MIDDLEWARE = [
@@ -68,17 +80,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# Custom User Model
+AUTH_USER_MODEL = 'users.CustomUser'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+load_dotenv()
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
