@@ -56,13 +56,13 @@ docker compose exec backend python manage.py createsuperuser
 
 ---
 
-## 🔑 Authentication Roles
+##  Authentication Roles
 
 - **System Admin**: Full access to the system.
 - **University Admin**: Manages lecturers and data for a specific institution.
 - **Lecturer**: Creates feedback forms and views analytics.
 
-## 📡 API Endpoints (Auth)
+##  API Endpoints (Auth)
 
 - `POST /api/auth/register/` - Register as a Lecturer or Admin.
 - `POST /api/auth/login/` - Obtain JWT Access/Refresh tokens.
