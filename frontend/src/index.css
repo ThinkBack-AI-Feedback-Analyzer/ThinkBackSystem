@@ -1,4 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import "tailwindcss";
+
 
 :root {
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
