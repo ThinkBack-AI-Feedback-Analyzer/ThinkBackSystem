@@ -4,7 +4,7 @@ import brandLogo from '../assets/logo_3.png'
 import { EnvelopeIcon, LockIcon } from '../components/auth/AuthIcons'
 
 const inputClassName =
-  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-4 pl-16 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
+  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-3 pl-16 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
 
 function AuthField({
   label,
@@ -59,30 +59,30 @@ function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#f5f2e9_0%,#eef4ef_52%,#f8f6ef_100%)] text-slate-900">
+    <div className="relative flex min-h-[100dvh] overflow-hidden bg-[linear-gradient(180deg,#f5f2e9_0%,#eef4ef_52%,#f8f6ef_100%)] text-slate-900">
       <div className="absolute left-[-120px] top-[-80px] h-72 w-72 rounded-full bg-[#d8eadf] blur-3xl" />
       <div className="absolute bottom-[-120px] right-[-40px] h-80 w-80 rounded-full bg-[#cfe3d7] blur-3xl" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_42%)]" />
 
-      <main className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-        <Link
-          to="/"
-          className="absolute right-4 top-4 inline-flex items-center justify-center rounded-full bg-[#184d35] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(24,77,53,0.18)] transition hover:-translate-y-0.5 hover:brightness-105 sm:right-6 sm:top-6"
-        >
-          Back to Home
-        </Link>
+      <Link
+        to="/"
+        className="absolute right-4 top-4 z-20 inline-flex items-center justify-center rounded-full bg-[#184d35] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(24,77,53,0.18)] transition hover:-translate-y-0.5 hover:brightness-105 sm:right-6 sm:top-6"
+      >
+        Back to Home
+      </Link>
 
+      <main className="relative flex flex-1 items-center justify-center px-4 py-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-xl rounded-[36px] border border-[#d8ddd3] bg-[#fcfbf7] px-5 pb-5 pt-0 shadow-[0_24px_60px_rgba(15,23,42,0.12)] sm:px-6 sm:pb-6 sm:pt-0 lg:px-7 lg:pb-7 lg:pt-0">
           <div className="text-center">
             <img
               src={brandLogo}
               alt="ThinkBack system logo"
-              className="mx-auto -mb-10 -mt-8 h-52 w-auto object-contain sm:-mb-12 sm:-mt-10 sm:h-60"
+              className="mx-auto -mb-8 -mt-6 h-40 w-auto object-contain sm:-mb-10 sm:-mt-8 sm:h-48 lg:h-52"
             />
             <p className="mt-0 text-sm font-semibold uppercase tracking-[0.24em] text-[#56836c]">
               Sign In
             </p>
-            <h2 className="mt-2 text-4xl font-semibold text-[#184d35]">
+            <h2 className="mt-2 text-3xl font-semibold text-[#184d35] sm:text-4xl">
               Access your account
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-slate-500">
@@ -91,7 +91,7 @@ function LoginPage() {
             </p>
           </div>
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
             <AuthField
               label="Email"
               htmlFor="login-email"
@@ -122,7 +122,7 @@ function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 rounded-[26px] border border-[#d6ddd3] bg-[linear-gradient(180deg,#ffffff_0%,#f6f8f3_100%)] px-5 py-4 text-center shadow-sm">
+          <div className="mt-5 rounded-[26px] border border-[#d6ddd3] bg-[linear-gradient(180deg,#ffffff_0%,#f6f8f3_100%)] px-5 py-3.5 text-center shadow-sm">
             <p className="text-sm leading-6 text-slate-600">
               Need a new account for your institution?
               <Link

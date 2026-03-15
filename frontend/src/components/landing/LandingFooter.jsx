@@ -35,7 +35,7 @@ function LandingFooter() {
           <div className="flex flex-wrap gap-3">
             <Link
               to="/institutions/register"
-              className="rounded-2xl bg-slate-950 px-6 py-3 font-semibold text-white transition hover:opacity-90"
+              className="rounded-2xl bg-[#f4f7f2] px-6 py-3 font-semibold text-[#184d35] transition hover:bg-white"
             >
               Create Institution Account
             </Link>
@@ -51,7 +51,7 @@ function LandingFooter() {
         <div className="grid gap-8 pt-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-lg font-semibold text-white">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f4f7f2] text-lg font-semibold text-[#184d35]">
                 TB
               </div>
               <div>

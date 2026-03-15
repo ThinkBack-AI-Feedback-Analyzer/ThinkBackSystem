@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
-import logo from '../../assets/Thinkback logo2-cropped.png'
+import logo from '../../assets/Logo_4.png'
 
 function LandingHeader({ navItems }) {
   return (
-    <header className="mb-8 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur">
+    <header className="mb-8 rounded-3xl border border-[#dbe4db] bg-[linear-gradient(180deg,#ffffff_0%,#f8fbf8_100%)] px-5 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex shrink-0 items-center">
           <img
@@ -16,7 +16,7 @@ function LandingHeader({ navItems }) {
 
         <nav
           aria-label="Primary navigation"
-          className="flex flex-wrap items-center gap-2 rounded-3xl border border-white/10 bg-black/20 px-3 py-3 xl:rounded-full"
+          className="flex flex-wrap items-center gap-2 rounded-3xl border border-[#dbe4db] bg-[#f4f7f2] px-3 py-3 xl:rounded-full"
         >
           {navItems.map((item, index) => (
             <a
@@ -24,8 +24,8 @@ function LandingHeader({ navItems }) {
               href={item.href}
               className={`rounded-full px-4 py-2 text-sm transition ${
                 index === 0
-                  ? 'bg-emerald-500 font-semibold text-black'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#184d35] font-semibold text-white shadow-[0_10px_24px_rgba(24,77,53,0.16)]'
+                  : 'text-slate-600 hover:bg-white hover:text-[#184d35]'
               }`}
             >
               {item.label}
@@ -36,13 +36,13 @@ function LandingHeader({ navItems }) {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/login"
-            className="rounded-2xl border border-white/15 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+            className="rounded-2xl border border-[#c8d7cc] px-4 py-2 text-sm font-medium text-[#184d35] transition hover:bg-[#edf4ef]"
           >
             Sign in
           </Link>
           <a
             href="#platform"
-            className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-105"
+            className="rounded-2xl bg-[#184d35] px-4 py-2 text-sm font-semibold text-white shadow-[0_16px_32px_rgba(24,77,53,0.18)] transition hover:brightness-105"
           >
             View Product Details
           </a>
