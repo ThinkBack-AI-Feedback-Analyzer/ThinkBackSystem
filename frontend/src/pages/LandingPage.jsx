@@ -3,6 +3,7 @@ import LandingHeader from '../components/landing/LandingHeader'
 import HeroSection from '../components/landing/HeroSection'
 import PlatformOverviewSection from '../components/landing/PlatformOverviewSection'
 import { modules, navItems, stats, steps } from '../data/landingPage'
+import { Link } from "react-router-dom";
 
 function LandingPage() {
   return (

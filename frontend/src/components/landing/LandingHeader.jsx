@@ -1,8 +1,12 @@
+import { Link } from "react-router-dom"; // import Link for navigation
 import logo from '../../assets/Thinkback logo2-cropped.png'
+
 function LandingHeader({ navItems }) {
   return (
     <header className="mb-8 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+
+        {/* Logo */}
         <div className="flex shrink-0 items-center">
           <img
             src={logo}
@@ -11,7 +15,7 @@ function LandingHeader({ navItems }) {
           />
         </div>
 
-
+        {/* Navigation Items */}
         <nav
           aria-label="Primary navigation"
           className="flex flex-wrap items-center gap-2 rounded-3xl border border-white/10 bg-black/20 px-3 py-3 xl:rounded-full"
@@ -31,13 +35,18 @@ function LandingHeader({ navItems }) {
           ))}
         </nav>
 
+        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="rounded-2xl border border-white/15 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
-          >
-            Sign in
-          </button>
+          {/* Sign In Button - using React Router Link */}
+          <Link to="/login">
+            <button
+              type="button"
+              className="rounded-2xl border border-white/15 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+            >
+              Sign in
+            </button>
+          </Link>
+
           <a
             href="#platform"
             className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-105"
@@ -45,6 +54,7 @@ function LandingHeader({ navItems }) {
             View Product Details
           </a>
         </div>
+
       </div>
     </header>
   )
