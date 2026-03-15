@@ -1,3 +1,4 @@
+from typing import Any, cast
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import User
 from .serializers import CustomTokenObtainPairSerializer, RegisterSerializer, UserSerializer
 
 
@@ -12,10 +14,10 @@ class RegisterView(APIView):
     """Register a new user endpoint"""
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def post(self, request: Any) -> Response:
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
+            user = cast(User, serializer.save())
             # Generate tokens for the new user
             refresh = RefreshToken.for_user(user)
             
