@@ -47,11 +47,14 @@ function ChevronDownIcon() {
 
 function FieldShell({ label, htmlFor, className = '', hint = '', children }) {
   return (
-    <label htmlFor={htmlFor} className={`group relative block ${className}`}>
+    <div className={`group relative block ${className}`}>
       <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
-      <span className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm">
+      <label
+        htmlFor={htmlFor}
+        className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm"
+      >
         {label}
-      </span>
+      </label>
       <span className="pointer-events-none absolute right-5 top-5 z-10 h-2.5 w-2.5 rounded-full bg-[#c3d8c8] transition duration-300 group-focus-within:bg-[#184d35] group-focus-within:shadow-[0_0_0_7px_rgba(24,77,53,0.12)]" />
       {children}
       {hint ? (
@@ -59,7 +62,7 @@ function FieldShell({ label, htmlFor, className = '', hint = '', children }) {
           {hint}
         </span>
       ) : null}
-    </label>
+    </div>
   )
 }
 

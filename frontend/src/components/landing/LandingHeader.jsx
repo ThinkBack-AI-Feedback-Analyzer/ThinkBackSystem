@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import logo from '../../assets/Thinkback logo2-cropped.png'
+
 function LandingHeader({ navItems }) {
   return (
     <header className="mb-8 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur">
@@ -32,12 +34,12 @@ function LandingHeader({ navItems }) {
         </nav>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <Link
+            to="/login"
             className="rounded-2xl border border-white/15 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
           >
             Sign in
-          </button>
+          </Link>
           <a
             href="#platform"
             className="rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-105"
