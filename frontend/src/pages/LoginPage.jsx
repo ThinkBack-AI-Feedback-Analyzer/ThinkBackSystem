@@ -1,95 +1,114 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import brandLogo from '../assets/logo_3.png'
-import { EnvelopeIcon, LockIcon } from '../components/auth/AuthIcons'
 
-const inputClassName =
-  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-3 pl-16 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/Auth.css";
+import logo from "../assets/logo1.png";
+import { FaEnvelope, FaLock } from "react-icons/fa";
+import AuthLayout from "../components/AuthLayout";
+import { login } from "../services/auth";
 
-function AuthField({
-  label,
-  htmlFor,
-  type,
-  name,
-  value,
-  placeholder,
-  onChange,
-  icon,
-}) {
-  return (
-    <label htmlFor={htmlFor} className="group relative block">
-      <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
-      <span className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm">
-        {label}
-      </span>
-      <span className="pointer-events-none absolute left-5 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-[#e7f1eb] text-[#184d35] shadow-sm transition duration-300 group-focus-within:bg-[#184d35] group-focus-within:text-white">
-        {icon}
-      </span>
-      <input
-        id={htmlFor}
-        type={type}
-        name={name}
-        value={value}
-        placeholder={placeholder}
-        onChange={onChange}
-        className={inputClassName}
-        required
-      />
-    </label>
-  )
-}
+const LoginPage = () => {
+  const navigate = useNavigate();
 
-function LoginPage() {
   const [data, setData] = useState({
-    email: '',
-    password: '',
-  })
+    email: "",
+    password: ""
+  });
 
-  function handleChange(event) {
-    const { name, value } = event.target
-    setData((currentData) => ({
-      ...currentData,
-      [name]: value,
-    }))
-  }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(event) {
-    event.preventDefault()
-    console.log(data)
-  }
+  const handleChange = (e) => {
+    setData({ ...data, [e.target.name]: e.target.value });
+    setError(""); // Clear error when user starts typing
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    // Validate inputs
+    if (!data.email || !data.password) {
+      setError("Please fill in all fields");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await login(data.email, data.password);
+      
+      // Store tokens
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      
+      // Store user data (including role)
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Redirect based on user role
+      const userRole = response.data.user.role;
+      if (userRole === 'institution_admin') {
+        navigate("/institution-dashboard");
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || "Invalid email or password";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate bubbles only once
+  const bubbles = useMemo(() => {
+    return Array.from({ length: 20 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      width: `${10 + Math.random() * 30}px`,
+      height: `${10 + Math.random() * 30}px`,
+      animationDuration: `${5 + Math.random() * 15}s`,
+      animationDelay: `${Math.random() * 10}s`
+    }));
+  }, []); // empty dependency → runs only once
 
   return (
-    <div className="relative flex min-h-[100dvh] overflow-hidden bg-[linear-gradient(180deg,#f5f2e9_0%,#eef4ef_52%,#f8f6ef_100%)] text-slate-900">
-      <div className="absolute left-[-120px] top-[-80px] h-72 w-72 rounded-full bg-[#d8eadf] blur-3xl" />
-      <div className="absolute bottom-[-120px] right-[-40px] h-80 w-80 rounded-full bg-[#cfe3d7] blur-3xl" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_42%)]" />
+    <div className="ai-container">
 
-      <Link
-        to="/"
-        className="absolute right-4 top-4 z-20 inline-flex items-center justify-center rounded-full bg-[#184d35] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(24,77,53,0.18)] transition hover:-translate-y-0.5 hover:brightness-105 sm:right-6 sm:top-6"
-      >
-        Back to Home
-      </Link>
+      <div className="bubble-bg">
+        {bubbles.map((bubble, i) => (
+          <div
+            key={i}
+            className="bubble"
+            style={{
+              left: bubble.left,
+              width: bubble.width,
+              height: bubble.height,
+              animationDuration: bubble.animationDuration,
+              animationDelay: bubble.animationDelay
+            }}
+          ></div>
+        ))}
+      </div>
 
-      <main className="relative flex flex-1 items-center justify-center px-4 py-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-xl rounded-[36px] border border-[#d8ddd3] bg-[#fcfbf7] px-5 pb-5 pt-0 shadow-[0_24px_60px_rgba(15,23,42,0.12)] sm:px-6 sm:pb-6 sm:pt-0 lg:px-7 lg:pb-7 lg:pt-0">
-          <div className="text-center">
-            <img
-              src={brandLogo}
-              alt="ThinkBack system logo"
-              className="mx-auto -mb-8 -mt-6 h-40 w-auto object-contain sm:-mb-10 sm:-mt-8 sm:h-48 lg:h-52"
-            />
-            <p className="mt-0 text-sm font-semibold uppercase tracking-[0.24em] text-[#56836c]">
-              Sign In
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold text-[#184d35] sm:text-4xl">
-              Access your account
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-slate-500">
-              Enter your institution email and password to continue to the
-              ThinkBack dashboard.
-            </p>
-          </div>
+      <div className="grid-bg"></div>
+
+      <div className="ai-card">
+
+        <div className="logo-title">
+          <img src={logo} alt="ThinkBack Logo" className="logo-img"/>
+          <h1 className="logo">ThinkBack</h1>
+        </div>
+
+        <h2>Welcome Back</h2>
+
+        <p className="tagline">
+          Sign in to your account to continue
+        </p>
+
+        {error && <div className="error-message">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+
 
           <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
             <AuthField
@@ -97,10 +116,14 @@ function LoginPage() {
               htmlFor="login-email"
               type="email"
               name="email"
+
+
+              placeholder="Email Address"
               value={data.email}
-              placeholder="name@institution.edu"
               onChange={handleChange}
-              icon={<EnvelopeIcon />}
+              disabled={loading}
+              required
+
             />
 
             <AuthField
@@ -108,11 +131,28 @@ function LoginPage() {
               htmlFor="login-password"
               type="password"
               name="password"
+
+
+              placeholder="Password"
               value={data.password}
-              placeholder="Enter your password"
               onChange={handleChange}
-              icon={<LockIcon />}
+              disabled={loading}
+              required
             />
+          </div>
+
+          <button className="ai-btn" type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Access Dashboard"}
+          </button>
+
+        </form>
+
+        <p className="switch">
+          No account? <a href="/register">Register</a>
+        </p>
+
+      </div>
+
 
             <button
               type="submit"

@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -13,7 +14,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('full_name', 'email', 'password', 'password_confirm', 'phone_number', 'designation', 'role')
+        fields = ('full_name', 'email', 'password', 'password_confirm', 'phone_number', 'designation', 'role', 'institution')
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -24,11 +25,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         
         return data
 
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> User:
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
         
-        user = User.objects.create(**validated_data)
+        user: User = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
         
@@ -38,7 +39,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'full_name', 'email', 'phone_number', 'designation', 'role', 'institution', 'department', 'is_active', 'created_at', 'updated_at')
+        fields = ('id', 'full_name', 'email', 'phone_number', 'designation', 'role', 'institution', 'is_active', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
 
 
@@ -52,7 +53,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Remove username from required fields
         self.fields.pop('username', None)
 
-    def validate(self, attrs):
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         email = attrs.get('email')
         password = attrs.get('password')
 
@@ -63,7 +64,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Find user by email
         try:
-            user = User.objects.get(email=email)
+            user: User = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError({"email": "User not found."})
 
