@@ -1,20 +1,18 @@
 from rest_framework import serializers
-from .models import Institution, Faculty, Department
+from .models import Institution
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Institution
-        fields = '__all__'
+        fields = ('id', 'institution_name', 'institution_type', 'phone_number', 'address', 'country', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
 
+    def validate_institution_name(self, value):
+        if not value or value.strip() == '':
+            raise serializers.ValidationError("Institution name cannot be empty.")
+        return value
 
-class FacultySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Faculty
-        fields = '__all__'
-
-
-class DepartmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = '__all__'
+    def create(self, validated_data):
+        institution = Institution.objects.create(**validated_data)
+        return institution
