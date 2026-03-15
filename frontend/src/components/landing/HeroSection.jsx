@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import heroImage from '../../assets/Robot_2.png'
 import feedbackLoopImage from '../../assets/R1.png'
 import insightImage from '../../assets/R2.png'
@@ -61,12 +62,12 @@ function HeroSection({ stats }) {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <button
-              type="button"
+            <Link
+              to="/institutions/register"
               className="rounded-2xl bg-emerald-500 px-6 py-3 font-semibold text-black shadow-lg shadow-emerald-500/30 transition hover:brightness-105"
             >
               Create Institution Account
-            </button>
+            </Link>
             <button
               type="button"
               className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3 font-medium text-white/85 transition hover:bg-white/10"
