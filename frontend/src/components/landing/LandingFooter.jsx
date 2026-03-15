@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const footerLinks = [
   'Home',
   'About Us',
@@ -16,30 +18,30 @@ function LandingFooter() {
   return (
     <footer
       id="contact"
-      className="mt-8 bg-gradient-to-r from-emerald-500 to-green-300 px-6 py-12 text-slate-950"
+      className="mt-8 bg-[#184d35] px-6 py-12 text-white"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-8 border-b border-slate-900/15 pb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-8 border-b border-white/15 pb-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-bold sm:text-4xl">
               Launch a smarter feedback system for your institution
             </h2>
-            <p className="mt-3 text-base leading-7 text-slate-900/75">
+            <p className="mt-3 text-base leading-7 text-white/75">
               Replace fragmented feedback collection with one intelligent
               platform for students, lecturers, and administrators.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
+            <Link
+              to="/institutions/register"
               className="rounded-2xl bg-slate-950 px-6 py-3 font-semibold text-white transition hover:opacity-90"
             >
               Create Institution Account
-            </button>
+            </Link>
             <button
               type="button"
-              className="rounded-2xl border border-slate-900/15 bg-white/60 px-6 py-3 font-semibold text-slate-900 transition hover:bg-white/80"
+              className="rounded-2xl border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
             >
               Request Demo
             </button>
@@ -54,7 +56,7 @@ function LandingFooter() {
               </div>
               <div>
                 <p className="text-lg font-semibold">ThinkBack AI</p>
-                <p className="text-sm text-slate-900/60">
+                <p className="text-sm text-white/60">
                   Student Feedback Intelligence Platform
                 </p>
               </div>
@@ -62,10 +64,10 @@ function LandingFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-900/60">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/60">
               Platform
             </p>
-            <div className="mt-4 space-y-2 text-sm text-slate-900/75">
+            <div className="mt-4 space-y-2 text-sm text-white/75">
               {footerLinks.map((item) => (
                 <p key={item}>{item}</p>
               ))}
@@ -73,10 +75,10 @@ function LandingFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-900/60">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/60">
               Features
             </p>
-            <div className="mt-4 space-y-2 text-sm text-slate-900/75">
+            <div className="mt-4 space-y-2 text-sm text-white/75">
               {featureLinks.map((item) => (
                 <p key={item}>{item}</p>
               ))}
@@ -84,10 +86,10 @@ function LandingFooter() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-900/60">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/60">
               Contact
             </p>
-            <div className="mt-4 space-y-2 text-sm text-slate-900/75">
+            <div className="mt-4 space-y-2 text-sm text-white/75">
               <p>hello@thinkback.ai</p>
               <p>+94 77 123 4567</p>
               <p>Colombo, Sri Lanka</p>
@@ -95,7 +97,7 @@ function LandingFooter() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 border-t border-slate-900/15 pt-6 text-sm text-slate-900/70 md:flex-row md:items-center md:justify-between">
+        <div className="mt-8 flex flex-col gap-3 border-t border-white/15 pt-6 text-sm text-white/70 md:flex-row md:items-center md:justify-between">
           <p>Copyright 2026 ThinkBack AI. All rights reserved.</p>
           <div className="flex gap-4">
             <p>Privacy Policy</p>
