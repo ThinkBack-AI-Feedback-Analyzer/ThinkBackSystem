@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
@@ -108,24 +109,30 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit}>
 
-          <div className="input-group">
-            <FaEnvelope/>
-            <input
+
+          <form className="mt-6 space-y-4 sm:mt-7" onSubmit={handleSubmit}>
+            <AuthField
+              label="Email"
+              htmlFor="login-email"
               type="email"
               name="email"
+
+
               placeholder="Email Address"
               value={data.email}
               onChange={handleChange}
               disabled={loading}
               required
-            />
-          </div>
 
-          <div className="input-group">
-            <FaLock/>
-            <input
+            />
+
+            <AuthField
+              label="Password"
+              htmlFor="login-password"
               type="password"
               name="password"
+
+
               placeholder="Password"
               value={data.password}
               onChange={handleChange}
@@ -146,8 +153,30 @@ const LoginPage = () => {
 
       </div>
 
-    </div>
-  );
-};
 
-export default LoginPage;
+            <button
+              type="submit"
+              className="w-full rounded-[24px] bg-[#184d35] px-6 py-4 text-lg font-semibold text-white shadow-[0_16px_40px_rgba(24,77,53,0.28)] transition hover:-translate-y-0.5 hover:brightness-105"
+            >
+              Sign In to Dashboard
+            </button>
+          </form>
+
+          <div className="mt-5 rounded-[26px] border border-[#d6ddd3] bg-[linear-gradient(180deg,#ffffff_0%,#f6f8f3_100%)] px-5 py-3.5 text-center shadow-sm">
+            <p className="text-sm leading-6 text-slate-600">
+              Need a new account for your institution?
+              <Link
+                to="/institutions/register"
+                className="ml-2 font-semibold text-[#184d35] transition hover:text-[#123925]"
+              >
+                Register here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+export default LoginPage

@@ -6,7 +6,7 @@ import { modules, navItems, stats, steps } from '../data/landingPage'
 
 function LandingPage() {
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen bg-white text-slate-900">
       <div className="mx-auto max-w-7xl px-6 py-6 lg:px-10">
         <LandingHeader navItems={navItems} />
 
