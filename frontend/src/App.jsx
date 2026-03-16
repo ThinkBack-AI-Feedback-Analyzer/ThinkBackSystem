@@ -18,7 +18,11 @@ function App() {
       />
       <Route path="/course-create" element={<CourseCreatePage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<InstitutionRegisterPage />} />
+      <Route path="/institutions/register" element={<InstitutionRegisterPage />} />
+      <Route
+        path="/register"
+        element={<Navigate to="/institutions/register" replace />}
+      />
       <Route path="/institution-dashboard" element={<InstitutionDashboardPage />} />
       <Route path="/portal" element={<StudentPortal />} />
       <Route path="/feedbackForm" element={<FormCreatePage />} />

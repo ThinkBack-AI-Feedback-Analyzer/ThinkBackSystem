@@ -7,14 +7,17 @@ import { modules, navItems, stats, steps } from '../data/landingPage'
 function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <div className="mx-auto max-w-7xl px-6 py-6 lg:px-10">
+      <div className="mx-auto max-w-7xl px-6 pt-6 lg:px-10">
         <LandingHeader navItems={navItems} />
-
-        <main className="space-y-8">
-          <HeroSection stats={stats} />
-          <PlatformOverviewSection modules={modules} steps={steps} />
-        </main>
       </div>
+
+      <main>
+        <HeroSection stats={stats} />
+
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+          <PlatformOverviewSection modules={modules} steps={steps} />
+        </div>
+      </main>
 
       <LandingFooter />
     </div>

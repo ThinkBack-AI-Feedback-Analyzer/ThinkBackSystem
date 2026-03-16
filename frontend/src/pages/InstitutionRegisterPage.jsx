@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import brandLogo from '../assets/Thinkback logo2-cropped.png'
-import systemLogo from '../assets/logo_3.png'
 import { countries } from '../data/countries'
 
 const institutionTypes = [
@@ -18,6 +17,12 @@ const designations = [
   'Registrar',
   'Director',
   'Coordinator',
+]
+
+const onboardingTips = [
+  'Use the official institution name, type, and country exactly as they should appear in reports.',
+  'Prepare the admin contact email and phone number for the person who will manage the workspace.',
+  'Keep your institution address, logo, and authorization confirmation ready before submitting.',
 ]
 
 const sectionCardClassName =
@@ -122,44 +127,45 @@ function InstitutionRegisterPage() {
               <p className="mt-8 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
                 Institution Onboarding
               </p>
-            </div>
 
-            <div className="mx-auto flex w-full max-w-md flex-1 items-center justify-center py-10 lg:py-0">
-              <div className="w-full">
-                <div className="rounded-[34px] border border-white/12 bg-white/10 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)] backdrop-blur">
-                  <div className="rounded-[28px] bg-[linear-gradient(180deg,#f7f5ef_0%,#eef6f1_100%)] p-6 text-slate-900">
-                    <div className="rounded-[28px] border border-[#d7e2d9] bg-[radial-gradient(circle_at_top,#ffffff_0%,#eff6f1_56%,#e7f1eb_100%)] px-6 py-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.96),0_16px_34px_rgba(24,77,53,0.08)]">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5a806c]">
-                        ThinkBack Platform
+              <div className="mt-6 max-w-md rounded-[30px] border border-white/12 bg-white/10 p-6 shadow-[0_18px_40px_rgba(0,0,0,0.12)] backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100/90">
+                  Quick Guide
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold leading-tight">
+                  What to prepare before you start
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-emerald-50/85">
+                  Having a few official details ready will make registration
+                  faster and help you complete the form in one go.
+                </p>
+
+                <div className="mt-5 space-y-3">
+                  {onboardingTips.map((tip, index) => (
+                    <div
+                      key={tip}
+                      className="flex gap-3 rounded-[22px] border border-white/10 bg-black/10 px-4 py-3"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-semibold text-white">
+                        0{index + 1}
+                      </span>
+                      <p className="text-sm leading-6 text-emerald-50/85">
+                        {tip}
                       </p>
-                      <img
-                        src={systemLogo}
-                        alt="ThinkBack system logo"
-                        className="mx-auto mt-5 h-24 w-auto object-contain sm:h-28"
-                      />
-                      <div className="mx-auto mt-6 max-w-xs rounded-[22px] border border-white/80 bg-white/80 px-5 py-4 shadow-sm">
-                        <p className="text-sm font-semibold text-[#184d35]">
-                          Student Feedback Intelligence Platform
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                          Create your institution workspace and start secure,
-                          AI-powered feedback management in one place.
-                        </p>
-                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
-                <div className="mx-auto mt-8 max-w-lg text-center">
-                  <h1 className="text-4xl font-semibold leading-tight">
-                    Register Your Institution
-                  </h1>
-                  <p className="mt-4 text-lg leading-8 text-emerald-50/85">
-                    Create your institution account to start collecting and
-                    analyzing student feedback with a secure, AI-powered
-                    academic workflow.
-                  </p>
-                </div>
+              <div className="mx-auto mt-10 w-full max-w-lg text-center">
+                <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
+                  Register Your Institution
+                </h1>
+                <p className="mt-5 text-lg leading-8 text-emerald-50/85">
+                  Create your institution account to start collecting and
+                  analyzing student feedback with a secure, AI-powered
+                  academic workflow.
+                </p>
               </div>
             </div>
 
