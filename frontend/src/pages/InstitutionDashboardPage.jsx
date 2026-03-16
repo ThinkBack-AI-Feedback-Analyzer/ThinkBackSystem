@@ -134,7 +134,9 @@ const InstitutionDashboardPage = () => {
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button className="btn-primary">+ Create New Course</button>
+          <button className="btn-primary" onClick={() => navigate('/course-create')}>
+            + Create New Course
+          </button>
           <button className="btn-secondary">+ Create New Feedback Form</button>
           <button className="btn-secondary">↓ Export Data</button>
         </div>
