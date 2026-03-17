@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import * as Select from '@radix-ui/react-select'
+import { toast } from 'sonner'
 import brandLogo from '../assets/Thinkback logo2-cropped.png'
 import { countries } from '../data/countries'
+import { createInstitution } from '../services/institutions'
+import { register } from '../services/auth'
 
 const institutionTypes = [
   'University',
@@ -9,14 +13,6 @@ const institutionTypes = [
   'Institute',
   'College',
   'School of Studies',
-]
-
-const designations = [
-  'Vice Chancellor',
-  'Dean',
-  'Registrar',
-  'Director',
-  'Coordinator',
 ]
 
 const onboardingTips = [
@@ -29,7 +25,7 @@ const sectionCardClassName =
   'rounded-[30px] border border-[#dde4db] bg-[linear-gradient(180deg,#ffffff_0%,#f6f5ef_100%)] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)] sm:p-7'
 
 const inputClassName =
-  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-4 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
+  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-3 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
 
 const selectClassName = `${inputClassName} appearance-none pr-16`
 
@@ -50,7 +46,14 @@ function ChevronDownIcon() {
   )
 }
 
-function FieldShell({ label, htmlFor, className = '', hint = '', children }) {
+function FieldShell({
+  label,
+  htmlFor,
+  className = '',
+  hint = '',
+  required = false,
+  children,
+}) {
   return (
     <div className={`group relative block ${className}`}>
       <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
@@ -59,6 +62,11 @@ function FieldShell({ label, htmlFor, className = '', hint = '', children }) {
         className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm"
       >
         {label}
+        {required ? (
+          <span className="ml-1 text-[#b42318]" aria-hidden="true">
+            *
+          </span>
+        ) : null}
       </label>
       <span className="pointer-events-none absolute right-5 top-5 z-10 h-2.5 w-2.5 rounded-full bg-[#c3d8c8] transition duration-300 group-focus-within:bg-[#184d35] group-focus-within:shadow-[0_0_0_7px_rgba(24,77,53,0.12)]" />
       {children}
@@ -80,59 +88,286 @@ function SectionTitle({ title, description }) {
   )
 }
 
-function SelectField({ id, defaultLabel, options }) {
+function SelectField({
+  id,
+  defaultLabel,
+  options,
+  value,
+  onValueChange,
+  searchable = false,
+  required = false,
+  hasError = false,
+}) {
+  const [open, setOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
+
+  const filteredOptions = searchable
+    ? options.filter((option) =>
+        option.toLowerCase().includes(searchText.toLowerCase().trim())
+      )
+    : options
+
   return (
-    <div className="relative">
-      <select id={id} className={selectClassName} defaultValue="" required>
-        <option value="" disabled>
-          {defaultLabel}
-        </option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <span className="pointer-events-none absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#e9f2ec] text-[#184d35] shadow-sm">
-        <ChevronDownIcon />
-      </span>
-    </div>
+    <Select.Root
+      name={id}
+      required={required}
+      value={value}
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (!nextOpen) {
+          setSearchText('')
+        }
+      }}
+      onValueChange={onValueChange}
+    >
+      <Select.Trigger
+        id={id}
+        className={`${selectClassName} flex items-center justify-between gap-3 text-left data-[placeholder]:text-slate-400 ${
+          hasError
+            ? 'border-[#b42318] focus:border-[#b42318] focus:shadow-[0_0_0_4px_rgba(180,35,24,0.12),0_18px_36px_rgba(180,35,24,0.12)]'
+            : ''
+        }`}
+      >
+        <Select.Value placeholder={defaultLabel} />
+        <Select.Icon asChild>
+          <span className="pointer-events-none flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e9f2ec] text-[#184d35] shadow-sm">
+            <ChevronDownIcon />
+          </span>
+        </Select.Icon>
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content
+          position="popper"
+          sideOffset={8}
+          className="z-50 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[20px] border border-[#d1d9cf] bg-white shadow-[0_20px_40px_rgba(15,23,42,0.16)]"
+        >
+          {searchable ? (
+            <div className="border-b border-[#e3e8df] p-2">
+              <input
+                type="text"
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder="Search..."
+                className="w-full rounded-xl border border-[#d1d9cf] bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#185237]"
+              />
+            </div>
+          ) : null}
+
+          <Select.ScrollUpButton className="flex h-7 items-center justify-center text-[#184d35]">
+            <ChevronDownIcon />
+          </Select.ScrollUpButton>
+
+          <Select.Viewport className="max-h-64 overflow-y-auto p-2">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-slate-500">
+                No results found
+              </div>
+            ) : null}
+
+            {filteredOptions.map((option) => (
+              <Select.Item
+                key={option}
+                value={option}
+                className="relative flex cursor-pointer items-center rounded-xl px-4 py-3 text-sm text-slate-700 outline-none transition hover:bg-[#edf5ef] focus:bg-[#edf5ef] data-[state=checked]:bg-[#e2efe7] data-[state=checked]:text-[#184d35]"
+              >
+                <Select.ItemText>{option}</Select.ItemText>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+
+          <Select.ScrollDownButton className="flex h-7 items-center justify-center text-[#184d35]">
+            <ChevronDownIcon />
+          </Select.ScrollDownButton>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
   )
 }
 
 function InstitutionRegisterPage() {
   const [logoName, setLogoName] = useState('Upload PNG, JPG, or SVG')
+  const [logoFile, setLogoFile] = useState(null)
+  const [formData, setFormData] = useState({
+    institutionName: '',
+    institutionType: '',
+    country: '',
+    address: '',
+    institutionPhone: '',
+    adminName: '',
+    adminEmail: '',
+    adminPhone: '',
+    password: '',
+    confirmPassword: '',
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  function updateField(name, value) {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFieldErrors((prev) => ({ ...prev, [name]: '' }))
+  }
+
+  function getInputClass(errorKey) {
+    return `${inputClassName} ${
+      fieldErrors[errorKey]
+        ? 'border-[#b42318] focus:border-[#b42318] focus:shadow-[0_0_0_4px_rgba(180,35,24,0.12),0_18px_36px_rgba(180,35,24,0.12)]'
+        : ''
+    }`
+  }
+
+  function validateForm() {
+    const errors = {}
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const phoneRegex = /^[0-9+()\-\s]{7,20}$/
+
+    if (!formData.institutionName.trim()) {
+      errors.institutionName = 'Institution name is required.'
+    }
+    if (!formData.institutionType) {
+      errors.institutionType = 'Institution type is required.'
+    }
+    if (formData.institutionPhone.trim() && !phoneRegex.test(formData.institutionPhone.trim())) {
+      errors.institutionPhone = 'Enter a valid phone number.'
+    }
+    if (!formData.adminName.trim()) {
+      errors.adminName = 'Admin name is required.'
+    }
+    if (!formData.adminEmail.trim()) {
+      errors.adminEmail = 'Admin email is required.'
+    } else if (!emailRegex.test(formData.adminEmail.trim())) {
+      errors.adminEmail = 'Enter a valid email address.'
+    }
+    if (formData.adminPhone.trim() && !phoneRegex.test(formData.adminPhone.trim())) {
+      errors.adminPhone = 'Enter a valid phone number.'
+    }
+    if (!formData.password) {
+      errors.password = 'Password is required.'
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters.'
+    }
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password.'
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Password and confirm password must match.'
+    }
+    if (logoFile && logoFile.size > 5 * 1024 * 1024) {
+      errors.logo = 'Logo must be 5MB or smaller.'
+    }
+
+    return errors
+  }
+
+  function getErrorMessage(error) {
+    const apiError = error?.response?.data
+    if (!apiError) {
+      return 'Unable to save form data. Please try again.'
+    }
+    if (typeof apiError === 'string') {
+      return apiError
+    }
+    const firstValue = Object.values(apiError)[0]
+    if (Array.isArray(firstValue) && firstValue.length > 0) {
+      return String(firstValue[0])
+    }
+    if (typeof firstValue === 'string') {
+      return firstValue
+    }
+    return 'Unable to save form data. Please check the form and try again.'
+  }
 
   function handleLogoChange(event) {
     const file = event.target.files?.[0]
+    setLogoFile(file || null)
     setLogoName(file ? file.name : 'Upload PNG, JPG, or SVG')
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
+    setSubmitError('')
+
+    const errors = validateForm()
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0]
+      setSubmitError(String(firstError))
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const institutionPayload = new FormData()
+      institutionPayload.append('institution_name', formData.institutionName.trim())
+      institutionPayload.append('institution_type', formData.institutionType)
+      institutionPayload.append('phone_number', formData.institutionPhone.trim())
+      institutionPayload.append('address', formData.address.trim())
+      if (formData.country) {
+        institutionPayload.append('country', formData.country)
+      }
+      if (logoFile) {
+        institutionPayload.append('logo', logoFile)
+      }
+
+      const institution = await createInstitution(institutionPayload)
+
+      await register({
+        full_name: formData.adminName.trim(),
+        email: formData.adminEmail.trim(),
+        password: formData.password,
+        password_confirm: formData.confirmPassword,
+        phone_number: formData.adminPhone.trim() || null,
+        role: 'institution_admin',
+        institution: institution.id,
+      })
+
+      toast.success('Institution and admin account saved successfully.')
+      setFormData({
+        institutionName: '',
+        institutionType: '',
+        country: '',
+        address: '',
+        institutionPhone: '',
+        adminName: '',
+        adminEmail: '',
+        adminPhone: '',
+        password: '',
+        confirmPassword: '',
+      })
+      setLogoFile(null)
+      setLogoName('Upload PNG, JPG, or SVG')
+    } catch (error) {
+      setSubmitError(getErrorMessage(error))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#f1efe8] text-slate-900">
-      <div className="grid min-h-screen lg:grid-cols-[0.46fr_0.54fr]">
-        <aside className="relative overflow-hidden bg-[radial-gradient(circle_at_top,#1f7a54_0%,#184d35_35%,#123925_100%)] px-6 py-8 text-white sm:px-8 lg:px-12 lg:py-12">
+      <div className="grid min-h-screen lg:grid-cols-[0.43fr_0.57fr]">
+        <aside className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#2b8c63_0%,#1b5a3f_42%,#102f22_100%)] px-6 py-8 text-white sm:px-8 lg:px-12 lg:py-12">
+          <div className="pointer-events-none absolute -left-16 top-12 h-48 w-48 rounded-full bg-emerald-200/15 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-16 right-0 h-56 w-56 rounded-full bg-emerald-100/10 blur-3xl" />
           <div className="absolute inset-y-0 right-0 hidden w-px bg-white/10 lg:block" />
-          <div className="relative flex h-full flex-col justify-between">
+          <div className="relative mx-auto flex h-full w-full max-w-[30rem] flex-col justify-between">
             <div>
               <img
                 src={brandLogo}
                 alt="ThinkBack AI"
-                className="h-16 w-auto object-contain"
+                className="h-14 w-auto object-contain sm:h-16"
               />
-              <p className="mt-8 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
+              <p className="mt-7 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
                 Institution Onboarding
               </p>
 
-              <div className="mt-6 max-w-md rounded-[30px] border border-white/12 bg-white/10 p-6 shadow-[0_18px_40px_rgba(0,0,0,0.12)] backdrop-blur">
+              <div className="mt-7 rounded-[30px] border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.07)_100%)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.15)] backdrop-blur">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100/90">
                   Quick Guide
                 </p>
-                <h2 className="mt-3 text-2xl font-semibold leading-tight">
+                <h2 className="mt-3 text-[1.65rem] font-semibold leading-tight">
                   What to prepare before you start
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-emerald-50/85">
@@ -157,11 +392,11 @@ function InstitutionRegisterPage() {
                 </div>
               </div>
 
-              <div className="mx-auto mt-10 w-full max-w-lg text-center">
-                <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
+              <div className="mt-10 w-full text-left">
+                <h1 className="max-w-md text-4xl font-semibold leading-tight sm:text-[2.8rem]">
                   Register Your Institution
                 </h1>
-                <p className="mt-5 text-lg leading-8 text-emerald-50/85">
+                <p className="mt-4 max-w-md text-base leading-7 text-emerald-50/85 sm:text-lg sm:leading-8">
                   Create your institution account to start collecting and
                   analyzing student feedback with a secure, AI-powered
                   academic workflow.
@@ -169,11 +404,11 @@ function InstitutionRegisterPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 text-sm text-emerald-50/75">
+            <div className="flex flex-col items-start justify-between gap-3 text-sm text-emerald-50/75 sm:flex-row sm:items-center">
               <span>Setup takes only a few minutes.</span>
               <Link
                 to="/"
-                className="rounded-full border border-white/15 px-4 py-2 font-medium text-white transition hover:bg-white/10"
+                className="rounded-full border border-white/20 px-4 py-2 font-medium text-white transition hover:bg-white/10"
               >
                 Back to Home
               </Link>
@@ -196,6 +431,12 @@ function InstitutionRegisterPage() {
             </div>
 
             <form className="mt-10 space-y-10" onSubmit={handleSubmit}>
+              {submitError ? (
+                <div className="rounded-2xl border border-[#f1c9cc] bg-[#fff1f2] px-4 py-3 text-sm text-[#9f1239]">
+                  {submitError}
+                </div>
+              ) : null}
+
               <section className={`${sectionCardClassName} space-y-6`}>
                 <SectionTitle
                   title="Institution"
@@ -206,26 +447,48 @@ function InstitutionRegisterPage() {
                   <FieldShell
                     label="Institution Name"
                     htmlFor="institution-name"
+                    required
                     className="md:col-span-2"
                   >
                     <input
                       id="institution-name"
                       type="text"
                       placeholder="Name of the institution"
-                      className={inputClassName}
+                      className={getInputClass('institutionName')}
+                      value={formData.institutionName}
+                      onChange={(event) =>
+                        updateField('institutionName', event.target.value)
+                      }
                       required
                     />
+                    {fieldErrors.institutionName ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.institutionName}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
                   <FieldShell
                     label="Institution Type"
                     htmlFor="institution-type"
+                    required
                   >
                     <SelectField
                       id="institution-type"
                       defaultLabel="Select institution type"
                       options={institutionTypes}
+                      value={formData.institutionType}
+                      onValueChange={(value) =>
+                        updateField('institutionType', value)
+                      }
+                      required
+                      hasError={Boolean(fieldErrors.institutionType)}
                     />
+                    {fieldErrors.institutionType ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.institutionType}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
                   <FieldShell label="Country" htmlFor="country">
@@ -233,6 +496,9 @@ function InstitutionRegisterPage() {
                       id="country"
                       defaultLabel="Select country"
                       options={countries}
+                      value={formData.country}
+                      onValueChange={(value) => updateField('country', value)}
+                      searchable
                     />
                   </FieldShell>
 
@@ -240,32 +506,28 @@ function InstitutionRegisterPage() {
                     label="Address"
                     htmlFor="institution-address"
                     className="md:col-span-2"
-                    hint="Street, city, and region details help identify your institution correctly."
+                  
                   >
                     <textarea
                       id="institution-address"
                       placeholder="Institution address"
-                      className={`${inputClassName} min-h-28 resize-y leading-7`}
-                      required
+                      className={`${getInputClass('address')} min-h-28 resize-y leading-7`}
+                      value={formData.address}
+                      onChange={(event) => updateField('address', event.target.value)}
                     />
+                    {fieldErrors.address ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.address}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
-                  <FieldShell
-                    label="Institution Phone"
-                    htmlFor="institution-phone"
-                  >
-                    <input
-                      id="institution-phone"
-                      type="tel"
-                      placeholder="+94 11 000 0000"
-                      className={inputClassName}
-                      required
-                    />
-                  </FieldShell>
+                
 
                   <FieldShell
                     label="Institution Logo"
                     htmlFor="institution-logo"
+                    className="md:col-span-2"
                     hint="A square or transparent logo works best across the platform."
                   >
                     <div className="rounded-[26px] border border-dashed border-[#c7d3c9] bg-[linear-gradient(180deg,#ffffff_0%,#f3f7f2_100%)] p-5 shadow-sm transition duration-200 hover:border-[#9db7a5] hover:shadow-md">
@@ -280,6 +542,9 @@ function InstitutionRegisterPage() {
                           <p className="mt-1 text-sm text-slate-500">
                             {logoName}
                           </p>
+                          {fieldErrors.logo ? (
+                            <p className="mt-2 text-xs text-[#b42318]">{fieldErrors.logo}</p>
+                          ) : null}
                         </div>
                         <label
                           htmlFor="institution-logo"
@@ -297,6 +562,27 @@ function InstitutionRegisterPage() {
                       />
                     </div>
                   </FieldShell>
+
+                    <FieldShell
+                    label="Institution Phone"
+                    htmlFor="institution-phone"
+                  >
+                    <input
+                      id="institution-phone"
+                      type="tel"
+                      placeholder="+94 11 000 0000"
+                      className={getInputClass('institutionPhone')}
+                      value={formData.institutionPhone}
+                      onChange={(event) =>
+                        updateField('institutionPhone', event.target.value)
+                      }
+                    />
+                    {fieldErrors.institutionPhone ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.institutionPhone}
+                      </span>
+                    ) : null}
+                  </FieldShell>
                 </div>
               </section>
 
@@ -307,32 +593,38 @@ function InstitutionRegisterPage() {
                 />
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <FieldShell label="Full Name" htmlFor="admin-name">
+                  <FieldShell label="Full Name" htmlFor="admin-name" required>
                     <input
                       id="admin-name"
                       type="text"
                       placeholder="Full name"
-                      className={inputClassName}
+                      className={getInputClass('adminName')}
+                      value={formData.adminName}
+                      onChange={(event) => updateField('adminName', event.target.value)}
                       required
                     />
+                    {fieldErrors.adminName ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.adminName}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
-                  <FieldShell label="Designation" htmlFor="designation">
-                    <SelectField
-                      id="designation"
-                      defaultLabel="Select designation"
-                      options={designations}
-                    />
-                  </FieldShell>
-
-                  <FieldShell label="Official Email" htmlFor="admin-email">
+                  <FieldShell label="Official Email" htmlFor="admin-email" required>
                     <input
                       id="admin-email"
                       type="email"
                       placeholder="name@institution.edu"
-                      className={inputClassName}
+                      className={getInputClass('adminEmail')}
+                      value={formData.adminEmail}
+                      onChange={(event) => updateField('adminEmail', event.target.value)}
                       required
                     />
+                    {fieldErrors.adminEmail ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.adminEmail}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
                   <FieldShell label="Phone Number" htmlFor="admin-phone">
@@ -340,9 +632,15 @@ function InstitutionRegisterPage() {
                       id="admin-phone"
                       type="tel"
                       placeholder="+94 77 000 0000"
-                      className={inputClassName}
-                      required
+                      className={getInputClass('adminPhone')}
+                      value={formData.adminPhone}
+                      onChange={(event) => updateField('adminPhone', event.target.value)}
                     />
+                    {fieldErrors.adminPhone ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.adminPhone}
+                      </span>
+                    ) : null}
                   </FieldShell>
                 </div>
               </section>
@@ -354,27 +652,44 @@ function InstitutionRegisterPage() {
                 />
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <FieldShell label="Password" htmlFor="password">
+                  <FieldShell label="Password" htmlFor="password" required>
                     <input
                       id="password"
                       type="password"
                       placeholder="Create password"
-                      className={inputClassName}
+                      className={getInputClass('password')}
+                      value={formData.password}
+                      onChange={(event) => updateField('password', event.target.value)}
                       required
                     />
+                    {fieldErrors.password ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.password}
+                      </span>
+                    ) : null}
                   </FieldShell>
 
                   <FieldShell
                     label="Confirm Password"
                     htmlFor="confirm-password"
+                    required
                   >
                     <input
                       id="confirm-password"
                       type="password"
                       placeholder="Confirm password"
-                      className={inputClassName}
+                      className={getInputClass('confirmPassword')}
+                      value={formData.confirmPassword}
+                      onChange={(event) =>
+                        updateField('confirmPassword', event.target.value)
+                      }
                       required
                     />
+                    {fieldErrors.confirmPassword ? (
+                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
+                        {fieldErrors.confirmPassword}
+                      </span>
+                    ) : null}
                   </FieldShell>
                 </div>
               </section>
@@ -397,9 +712,10 @@ function InstitutionRegisterPage() {
 
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full rounded-[24px] bg-[#184d35] px-6 py-5 text-lg font-semibold text-white shadow-[0_16px_40px_rgba(24,77,53,0.28)] transition hover:brightness-105"
               >
-                Register Institution
+                {isSubmitting ? 'Saving...' : 'Register Institution'}
               </button>
             </form>
           </div>

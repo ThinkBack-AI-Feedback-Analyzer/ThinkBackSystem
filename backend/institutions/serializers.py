@@ -5,7 +5,7 @@ from .models import Institution
 class InstitutionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Institution
-        fields = ('id', 'institution_name', 'institution_type', 'phone_number', 'address', 'country', 'is_active', 'created_at', 'updated_at')
+        fields = ('id', 'institution_name', 'institution_type', 'logo', 'phone_number', 'address', 'country', 'is_active', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def validate_institution_name(self, value):
