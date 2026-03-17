@@ -1,17 +1,17 @@
 function CourseFormHeader({ onBack }) {
   return (
-    <div className="mb-8 flex flex-col gap-5 rounded-[28px] bg-[#c7e0cf] px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex items-start gap-4">
+    <div className="mb-6 flex flex-col gap-4 rounded-[24px] bg-[#c7e0cf] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex items-start gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="mt-1 rounded-2xl p-2 text-slate-900 transition hover:bg-white/50"
+          className="mt-0.5 rounded-xl p-2 text-slate-900 transition hover:bg-white/50"
           aria-label="Go back"
         >
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
-            className="h-8 w-8"
+            className="h-6 w-6"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -23,25 +23,25 @@ function CourseFormHeader({ onBack }) {
         </button>
 
         <div>
-          <h1 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
+          <h1 className="text-2xl font-bold text-[#124f2f] md:text-3xl">
             Create New Course
           </h1>
-          <p className="mt-2 text-lg text-[#315443] md:text-xl">
+          <p className="mt-1 text-sm text-[#315443] md:text-base">
             Add a new course to your curriculum
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-5 self-end lg:self-auto">
+      <div className="flex items-center gap-4 self-end lg:self-auto">
         <button
           type="button"
-          className="rounded-2xl p-2 text-[#124f2f] transition hover:bg-white/40"
+          className="rounded-xl p-2 text-[#124f2f] transition hover:bg-white/40"
           aria-label="Notifications"
         >
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"
-            className="h-7 w-7"
+            className="h-5 w-5"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -57,13 +57,13 @@ function CourseFormHeader({ onBack }) {
           <img
             src="https://i.pravatar.cc/60?img=5"
             alt="Profile"
-            className="h-14 w-14 rounded-full object-cover"
+            className="h-11 w-11 rounded-full object-cover"
           />
           <div>
-            <h3 className="text-lg font-semibold text-[#234532]">
+            <h3 className="text-sm font-semibold text-[#234532] md:text-base">
               Dr. Sarah Johnson
             </h3>
-            <p className="text-sm text-slate-600">sarah@gmail.com</p>
+            <p className="text-xs text-slate-600 md:text-sm">sarah@gmail.com</p>
           </div>
         </div>
       </div>

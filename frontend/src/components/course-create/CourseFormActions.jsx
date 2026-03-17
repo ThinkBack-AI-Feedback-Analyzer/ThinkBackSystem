@@ -1,11 +1,11 @@
 function ActionButton({ type = 'button', onClick, variant, children, icon }) {
   const baseClassName =
-    'inline-flex items-center gap-3 rounded-2xl px-6 py-4 text-lg font-semibold transition md:px-8'
+    'inline-flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold transition md:px-5'
 
   const variantClassName =
     variant === 'primary'
       ? 'bg-[#124f2f] text-white hover:bg-[#0f4228]'
-      : 'border-2 border-slate-300 text-[#124f2f] hover:bg-slate-100'
+      : 'border border-slate-300 text-[#124f2f] hover:bg-slate-100'
 
   return (
     <button
@@ -23,7 +23,7 @@ function ActionIcon({ type }) {
   const commonProps = {
     'aria-hidden': 'true',
     viewBox: '0 0 24 24',
-    className: 'h-6 w-6',
+    className: 'h-[18px] w-[18px]',
     fill: 'none',
     stroke: 'currentColor',
     strokeWidth: '2',
@@ -60,7 +60,7 @@ function ActionIcon({ type }) {
 
 function CourseFormActions({ onReset, onCancel }) {
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="flex flex-wrap gap-3">
       <ActionButton type="submit" variant="primary" icon={<ActionIcon type="save" />}>
         Save Course
       </ActionButton>
