@@ -6,6 +6,8 @@ import InstitutionRegisterPage from "./pages/InstitutionRegisterPage";
 import InstitutionDashboardPage from "./pages/InstitutionDashboardPage";
 import StudentPortal from "./pages/StudentPortal";
 import FormCreatePage from "./pages/FormCreatePage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 
 function App() {
   return (
@@ -23,6 +25,9 @@ function App() {
       <Route path="/feedbackForm" element={<FormCreatePage />} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
+
+      <Route path="/about" element={<AboutPage />} />
+<Route path="/contact" element={<ContactPage />} />
     </Routes>
   )
 }

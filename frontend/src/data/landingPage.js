@@ -1,9 +1,9 @@
 export const navItems = [
   { label: 'Home', href: '#home' },
   { label: 'Platform', href: '#platform' },
-  { label: 'About Us', href: '#about' },
+  { label: 'About Us', href: '/about' },
   { label: 'Workflow', href: '#workflow' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export const modules = [
