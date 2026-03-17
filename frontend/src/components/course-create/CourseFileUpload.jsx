@@ -28,7 +28,6 @@ function CourseFileUpload({ selectedFileName, onChange }) {
             Choose File
           </label>
         </div>
-
         <input
           id="studentFile"
           type="file"
