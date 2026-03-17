@@ -4,5 +4,6 @@ djangorestframework-simplejwt
 psycopg2-binary
 python-dotenv
 django-cors-headers
+Pillow
 transformers
 numpy

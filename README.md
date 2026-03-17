@@ -230,3 +230,5 @@ python manage.py migrate
 ## License
 
 This project is part of ThinkBack educational feedback system.
+
+docker-compose down -v 

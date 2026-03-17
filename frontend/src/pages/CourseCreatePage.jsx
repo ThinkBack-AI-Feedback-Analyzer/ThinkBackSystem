@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import CourseFileUpload from '../components/course-create/CourseFileUpload'
 import CourseFormActions from '../components/course-create/CourseFormActions'
 import CourseFormField from '../components/course-create/CourseFormField'
+import CourseFormHeader from '../components/course-create/CourseFormHeader'
 import CourseFormSidebar from '../components/course-create/CourseFormSidebar'
 import CourseFormTextarea from '../components/course-create/CourseFormTextarea'
 import CourseSelectField from '../components/course-create/CourseSelectField'
@@ -21,7 +22,7 @@ function buildInitialFormData(courseInfo) {
 }
 
 const semesterOptions = ['Semester 1', 'Semester 2', 'Year 1', 'Year 2']
-const softInputClassName = 'border-slate-200 bg-[#f8fbf9]'
+const softInputClassName = 'border-[#d9e2db] bg-[#f8fbf9]'
 
 function CourseCreatePage() {
   const location = useLocation()
@@ -56,7 +57,7 @@ function CourseCreatePage() {
   }
 
   function handleCancel() {
-    navigate('/create-course-intro')
+    navigate('/institution-dashboard')
   }
 
   function handleSubmit(event) {
@@ -70,9 +71,11 @@ function CourseCreatePage() {
         <CourseFormSidebar />
 
         <main className="flex-1 p-4 md:p-6">
-          <div className="mx-auto max-w-5xl rounded-[28px] bg-white px-6 py-7 shadow-md md:px-10 md:py-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-[#124f2f] md:text-3xl">
+          <CourseFormHeader onBack={handleCancel} />
+
+          <div className="mx-auto max-w-6xl rounded-[32px] bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
                 Course Information
               </h2>
               <p className="mt-1.5 text-xs leading-5 text-slate-500 md:text-sm">

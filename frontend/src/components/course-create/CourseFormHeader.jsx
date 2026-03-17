@@ -54,16 +54,30 @@ function CourseFormHeader({ onBack }) {
         </button>
 
         <div className="flex items-center gap-3">
-          <img
-            src="https://i.pravatar.cc/60?img=5"
-            alt="Profile"
-            className="h-11 w-11 rounded-full object-cover"
-          />
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 text-[#4d6557] shadow-sm"
+            aria-label="Institution admin profile"
+            role="img"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-8 w-8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 20a6 6 0 0 0-12 0" />
+              <circle cx="12" cy="10" r="4" />
+            </svg>
+          </div>
           <div>
-            <h3 className="text-sm font-semibold text-[#234532] md:text-base">
-              Dr. Sarah Johnson
+            <h3 className="text-base font-semibold text-[#234532] md:text-lg">
+              Institution Admin
             </h3>
-            <p className="text-xs text-slate-600 md:text-sm">sarah@gmail.com</p>
+            <p className="text-sm text-slate-600">Course setup workspace</p>
           </div>
         </div>
       </div>
