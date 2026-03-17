@@ -56,7 +56,7 @@ function FieldShell({
 }) {
   return (
     <div className={`group relative block ${className}`}>
-      <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-[24px] bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
+      <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-3xl bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
       <label
         htmlFor={htmlFor}
         className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm"
@@ -712,8 +712,7 @@ function InstitutionRegisterPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-[24px] bg-[#184d35] px-6 py-5 text-lg font-semibold text-white shadow-[0_16px_40px_rgba(24,77,53,0.28)] transition hover:brightness-105"
+
               >
                 {isSubmitting ? 'Saving...' : 'Register Institution'}
               </button>
