@@ -73,7 +73,7 @@ function CourseCreatePage() {
         <main className="flex-1 p-6 md:p-8">
           <CourseFormHeader onBack={() => navigate('/create-course-intro')} />
 
-          <div className="mx-auto max-w-6xl rounded-[32px] bg-white px-8 py-10 shadow-md md:px-14">
+          <div className="mx-auto max-w-6xl rounded-3xl bg-white px-8 py-10 shadow-md md:px-14">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
                 Course Information

@@ -123,7 +123,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 rounded-[24px] bg-[#184d35] px-6 py-5 text-lg font-semibold text-white shadow-[0_16px_40px_rgba(24,77,53,0.28)] transition hover:brightness-105 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full mt-4 rounded-3xl bg-[#184d35] px-6 py-5 text-lg font-semibold text-white shadow-[0_16px_40px_rgba(24,77,53,0.28)] transition hover:brightness-105 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In to Dashboard"}
             </button>
