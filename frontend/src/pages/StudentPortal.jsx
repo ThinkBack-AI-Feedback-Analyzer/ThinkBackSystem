@@ -1,5 +1,6 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
+import studentlogo from "../assets/logo_3.png";
 
 export default function StudentFeedbackPortal() {
   return (
@@ -8,7 +9,7 @@ export default function StudentFeedbackPortal() {
       {/* Logo + Heading */}
       <div className="text-center mb-10">
         <img
-          src="/logo3.png"
+          src={studentlogo}
           alt="University Logo"
           className="w-20 mx-auto mb-4"
         />
