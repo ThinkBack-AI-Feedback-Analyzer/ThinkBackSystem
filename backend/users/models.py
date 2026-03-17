@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from institutions.models import Institution, Department
+from institutions.models import Institution
 
 
 class CustomUserManager(BaseUserManager):
@@ -23,7 +23,7 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('system_admin', 'System Admin'),
-        ('university_admin', 'University Admin'),
+        ('institution_admin', 'Institution Admin'),
         ('lecturer', 'Lecturer'),
         ('coordinator', 'Coordinator'),
     )
@@ -40,13 +40,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     institution = models.ForeignKey(
         Institution,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='users'
-    )
-    department = models.ForeignKey(
-        Department,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
