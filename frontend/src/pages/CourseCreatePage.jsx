@@ -73,14 +73,13 @@ function CourseCreatePage() {
         <main className="flex-1 p-4 md:p-6">
           <CourseFormHeader onBack={handleCancel} />
 
-          <div className="mx-auto max-w-6xl rounded-[32px] bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
+          <div className="mx-auto max-w-6xl rounded-4xl bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
-                Course Information
+                Create Course Details
               </h2>
               <p className="mt-1.5 text-xs leading-5 text-slate-500 md:text-sm">
-                Complete the course profile and optionally upload the student
-                roster for the first feedback cycle.
+                Fill in the course information and upload student details if needed.
               </p>
             </div>
 
