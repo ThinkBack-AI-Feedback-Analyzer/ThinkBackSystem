@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import logo from '../../assets/Logo_4.png'
 
 const footerLinks = [
   'Home',
@@ -51,9 +52,7 @@ function LandingFooter() {
         <div className="grid gap-8 pt-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f4f7f2] text-lg font-semibold text-[#184d35]">
-                TB
-              </div>
+               
               <div>
                 <p className="text-lg font-semibold">ThinkBack AI</p>
                 <p className="text-sm text-white/60">

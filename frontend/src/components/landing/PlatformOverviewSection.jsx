@@ -10,12 +10,10 @@ function PlatformOverviewSection({ modules, steps }) {
             Why ThinkBack AI
           </p>
           <h2 className="mt-3 text-3xl font-semibold text-[#184d35]">
-            Built like a product platform, not a static marketing page
+            A Complete Student Feedback Platform, Not Just a Simple Form
           </h2>
           <p className="mt-4 max-w-xl text-slate-600">
-            Present the system as something institutions can trust every day:
-            structured workflows, actionable analytics, role-based management,
-            and a clean product-first interface.
+            A student feedback platform you can rely on every day. Manage feedback with structured workflows, clear insights, and an easy-to-use interface built for real results.
           </p>
         </div>
 
