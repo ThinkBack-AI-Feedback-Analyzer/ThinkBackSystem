@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import DashboardSidebar from '../components/common/DashboardSidebar'
+import DashboardTopBar from '../components/common/DashboardTopBar'
 import CourseFileUpload from '../components/course-create/CourseFileUpload'
 import CourseFormActions from '../components/course-create/CourseFormActions'
 import CourseFormField from '../components/course-create/CourseFormField'
-import CourseFormHeader from '../components/course-create/CourseFormHeader'
-import CourseFormSidebar from '../components/course-create/CourseFormSidebar'
 import CourseFormTextarea from '../components/course-create/CourseFormTextarea'
 import CourseSelectField from '../components/course-create/CourseSelectField'
 
@@ -27,12 +27,61 @@ const softInputClassName = 'border-[#d9e2db] bg-[#f8fbf9]'
 function CourseCreatePage() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [authState] = useState(() => {
+    const storedUser = localStorage.getItem('user')
+
+    if (!storedUser) {
+      return { user: null, loading: false }
+    }
+
+    try {
+      return { user: JSON.parse(storedUser), loading: false }
+    } catch {
+      return { user: null, loading: false }
+    }
+  })
   const initialFormData = useMemo(
     () => buildInitialFormData(location.state?.courseInfo),
     [location.state],
   )
   const [formData, setFormData] = useState(initialFormData)
   const [statusMessage, setStatusMessage] = useState('')
+
+  useEffect(() => {
+    if (!authState.user) {
+      navigate('/login')
+      return
+    }
+
+    if (authState.user.role !== 'institution_admin') {
+      navigate('/')
+    }
+  }, [authState.user, navigate])
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }, [navigate])
+
+  const handleSidebarNavigation = useCallback(
+    (key) => {
+      const routeMap = {
+        dashboard: '/institution-dashboard',
+        courses: '/course-create',
+        feedback: '/feedbackForm',
+        users: '/student-management',
+      }
+
+      const targetRoute = routeMap[key]
+
+      if (targetRoute) {
+        navigate(targetRoute)
+      }
+    },
+    [navigate],
+  )
 
   function handleChange(event) {
     const { name, value, files } = event.target
@@ -65,15 +114,37 @@ function CourseCreatePage() {
     setStatusMessage('Course saved successfully.')
   }
 
+  if (!authState.user) {
+    return <div className="loading">Loading...</div>
+  }
+
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-slate-900">
-      <div className="flex min-h-screen">
-        <CourseFormSidebar />
+    <div className="dash-wrapper">
+      <DashboardSidebar
+        activeNav="courses"
+        onNavChange={handleSidebarNavigation}
+        onLogout={handleLogout}
+      />
 
-        <main className="flex-1 p-4 md:p-6">
-          <CourseFormHeader onBack={handleCancel} />
+      <main className="dashboard-main">
+        <DashboardTopBar
+          userName={authState.user.full_name}
+          userEmail={authState.user.email}
+          searchPlaceholder="Search courses"
+        />
 
-          <div className="mx-auto max-w-6xl rounded-4xl bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
+        <section className="dashboard-page-intro px-4 pb-4 md:px-6 md:pb-6">
+          <div className="mx-auto mb-5 max-w-6xl rounded-[24px] border border-[#d8e7dd] bg-white px-6 py-5 shadow-sm md:px-8">
+            <h1 className="text-2xl font-bold text-[#124f2f] md:text-3xl">
+              Create New Course
+            </h1>
+            <p className="mt-2 text-sm text-slate-600 md:text-base">
+              Add a new course to your curriculum and upload student details when
+              needed.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-6xl rounded-[32px] bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
                 Create Course Details
@@ -180,8 +251,8 @@ function CourseCreatePage() {
               />
             </form>
           </div>
-        </main>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }
