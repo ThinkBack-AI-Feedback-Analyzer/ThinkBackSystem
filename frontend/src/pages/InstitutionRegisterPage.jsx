@@ -263,7 +263,7 @@ function InstitutionRegisterPage() {
   function getErrorMessage(error) {
     const apiError = error?.response?.data
     if (!apiError) {
-      return 'Unable to save form data. Please try again.'
+      return 'Unable to reach backend from browser. Check backend server, CORS settings, and API URL.'
     }
     if (typeof apiError === 'string') {
       return apiError
