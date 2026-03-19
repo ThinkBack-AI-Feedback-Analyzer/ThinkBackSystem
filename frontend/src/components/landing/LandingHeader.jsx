@@ -1,7 +1,27 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/Logo_4.png'
 
 function LandingHeader({ navItems }) {
+  const location = useLocation()
+
+  const getNavTarget = (href) => (href.startsWith('#') ? `/${href}` : href)
+
+  const isActiveNavItem = (href) => {
+    if (href.startsWith('#')) {
+      if (location.pathname !== '/') {
+        return false
+      }
+
+      if (href === '#home') {
+        return location.hash === '' || location.hash === '#home'
+      }
+
+      return location.hash === href
+    }
+
+    return location.pathname === href
+  }
+
   return (
     <header className="relative mb-8 overflow-hidden rounded-[36px] border border-[#9ec4ab]/70 bg-[linear-gradient(135deg,rgba(232,247,237,0.92)_0%,rgba(186,223,198,0.78)_42%,rgba(108,169,130,0.58)_100%)] px-5 py-4 shadow-[0_28px_76px_rgba(24,77,53,0.22),0_0_54px_rgba(62,153,108,0.18)] backdrop-blur-3xl">
       <div className="pointer-events-none absolute inset-0">
@@ -17,7 +37,7 @@ function LandingHeader({ navItems }) {
 
       <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex shrink-0 items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="rounded-[24px] border border-white/60 bg-[linear-gradient(135deg,rgba(248,255,250,0.56)_0%,rgba(215,238,222,0.68)_100%)] px-3 py-2 shadow-[0_16px_32px_rgba(17,56,38,0.12)] backdrop-blur-xl">
               <img
                 src={logo}
@@ -32,25 +52,25 @@ function LandingHeader({ navItems }) {
                 <span className="text-[#184d35]">Back</span>
               </p>
             </div>
-          </div>
+          </Link>
         </div>
 
         <nav
           aria-label="Primary navigation"
           className="flex flex-wrap items-center gap-2 rounded-[28px] border border-[#d5eadb]/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.22)_0%,rgba(209,235,217,0.34)_44%,rgba(121,185,144,0.2)_100%)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_20px_38px_rgba(24,77,53,0.16),0_0_32px_rgba(73,161,116,0.16)] backdrop-blur-2xl xl:rounded-full"
         >
-          {navItems.map((item, index) => (
-            <a
+          {navItems.map((item) => (
+            <Link
               key={item.label}
-              href={item.href}
+              to={getNavTarget(item.href)}
               className={`rounded-full px-4 py-2.5 text-sm transition duration-300 ${
-                index === 0
+                isActiveNavItem(item.href)
                   ? 'bg-[linear-gradient(135deg,#236547_0%,#184d35_58%,#103120_100%)] font-semibold text-white shadow-[0_16px_34px_rgba(24,77,53,0.28),0_0_20px_rgba(73,161,116,0.16)]'
                   : 'text-[#234633] hover:bg-[linear-gradient(135deg,rgba(245,255,248,0.62)_0%,rgba(194,230,206,0.72)_100%)] hover:text-[#123a28] hover:shadow-[0_12px_24px_rgba(24,77,53,0.14)]'
               }`}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -61,12 +81,12 @@ function LandingHeader({ navItems }) {
           >
             Sign in
           </Link>
-          <a
-            href="#platform"
+          <Link
+            to="/#platform"
             className="rounded-2xl border border-[#2f7351] bg-[linear-gradient(135deg,#2e7b56_0%,#184d35_56%,#0f2f1e_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_22px_38px_rgba(24,77,53,0.26),0_0_24px_rgba(73,161,116,0.18)] transition duration-300 hover:-translate-y-0.5 hover:brightness-105"
           >
             View Product Details
-          </a>
+          </Link>
         </div>
       </div>
     </header>

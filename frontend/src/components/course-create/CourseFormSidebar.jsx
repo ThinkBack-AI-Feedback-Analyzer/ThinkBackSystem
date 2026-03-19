@@ -12,7 +12,7 @@ function SidebarIcon({ name }) {
   const commonProps = {
     'aria-hidden': 'true',
     viewBox: '0 0 24 24',
-    className: 'h-7 w-7',
+    className: 'h-[22px] w-[22px]',
     fill: 'none',
     stroke: 'currentColor',
     strokeWidth: '2',
@@ -85,24 +85,24 @@ function SidebarItem({ icon, label, active = false }) {
   return (
     <button
       type="button"
-      className={`mx-2 flex w-full flex-col items-center justify-center rounded-xl py-4 text-white transition ${
+      className={`mx-1.5 flex w-full flex-col items-center justify-center rounded-lg py-3 text-white transition ${
         active ? 'bg-[#3b6f57]' : 'hover:bg-[#1b5c3d]'
       }`}
     >
       <SidebarIcon name={icon} />
-      <span className="mt-1 text-center text-xs font-semibold">{label}</span>
+      <span className="mt-1 text-center text-[10px] font-semibold leading-4">{label}</span>
     </button>
   )
 }
 
 function CourseFormSidebar() {
   return (
-    <aside className="hidden min-h-screen w-24 flex-col items-center bg-[#0d4f31] py-5 lg:flex">
-      <div className="mb-8 rounded-2xl bg-[#144f35] p-3 text-yellow-400">
+    <aside className="hidden min-h-screen w-20 flex-col items-center bg-[#0d4f31] py-4 lg:flex">
+      <div className="mb-6 rounded-xl bg-[#144f35] p-2.5 text-yellow-400">
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="h-8 w-8"
+          className="h-6 w-6"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -114,9 +114,9 @@ function CourseFormSidebar() {
         </svg>
       </div>
 
-      <div className="mb-4 w-full border-t border-white/30" />
+      <div className="mb-3 w-full border-t border-white/30" />
 
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-1.5">
         {sidebarItems.map((item) => (
           <SidebarItem
             key={item.key}
