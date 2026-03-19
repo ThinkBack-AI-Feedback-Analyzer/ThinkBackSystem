@@ -163,5 +163,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5177",
 ]
 
+# Allow any local Vite/dev port (e.g. 5178, 5179) on different machines.
+# CORS_ALLOWED_ORIGIN_REGEXES = [
+#     r"^http://localhost:\d+$",
+#     r"^http://127\.0\.0\.1:\d+$",
+# ]
+
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'

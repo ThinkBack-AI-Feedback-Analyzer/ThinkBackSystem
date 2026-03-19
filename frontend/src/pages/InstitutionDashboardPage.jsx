@@ -1,12 +1,116 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaHome, FaBook, FaComments, FaUsers, FaCog, FaSignOutAlt, FaChartBar } from "react-icons/fa";
+import DashboardSidebar from "../components/common/DashboardSidebar";
+import DashboardTopBar from "../components/common/DashboardTopBar";
+import { 
+  FaUsers, 
+  FaChartLine, 
+  FaClipboardList, 
+  FaCheckCircle,
+  FaArrowUp,
+  FaArrowDown
+} from "react-icons/fa";
+
+const StatCard = ({ stat }) => {
+  const cardRef = React.useRef(null);
+  
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Calculate rotation (max 15 degrees for premium feel)
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -15; 
+    const rotateY = ((x - centerX) / centerX) * 15;
+    
+    // Calculate shine position
+    const shineX = (x / rect.width) * 100;
+    const shineY = (y / rect.height) * 100;
+    
+    // Calculate shadow shift (opposite to tilt)
+    const shadowX = (rotateY / 15) * -12;
+    const shadowY = (rotateX / 15) * 12;
+    
+    // Apply variables
+    card.style.setProperty('--rotate-x', `${rotateX}deg`);
+    card.style.setProperty('--rotate-y', `${rotateY}deg`);
+    card.style.setProperty('--translate-z', '50px');
+    card.style.setProperty('--shine-x', `${shineX}%`);
+    card.style.setProperty('--shine-y', `${shineY}%`);
+    card.style.setProperty('--shadow-x', `${shadowX}px`);
+    card.style.setProperty('--shadow-y', `${shadowY + 15}px`);
+    card.style.setProperty('--circle-scale', '1.3');
+  };
+  
+  const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+    
+    const card = cardRef.current;
+    // Spring back to zero
+    card.style.setProperty('--rotate-x', '0deg');
+    card.style.setProperty('--rotate-y', '0deg');
+    card.style.setProperty('--translate-z', '0px');
+    card.style.setProperty('--shadow-x', '0px');
+    card.style.setProperty('--shadow-y', '10px');
+    card.style.setProperty('--circle-scale', '1');
+  };
+
+  return (
+    <div 
+      ref={cardRef}
+      className={`stat-card ${stat.trendUp ? 'up' : 'down'}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="stat-card-shine" />
+      
+      <div className="stat-card-header">
+        <div className="stat-icon-wrapper">
+          {stat.icon}
+        </div>
+        <div className="stat-mini-chart">
+          {stat.chartData.map((height, i) => (
+            <div 
+              key={i} 
+              className={`mini-bar ${i === stat.chartData.length - 1 ? 'active' : ''}`} 
+              style={{ height: `${height}%` }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="stat-label">{stat.label}</div>
+      <div className="stat-number">{stat.value}</div>
+      
+      <div className="stat-trend-container">
+        <div className={`stat-trend ${stat.trendUp ? 'up' : 'down'}`}>
+          {stat.trendUp ? <FaArrowUp size={8} /> : <FaArrowDown size={8} />}
+          {stat.trend}
+        </div>
+        <div className="stat-trend-text">{stat.trendText}</div>
+      </div>
+
+      <div className="stat-footer">
+        <div className="stat-progress-track">
+          <div 
+            className="stat-progress-bar" 
+            style={{ width: `${stat.progress}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const InstitutionDashboardPage = () => {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState("dashboard");
 
-  // Initialize state from localStorage (synchronous, no effect needed)
+  // Initialize state from localStorage
   const [state] = useState(() => {
     const storedUser = localStorage.getItem('user');
     
@@ -22,7 +126,7 @@ const InstitutionDashboardPage = () => {
     }
   });
 
-  // Effect only for side effects (navigation)
+  // Effect only for navigation
   useEffect(() => {
     if (!state.user) {
       navigate("/login");
@@ -42,202 +146,66 @@ const InstitutionDashboardPage = () => {
     return <div className="loading">Loading...</div>;
   }
 
-  const { user } = state;
+  const stats = [
+    {
+      label: "TOTAL COURSES",
+      value: "148",
+      icon: <FaClipboardList />,
+      trend: "12",
+      trendText: "this semester",
+      trendUp: true,
+      progress: 65,
+      chartData: [40, 60, 30, 80, 50]
+    },
+    {
+      label: "LECTURERS",
+      value: "63",
+      icon: <FaUsers />,
+      trend: "4",
+      trendText: "this month",
+      trendUp: true,
+      progress: 45,
+      chartData: [30, 50, 70, 40, 60]
+    },
+    {
+      label: "ACTIVE FORMS",
+      value: "31",
+      icon: <FaCheckCircle />,
+      trend: "7",
+      trendText: "this week",
+      trendUp: true,
+      progress: 55,
+      chartData: [20, 40, 60, 80, 100]
+    },
+    {
+      label: "RESPONSES",
+      value: "2,847",
+      icon: <FaChartLine />,
+      trend: "318",
+      trendText: "since yesterday",
+      trendUp: true,
+      progress: 85,
+      chartData: [50, 30, 80, 40, 90]
+    }
+  ];
 
   return (
     <div className="dash-wrapper">
-      {/* Sidebar */}
-      <aside className="dashboard-sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-icon">TB</div>
-        </div>
+      <DashboardSidebar onLogout={handleLogout} />
 
-        <nav className="sidebar-nav">
-          <button 
-            className={`nav-item ${activeNav === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveNav('dashboard')}
-          >
-            <FaHome />
-          </button>
-          <button 
-            className={`nav-item ${activeNav === 'courses' ? 'active' : ''}`}
-            onClick={() => setActiveNav('courses')}
-          >
-            <FaBook />
-          </button>
-          <button 
-            className={`nav-item ${activeNav === 'feedback' ? 'active' : ''}`}
-            onClick={() => setActiveNav('feedback')}
-          >
-            <FaComments />
-          </button>
-          <button 
-            className={`nav-item ${activeNav === 'analytics' ? 'active' : ''}`}
-            onClick={() => setActiveNav('analytics')}
-          >
-            <FaChartBar />
-          </button>
-          <button 
-            className={`nav-item ${activeNav === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveNav('users')}
-          >
-            <FaUsers />
-          </button>
-          <button 
-            className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveNav('settings')}
-          >
-            <FaCog />
-          </button>
-        </nav>
+      <main className="dashboard-main">
+        <DashboardTopBar 
+          userName={state.user.full_name} 
+          userEmail={state.user.email} 
+        />
 
-        <button className="nav-logout" onClick={handleLogout}>
-          <FaSignOutAlt />
-        </button>
-      </aside>
-
-      {/* Main Content */}
-      <div className="dashboard-main">
-        {/* Header */}
-        <header className="dashboard-header">
-          <div className="header-left">
-            <h1>Dashboard</h1>
-            <p>Welcome back, {user.full_name}!</p>
-          </div>
-          <div className="header-right">
-            <div className="user-info">
-              <div className="user-avatar">{user.full_name.charAt(0)}</div>
-              <span className="user-email">{user.email}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Stats Cards */}
+        {/* Stats Grid */}
         <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">24</div>
-            <div className="stat-label">Total Courses</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">18</div>
-            <div className="stat-label">Completed Forms</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">12</div>
-            <div className="stat-label">Active Forms</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">08</div>
-            <div className="stat-label">Draft Forms</div>
-          </div>
+          {stats.map((stat, index) => (
+            <StatCard key={index} stat={stat} />
+          ))}
         </div>
-
-        {/* Action Buttons */}
-        <div className="action-buttons">
-          <button className="btn-primary" onClick={() => navigate('/course-create')}>
-            + Create New Course
-          </button>
-          <button className="btn-secondary">+ Create New Feedback Form</button>
-          <button className="btn-secondary">↓ Export Data</button>
-        </div>
-
-        {/* Analytics Section */}
-        <section className="analytics-section">
-          <div className="section-header">
-            <h2>Feedback Analytics</h2>
-          </div>
-
-          <div className="analytics-controls">
-            <label>Select Course</label>
-            <select>
-              <option>Choose a course to view analytics</option>
-              <option>Course 101</option>
-              <option>Course 102</option>
-            </select>
-          </div>
-
-          <div className="charts-grid">
-            <div className="chart-container">
-              <h3>Feedback Sentiment Overview</h3>
-              <div className="chart-placeholder">
-                <div style={{ height: '250px', background: 'linear-gradient(to right, #1b5e20 0%, #2e7d32 100%)', borderRadius: '8px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '20px' }}>
-                  <div style={{ width: '60px', height: '150px', background: '#1b5e20', borderRadius: '4px' }}></div>
-                  <div style={{ width: '60px', height: '100px', background: '#558b2f', borderRadius: '4px' }}></div>
-                  <div style={{ width: '60px', height: '60px', background: '#9ccc65', borderRadius: '4px' }}></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="chart-container">
-              <h3>Top 5 Topics Mentioned</h3>
-              <div className="chart-placeholder">
-                <div style={{ width: '100%', height: '250px', background: 'conic-gradient(#1b5e20 0deg 90deg, #2e7d32 90deg 180deg, #558b2f 180deg 270deg, #9ccc65 270deg 360deg)', borderRadius: '50%', margin: '0 auto' }}></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Data Table */}
-        <section className="table-section">
-          <h2>Feedback Sentiment Overview</h2>
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Instructor</th>
-                  <th>Count</th>
-                  <th>Sentiment</th>
-                  <th>Last Update</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Database 101</td>
-                  <td>Dr. Jane Patel</td>
-                  <td>28</td>
-                  <td><span className="badge positive">Positive</span></td>
-                  <td>3 days ago</td>
-                  <td><button className="view-btn">View Report</button></td>
-                </tr>
-                <tr>
-                  <td>Database 102</td>
-                  <td>Dr. Jane Patel</td>
-                  <td>24</td>
-                  <td><span className="badge positive">Positive</span></td>
-                  <td>2 days ago</td>
-                  <td><button className="view-btn">View Report</button></td>
-                </tr>
-                <tr>
-                  <td>Database 103</td>
-                  <td>Dr. Jane Patel</td>
-                  <td>18</td>
-                  <td><span className="badge neutral">Neutral</span></td>
-                  <td>1 day ago</td>
-                  <td><button className="view-btn">View Report</button></td>
-                </tr>
-                <tr>
-                  <td>Database 104</td>
-                  <td>Dr. Jane Patel</td>
-                  <td>35</td>
-                  <td><span className="badge negative">Negative</span></td>
-                  <td>2 days ago</td>
-                  <td><button className="view-btn">View Report</button></td>
-                </tr>
-                <tr>
-                  <td>Database 105</td>
-                  <td>Dr. Jane Patel</td>
-                  <td>12</td>
-                  <td><span className="badge positive">Positive</span></td>
-                  <td>1 hour ago</td>
-                  <td><button className="view-btn">View Report</button></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+      </main>
     </div>
   );
 };
