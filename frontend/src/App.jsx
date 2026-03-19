@@ -25,11 +25,9 @@ function App() {
       <Route path="/portal" element={<StudentPortal />} />
       <Route path="/feedbackForm" element={<FormCreatePage />} />
       <Route path="/student-management" element={<StudentManagement />} />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
-
       <Route path="/about" element={<AboutPage />} />
-<Route path="/contact" element={<ContactPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

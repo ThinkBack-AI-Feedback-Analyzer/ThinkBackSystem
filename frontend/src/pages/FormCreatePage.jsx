@@ -1,297 +1,487 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import DashboardSidebar from "../components/common/DashboardSidebar";
+import DashboardTopBar from "../components/common/DashboardTopBar";
+import institutionLogo from "../assets/Logo_4.png";
 
-export default function FeedbackFormBuilder(){
+export default function FeedbackFormBuilder() {
+  const navigate = useNavigate();
+  const [authState] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      return { user: null, loading: false };
+    }
+
+    try {
+      return { user: JSON.parse(storedUser), loading: false };
+    } catch {
+      return { user: null, loading: false };
+    }
+  });
 
   const templateSets = {
     Exam: [
       "Was the exam difficulty appropriate?",
       "Were the exam instructions clear?",
       "Did the exam cover the syllabus properly?",
-      "Was enough time given to complete the exam?"
+      "Was enough time given to complete the exam?",
     ],
     Lab: [
       "Were lab sessions helpful for understanding concepts?",
       "Were the lab instructions clear?",
       "Was lab equipment adequate?",
-      "How can lab sessions be improved?"
+      "How can lab sessions be improved?",
     ],
     Course: [
       "How would you rate the overall course?",
       "Was the course content well organized?",
       "Was the lecturer clear in teaching?",
-      "What improvements would you suggest for the course?"
-    ]
+      "What improvements would you suggest for the course?",
+    ],
   };
 
-  const [selectedType,setSelectedType] = useState("Exam");
-  const [editableTemplates,setEditableTemplates] = useState(templateSets["Exam"]);
-  const [questions,setQuestions] = useState([]);
+  const [selectedType, setSelectedType] = useState("Exam");
+  const [editableTemplates, setEditableTemplates] = useState(templateSets.Exam);
+  const [questions, setQuestions] = useState([]);
+  const [customText, setCustomText] = useState("");
+  const [customType, setCustomType] = useState("Open Ended");
+  const [options, setOptions] = useState([""]);
+  const [starCount, setStarCount] = useState(5);
+  const [formTitle, setFormTitle] = useState("");
+  const [previewMode, setPreviewMode] = useState(false);
+  const [answers, setAnswers] = useState({});
 
-  const [customText,setCustomText] = useState("");
-  const [customType,setCustomType] = useState("Open Ended");
-  const [options,setOptions] = useState([""]);
-  const [starCount,setStarCount] = useState(5);
+  useEffect(() => {
+    if (!authState.user) {
+      navigate("/login");
+      return;
+    }
 
-  const [formTitle,setFormTitle] = useState("");
-  const [previewMode,setPreviewMode] = useState(false);
+    if (authState.user.role !== "institution_admin") {
+      navigate("/");
+    }
+  }, [authState.user, navigate]);
 
-  const handleTypeChange = (type)=>{
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  }, [navigate]);
+
+  const handleSidebarNavigation = useCallback((key) => {
+    const routeMap = {
+      dashboard: "/institution-dashboard",
+      courses: "/course-create",
+      feedback: "/feedbackForm",
+      users: "/student-management",
+    };
+
+    const targetRoute = routeMap[key];
+
+    if (targetRoute) {
+      navigate(targetRoute);
+    }
+  }, [navigate]);
+
+  const handleTypeChange = (type) => {
     setSelectedType(type);
     setEditableTemplates(templateSets[type]);
-  }
+  };
 
-  const handleEditTemplate = (value,index)=>{
+  const handleEditTemplate = (value, index) => {
     const updated = [...editableTemplates];
     updated[index] = value;
     setEditableTemplates(updated);
-  }
+  };
 
-  const addAllQuestions = ()=>{
-    const newQs = editableTemplates.map(q=>({text:q,type:"Open Ended",options:[]}));
-    setQuestions([...questions,...newQs]);
-  }
+  const addAllQuestions = () => {
+    const newQuestions = editableTemplates.map((question) => ({
+      text: question,
+      type: "Open Ended",
+      options: [],
+    }));
 
-  const addOption = ()=> setOptions([...options,""]);
+    setQuestions([...questions, ...newQuestions]);
+  };
 
-  const updateOption = (value,index)=>{
+  const addOption = () => setOptions([...options, ""]);
+
+  const updateOption = (value, index) => {
     const updated = [...options];
     updated[index] = value;
     setOptions(updated);
-  }
+  };
 
-  const deleteOption = (index)=>{
-    const updated = options.filter((_,i)=>i!==index);
+  const deleteOption = (index) => {
+    const updated = options.filter((_, optionIndex) => optionIndex !== index);
     setOptions(updated);
-  }
+  };
 
-  const addCustomQuestion = ()=>{
-    if(!customText) return;
+  const addCustomQuestion = () => {
+    if (!customText) return;
 
-    let newQuestion = {
+    const newQuestion = {
       text: customText,
       type: customType,
-      options: []
+      options:
+        customType === "Multiple Choice"
+          ? options
+          : customType === "Yes/No"
+            ? ["Yes", "No"]
+            : customType === "Rating"
+              ? Array.from({ length: starCount }, (_, index) => index + 1)
+              : [],
     };
 
-    if(customType === "Multiple Choice") newQuestion.options = options;
-    if(customType === "Yes/No") newQuestion.options = ["Yes","No"];
-    if(customType === "Rating") newQuestion.options = Array.from({length:starCount},(_,i)=>i+1);
-
-    setQuestions([...questions,newQuestion]);
+    setQuestions([...questions, newQuestion]);
     setCustomText("");
     setOptions([""]);
-  }
+  };
 
-  const updateQuestion = (value,index)=>{
+  const updateQuestion = (value, index) => {
     const updated = [...questions];
     updated[index].text = value;
     setQuestions(updated);
-  }
+  };
 
-  const updateQuestionOption = (qIndex,opIndex,value)=>{
+  const updateQuestionOption = (questionIndex, optionIndex, value) => {
     const updated = [...questions];
-    updated[qIndex].options[opIndex] = value;
+    updated[questionIndex].options[optionIndex] = value;
     setQuestions(updated);
-  }
+  };
 
-  const addQuestionOption = (qIndex)=>{
+  const addQuestionOption = (questionIndex) => {
     const updated = [...questions];
-    updated[qIndex].options.push("");
+    updated[questionIndex].options.push("");
     setQuestions(updated);
-  }
+  };
 
-  const deleteQuestionOption = (qIndex,opIndex)=>{
+  const deleteQuestionOption = (questionIndex, optionIndex) => {
     const updated = [...questions];
-    updated[qIndex].options = updated[qIndex].options.filter((_,i)=>i!==opIndex);
+    updated[questionIndex].options = updated[questionIndex].options.filter(
+      (_, currentIndex) => currentIndex !== optionIndex,
+    );
     setQuestions(updated);
-  }
+  };
 
-  const deleteQuestion = (index)=>{
-    const updated = questions.filter((_,i)=>i!==index);
+  const deleteQuestion = (index) => {
+    const updated = questions.filter((_, questionIndex) => questionIndex !== index);
     setQuestions(updated);
+  };
+
+  const setRating = (questionIndex, value) => {
+    setAnswers({ ...answers, [questionIndex]: value });
+  };
+
+  if (!authState.user) {
+    return <div className="loading">Loading...</div>;
   }
 
-  const [answers,setAnswers] = useState({});
-
-  const setRating = (qIndex,value)=>{
-    setAnswers({...answers,[qIndex]:value});
-  }
-
-  if(previewMode){
+  if (previewMode) {
     return (
-      <div className="p-10 max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-[#13462D]">{formTitle || "Preview Form"}</h1>
+      <div className="dash-wrapper">
+        <DashboardSidebar
+          activeNav="feedback"
+          onNavChange={handleSidebarNavigation}
+          onLogout={handleLogout}
+          logoSrc={institutionLogo}
+          logoAlt="ThinkBack logo"
+        />
 
-        {questions.map((q,i)=> (
-          <div key={i} className="mb-6 p-4 border rounded-xl shadow-sm">
-            <p className="font-medium mb-3">{q.text}</p>
+        <main className="dashboard-main">
+          <DashboardTopBar
+            userName={authState.user.full_name}
+            userEmail={authState.user.email}
+            searchPlaceholder="Search feedback forms"
+          />
 
-            {q.type === "Open Ended" && <Textarea placeholder="Your answer" />}
+          <section className="dashboard-page-intro px-4 pb-4 md:px-6 md:pb-6">
+            <div className="mx-auto max-w-5xl rounded-[32px] bg-white px-6 py-8 shadow-md md:px-10">
+              <h1 className="mb-6 text-3xl font-bold text-[#13462D]">
+                {formTitle || "Preview Form"}
+              </h1>
 
-            {q.type === "Multiple Choice" && q.options.map((op,idx)=>(
-              <label key={idx} className="flex items-center gap-2 mb-1 cursor-pointer">
-                <input type="radio" name={`q-${i}`} /> <span>{op}</span>
-              </label>
-            ))}
+              {questions.map((question, index) => (
+                <div key={index} className="mb-6 rounded-xl border p-4 shadow-sm">
+                  <p className="mb-3 font-medium">{question.text}</p>
 
-            {q.type === "Yes/No" && ["Yes","No"].map((op,idx)=>(
-              <label key={idx} className="flex items-center gap-2 mb-1 cursor-pointer">
-                <input type="radio" name={`q-${i}`} /> <span>{op}</span>
-              </label>
-            ))}
+                  {question.type === "Open Ended" && <Textarea placeholder="Your answer" />}
 
-            {q.type === "Rating" && (
-              <div className="flex gap-2 text-2xl">
-                {q.options.map((n)=> (
-                  <span
-                    key={n}
-                    onClick={()=>setRating(i,n)}
-                    className={`cursor-pointer ${answers[i] >= n ? "text-yellow-500" : "text-gray-300"}`}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+                  {question.type === "Multiple Choice" &&
+                    question.options.map((option, optionIndex) => (
+                      <label
+                        key={optionIndex}
+                        className="mb-1 flex cursor-pointer items-center gap-2"
+                      >
+                        <input type="radio" name={`q-${index}`} />
+                        <span>{option}</span>
+                      </label>
+                    ))}
 
-        <button onClick={()=>setPreviewMode(false)} className="border px-4 py-2 rounded-lg hover:bg-gray-100 transition">Back to Edit</button>
+                  {question.type === "Yes/No" &&
+                    ["Yes", "No"].map((option, optionIndex) => (
+                      <label
+                        key={optionIndex}
+                        className="mb-1 flex cursor-pointer items-center gap-2"
+                      >
+                        <input type="radio" name={`q-${index}`} />
+                        <span>{option}</span>
+                      </label>
+                    ))}
+
+                  {question.type === "Rating" && (
+                    <div className="flex gap-2 text-2xl">
+                      {question.options.map((rating) => (
+                        <span
+                          key={rating}
+                          onClick={() => setRating(index, rating)}
+                          className={`cursor-pointer ${answers[index] >= rating ? "text-yellow-500" : "text-gray-300"}`}
+                        >
+                          *
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <button
+                onClick={() => setPreviewMode(false)}
+                className="rounded-lg border px-4 py-2 transition hover:bg-gray-100"
+              >
+                Back to Edit
+              </button>
+            </div>
+          </section>
+        </main>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="dash-wrapper">
+      <DashboardSidebar
+        activeNav="feedback"
+        onNavChange={handleSidebarNavigation}
+        onLogout={handleLogout}
+        logoSrc={institutionLogo}
+        logoAlt="ThinkBack logo"
+      />
 
-      <div className="bg-[#C4E8D3] w-full py-6 px-10 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-[#13462D]">Feedback Form</h1>
-          <p className="text-sm text-gray-700">Create and customize your feedback questionnaire</p>
-        </div>
+      <main className="dashboard-main">
+        <DashboardTopBar
+          userName={authState.user.full_name}
+          userEmail={authState.user.email}
+          searchPlaceholder="Search feedback forms"
+        />
 
-        <div className="flex gap-3">
-          <button className="bg-[#C4E8D3] border-2 border-[#13462D] text-[#13462D] rounded-xl px-5 py-2 hover:bg-[#b2dcc4] transition">Save Draft</button>
-          <button className="bg-[#13462D] text-white rounded-xl px-5 py-2 hover:bg-[#0f3a26] transition">Publish Form</button>
-        </div>
-      </div>
+        <section className="dashboard-page-intro px-4 pb-4 md:px-6 md:pb-6">
+          <div className="mx-auto mb-5 flex max-w-7xl flex-col gap-4 rounded-[24px] border border-[#d8e7dd] bg-white px-6 py-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[#13462D] md:text-3xl">
+                Feedback Form
+              </h1>
+              <p className="mt-2 text-sm text-gray-700 md:text-base">
+                Create and customize your feedback questionnaire
+              </p>
+            </div>
 
-      <div className="p-10 grid grid-cols-12 gap-6">
+            <div className="flex gap-3">
+              <button className="rounded-xl border-2 border-[#13462D] bg-[#C4E8D3] px-5 py-2 text-[#13462D] transition hover:bg-[#b2dcc4]">
+                Save Draft
+              </button>
+              <button className="rounded-xl bg-[#13462D] px-5 py-2 text-white transition hover:bg-[#0f3a26]">
+                Publish Form
+              </button>
+            </div>
+          </div>
 
-        <div className="col-span-8 space-y-6">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="space-y-6 lg:col-span-8">
+              <Card>
+                <CardContent className="space-y-4 px-6 pb-6 pt-6">
+                  <Input
+                    className="block w-full"
+                    placeholder="Feedback Form Title"
+                    value={formTitle}
+                    onChange={(event) => setFormTitle(event.target.value)}
+                  />
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6 pb-6 px-6 space-y-4">
-              <Input className="w-full block"
-                placeholder="Feedback Form Title"
-                value={formTitle}
-                onChange={(e)=>setFormTitle(e.target.value)}
-              />
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="space-y-4 px-6 pb-6 pt-6">
+                  <select
+                    className="w-full rounded-lg border p-2"
+                    value={selectedType}
+                    onChange={(event) => handleTypeChange(event.target.value)}
+                  >
+                    <option>Exam</option>
+                    <option>Lab</option>
+                    <option>Course</option>
+                  </select>
 
-          <Card>
-            <CardContent className="pt-6 pb-6 px-6 space-y-4">
-              <select className="border p-2 w-full rounded-lg" value={selectedType} onChange={(e)=>handleTypeChange(e.target.value)}>
-                <option>Exam</option>
-                <option>Lab</option>
-                <option>Course</option>
-              </select>
-
-              {editableTemplates.map((q,i)=>(
-                <Textarea className="w-full block" key={i} value={q} onChange={(e)=>handleEditTemplate(e.target.value,i)} />
-              ))}
-
-              <button onClick={addAllQuestions} className="bg-[#13462D] text-white px-4 py-2 rounded-lg hover:bg-[#0f3a26] transition">Add Templates</button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6 pb-6 px-6 space-y-4">
-              <Textarea className="w-full block"
-                placeholder="Enter your question..."
-                value={customText}
-                onChange={(e)=>setCustomText(e.target.value)}
-              />
-
-              <select value={customType} onChange={(e)=>setCustomType(e.target.value)} className="border p-2 w-full rounded-lg">
-                <option>Open Ended</option>
-                <option>Multiple Choice</option>
-                <option>Yes/No</option>
-                <option>Rating</option>
-              </select>
-
-              {customType === "Multiple Choice" && (
-                <div className="space-y-2">
-                  {options.map((op,i)=>(
-                    <div key={i} className="flex gap-2">
-                      <Input className="w-full block" value={op} onChange={(e)=>updateOption(e.target.value,i)} placeholder={`Option ${i+1}`} />
-                      <button onClick={()=>deleteOption(i)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition">X</button>
-                    </div>
+                  {editableTemplates.map((question, index) => (
+                    <Textarea
+                      className="block w-full"
+                      key={index}
+                      value={question}
+                      onChange={(event) => handleEditTemplate(event.target.value, index)}
+                    />
                   ))}
-                  <button onClick={addOption} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Add Option</button>
-                </div>
-              )}
 
-              {customType === "Rating" && (
-                <div>
-                  <label className="text-sm">Number of Stars</label>
-                  <Input type="number" value={starCount} onChange={(e)=>setStarCount(Number(e.target.value))} />
-                </div>
-              )}
+                  <button
+                    onClick={addAllQuestions}
+                    className="rounded-lg bg-[#13462D] px-4 py-2 text-white transition hover:bg-[#0f3a26]"
+                  >
+                    Add Templates
+                  </button>
+                </CardContent>
+              </Card>
 
-              <button onClick={addCustomQuestion} className="bg-[#13462D] text-white px-4 py-2 rounded-lg hover:bg-[#0f3a26] transition">Add Question</button>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="space-y-4 px-6 pb-6 pt-6">
+                  <Textarea
+                    className="block w-full"
+                    placeholder="Enter your question..."
+                    value={customText}
+                    onChange={(event) => setCustomText(event.target.value)}
+                  />
 
-          <Card>
-            <CardContent className="p-6">
-              {questions.map((q,i)=>(
-                <div key={i} className="border p-4 mb-3 rounded-xl bg-gray-50 space-y-3">
-                  <Textarea value={q.text} onChange={(e)=>updateQuestion(e.target.value,i)} />
-                  <p className="text-sm">Type: {q.type}</p>
+                  <select
+                    value={customType}
+                    onChange={(event) => setCustomType(event.target.value)}
+                    className="w-full rounded-lg border p-2"
+                  >
+                    <option>Open Ended</option>
+                    <option>Multiple Choice</option>
+                    <option>Yes/No</option>
+                    <option>Rating</option>
+                  </select>
 
-                  {q.type === "Multiple Choice" && (
+                  {customType === "Multiple Choice" && (
                     <div className="space-y-2">
-                      {q.options.map((op,idx)=>(
-                        <div key={idx} className="flex gap-2">
-                          <Input className="w-full block" value={op} onChange={(e)=>updateQuestionOption(i,idx,e.target.value)} />
-                          <button onClick={()=>deleteQuestionOption(i,idx)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg transition">X</button>
+                      {options.map((option, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            className="block w-full"
+                            value={option}
+                            onChange={(event) => updateOption(event.target.value, index)}
+                            placeholder={`Option ${index + 1}`}
+                          />
+                          <button
+                            onClick={() => deleteOption(index)}
+                            className="rounded-lg bg-red-600 px-3 py-1 text-white transition hover:bg-red-700"
+                          >
+                            X
+                          </button>
                         </div>
                       ))}
-                      <button onClick={()=>addQuestionOption(i)} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Add Option</button>
+                      <button
+                        onClick={addOption}
+                        className="rounded-lg bg-gray-200 px-4 py-2 transition hover:bg-gray-300"
+                      >
+                        Add Option
+                      </button>
                     </div>
                   )}
 
-                  <button onClick={()=>deleteQuestion(i)} className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg transition">Delete Question</button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                  {customType === "Rating" && (
+                    <div>
+                      <label className="text-sm">Number of Stars</label>
+                      <Input
+                        type="number"
+                        value={starCount}
+                        onChange={(event) => setStarCount(Number(event.target.value))}
+                      />
+                    </div>
+                  )}
 
-          <button onClick={()=>setPreviewMode(true)} className="bg-[#13462D] text-white w-full py-3 text-lg rounded-xl">
-            View Form Preview
-          </button>
+                  <button
+                    onClick={addCustomQuestion}
+                    className="rounded-lg bg-[#13462D] px-4 py-2 text-white transition hover:bg-[#0f3a26]"
+                  >
+                    Add Question
+                  </button>
+                </CardContent>
+              </Card>
 
-        </div>
+              <Card>
+                <CardContent className="p-6">
+                  {questions.map((question, index) => (
+                    <div
+                      key={index}
+                      className="mb-3 space-y-3 rounded-xl border bg-gray-50 p-4"
+                    >
+                      <Textarea
+                        value={question.text}
+                        onChange={(event) => updateQuestion(event.target.value, index)}
+                      />
+                      <p className="text-sm">Type: {question.type}</p>
 
-        <div className="col-span-4">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p>Total Questions</p>
-              <p className="text-2xl font-bold text-[#13462D]">{questions.length}</p>
-            </CardContent>
-          </Card>
-        </div>
+                      {question.type === "Multiple Choice" && (
+                        <div className="space-y-2">
+                          {question.options.map((option, optionIndex) => (
+                            <div key={optionIndex} className="flex gap-2">
+                              <Input
+                                className="block w-full"
+                                value={option}
+                                onChange={(event) =>
+                                  updateQuestionOption(index, optionIndex, event.target.value)
+                                }
+                              />
+                              <button
+                                onClick={() => deleteQuestionOption(index, optionIndex)}
+                                className="rounded-lg bg-red-600 px-3 py-1 text-white transition hover:bg-red-700"
+                              >
+                                X
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => addQuestionOption(index)}
+                            className="rounded-lg bg-gray-200 px-4 py-2 transition hover:bg-gray-300"
+                          >
+                            Add Option
+                          </button>
+                        </div>
+                      )}
 
-      </div>
+                      <button
+                        onClick={() => deleteQuestion(index)}
+                        className="rounded-lg bg-red-700 px-4 py-2 text-white transition hover:bg-red-800"
+                      >
+                        Delete Question
+                      </button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-      <div className="bg-[#C4E8D3] h-10 mt-10"></div>
+              <button
+                onClick={() => setPreviewMode(true)}
+                className="w-full rounded-xl bg-[#13462D] py-3 text-lg text-white"
+              >
+                View Form Preview
+              </button>
+            </div>
 
+            <div className="lg:col-span-4">
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p>Total Questions</p>
+                  <p className="text-2xl font-bold text-[#13462D]">{questions.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
-  )
+  );
 }

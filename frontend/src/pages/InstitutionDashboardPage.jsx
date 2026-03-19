@@ -143,6 +143,21 @@ const InstitutionDashboardPage = () => {
     navigate("/login");
   }, [navigate]);
 
+  const handleSidebarNavigation = useCallback((key) => {
+    const routeMap = {
+      dashboard: "/institution-dashboard",
+      courses: "/course-create",
+      feedback: "/feedbackForm",
+      users: "/student-management",
+    };
+
+    const targetRoute = routeMap[key];
+
+    if (targetRoute) {
+      navigate(targetRoute);
+    }
+  }, [navigate]);
+
   if (!state.user) {
     return <div className="loading">Loading...</div>;
   }
@@ -193,6 +208,8 @@ const InstitutionDashboardPage = () => {
   return (
     <div className="dash-wrapper">
       <DashboardSidebar
+        activeNav="dashboard"
+        onNavChange={handleSidebarNavigation}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
