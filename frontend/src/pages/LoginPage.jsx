@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import logo from "../assets/logo1.png";
+import logo from "../assets/logo_4.png";
 import { login } from "../services/auth";
 
 const inputClassName =
