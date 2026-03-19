@@ -22,7 +22,7 @@ function buildInitialFormData(courseInfo) {
 }
 
 const semesterOptions = ['Semester 1', 'Semester 2', 'Year 1', 'Year 2']
-const softInputClassName = 'border-slate-200 bg-[#f8fbf9]'
+const softInputClassName = 'border-[#d9e2db] bg-[#f8fbf9]'
 
 function CourseCreatePage() {
   const location = useLocation()
@@ -57,7 +57,7 @@ function CourseCreatePage() {
   }
 
   function handleCancel() {
-    navigate('/create-course-intro')
+    navigate('/institution-dashboard')
   }
 
   function handleSubmit(event) {
@@ -70,22 +70,21 @@ function CourseCreatePage() {
       <div className="flex min-h-screen">
         <CourseFormSidebar />
 
-        <main className="flex-1 p-6 md:p-8">
-          <CourseFormHeader onBack={() => navigate('/create-course-intro')} />
+        <main className="flex-1 p-4 md:p-6">
+          <CourseFormHeader onBack={handleCancel} />
 
-          <div className="mx-auto max-w-6xl rounded-3xl bg-white px-8 py-10 shadow-md md:px-14">
+          <div className="mx-auto max-w-6xl rounded-4xl bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
-                Course Information
+                Create Course Details
               </h2>
-              <p className="mt-2 text-sm text-slate-500 md:text-base">
-                Complete the course profile and optionally upload the student
-                roster for the first feedback cycle.
+              <p className="mt-1.5 text-xs leading-5 text-slate-500 md:text-sm">
+                Fill in the course information and upload student details if needed.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <CourseFormField
                   id="courseTitle"
                   name="courseTitle"
@@ -93,6 +92,7 @@ function CourseCreatePage() {
                   placeholder="Enter the official course title"
                   value={formData.courseTitle}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
                 <CourseFormField
@@ -102,6 +102,7 @@ function CourseCreatePage() {
                   placeholder="Enter the unique course code"
                   value={formData.courseCode}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
                 <CourseFormField
@@ -111,6 +112,7 @@ function CourseCreatePage() {
                   placeholder="Name of the faculty"
                   value={formData.department}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
                 <CourseSelectField
@@ -121,6 +123,7 @@ function CourseCreatePage() {
                   options={semesterOptions}
                   value={formData.semester}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
               </div>
@@ -132,10 +135,12 @@ function CourseCreatePage() {
                 placeholder="A short summary of what the course is about."
                 value={formData.description}
                 onChange={handleChange}
+                compact
+                rows={4}
                 inputClassName={softInputClassName}
               />
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <CourseFormField
                   id="coordinator"
                   name="coordinator"
@@ -143,6 +148,7 @@ function CourseCreatePage() {
                   placeholder="Name of the course coordinator"
                   value={formData.coordinator}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
                 <CourseFormField
@@ -152,6 +158,7 @@ function CourseCreatePage() {
                   placeholder="One or more lecturers teaching the course"
                   value={formData.lecturers}
                   onChange={handleChange}
+                  compact
                   inputClassName={softInputClassName}
                 />
               </div>
@@ -162,7 +169,7 @@ function CourseCreatePage() {
               />
 
               {statusMessage ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-medium text-emerald-800">
                   {statusMessage}
                 </div>
               ) : null}

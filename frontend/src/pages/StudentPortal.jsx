@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
-import studentlogo from "../assets/logo_3.png";
+import studentlogo from "../assets/logo_4.png";
 
 export default function StudentFeedbackPortal() {
   return (

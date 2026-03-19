@@ -37,7 +37,12 @@ function CourseFileUpload({ selectedFileName, onChange }) {
           accept=".csv,.xls,.xlsx"
         />
       </div>
-      <p className="mt-3 pl-2 text-xs leading-5 text-[#61726a]">
+      {selectedFileName ? (
+        <p className="mt-3 pl-2 text-sm font-medium text-emerald-700">
+          Selected file: {selectedFileName}
+        </p>
+      ) : null}
+      <p className="mt-2 pl-2 text-xs leading-5 text-[#61726a]">
         Upload an Excel or CSV file containing student names, IDs, and emails.
       </p>
     </div>
