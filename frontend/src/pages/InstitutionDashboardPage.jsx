@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "../components/common/DashboardSidebar";
 import DashboardTopBar from "../components/common/DashboardTopBar";
+import institutionLogo from "../assets/Logo_4.png";
 import { 
   FaUsers, 
   FaChartLine, 
@@ -191,7 +192,11 @@ const InstitutionDashboardPage = () => {
 
   return (
     <div className="dash-wrapper">
-      <DashboardSidebar onLogout={handleLogout} />
+      <DashboardSidebar
+        onLogout={handleLogout}
+        logoSrc={institutionLogo}
+        logoAlt="ThinkBack logo"
+      />
 
       <main className="dashboard-main">
         <DashboardTopBar 

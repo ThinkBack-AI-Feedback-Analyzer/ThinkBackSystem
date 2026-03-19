@@ -161,6 +161,18 @@ a {
   box-shadow: 0 8px 16px rgba(22, 119, 78, 0.22);
 }
 
+.sidebar-logo-with-image {
+  background: rgba(255, 255, 255, 0.94);
+  padding: 8px;
+}
+
+.sidebar-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-icon {
   color: white;
   font-weight: 700;
@@ -613,7 +625,7 @@ a {
   background: #ffffff;
   padding: 36px 30px;
   border-radius: 40px;
-  border: none !important;
+  border: 1px solid rgba(24, 80, 55, 0.14) !important;
   text-align: left;
   position: relative;
   overflow: hidden;
@@ -629,14 +641,16 @@ a {
     
   /* Multi-layered directional emerald shadow */
   box-shadow: 
+    0 0 0 1px rgba(16, 185, 129, 0.06),
     var(--shadow-x, 0px) var(--shadow-y, 20px) 40px rgba(16, 185, 129, 0.08),
     0 15px 25px -5px rgba(0, 0, 0, 0.04),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.65);
     
   transition: 
     transform 0.1s ease-out, 
     box-shadow 0.1s ease-out, 
-    background 0.4s ease;
+    background 0.4s ease,
+    border-color 0.2s ease;
   cursor: pointer;
 }
 
@@ -684,6 +698,10 @@ a {
 
 .stat-card:hover::after {
   transform: scale(1.2) translateZ(-1px);
+}
+
+.stat-card:hover {
+  border-color: rgba(16, 185, 129, 0.28) !important;
 }
 
 .stat-card > * {

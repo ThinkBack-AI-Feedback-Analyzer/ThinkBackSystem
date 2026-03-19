@@ -24,6 +24,8 @@ const DEFAULT_NAV_ITEMS = [
 
 const DashboardSidebar = ({
   logoText = "TB",
+  logoSrc,
+  logoAlt,
   brandName = "Think Back",
   navItems = DEFAULT_NAV_ITEMS,
   activeNav: activeNavProp,
@@ -112,8 +114,16 @@ const DashboardSidebar = ({
       <aside className={sidebarClassName}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <div className="sidebar-logo">
-              <div className="logo-icon">{logoText}</div>
+            <div className={`sidebar-logo ${logoSrc ? "sidebar-logo-with-image" : ""}`}>
+              {logoSrc ? (
+                <img
+                  src={logoSrc}
+                  alt={logoAlt || `${brandName} logo`}
+                  className="sidebar-logo-image"
+                />
+              ) : (
+                <div className="logo-icon">{logoText}</div>
+              )}
             </div>
             <div className="sidebar-brand-text">
               <h2>{brandName}</h2>
