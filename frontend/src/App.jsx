@@ -8,6 +8,7 @@ import StudentPortal from "./pages/StudentPortal";
 import FormCreatePage from "./pages/FormCreatePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import StudentManagement from "./pages/StudentManagementPage";
 
 function App() {
   return (
@@ -23,7 +24,8 @@ function App() {
       <Route path="/institution-dashboard" element={<InstitutionDashboardPage />} />
       <Route path="/portal" element={<StudentPortal />} />
       <Route path="/feedbackForm" element={<FormCreatePage />} />
-      
+      <Route path="/student-management" element={<StudentManagement />} />
+
       <Route path="*" element={<Navigate to="/" replace />} />
 
       <Route path="/about" element={<AboutPage />} />
