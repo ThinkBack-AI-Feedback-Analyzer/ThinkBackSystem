@@ -23,6 +23,18 @@ function buildInitialFormData(courseInfo) {
 }
 
 const academicYearOptions = ['2024-2025', '2025-2026', '2026-2027', '2027-2028']
+const coordinatorOptions = [
+  'Dr. Nadeesha Perera',
+  'Dr. Hasini Fernando',
+  'Mr. Dilshan Rathnayake',
+  'Dr. Kavindu Abeysekera',
+]
+const lecturerOptions = [
+  'Prof. Malith Jayasinghe',
+  'Ms. Tharushi Wickramasinghe',
+  'Dr. Sachini Gunawardena',
+  'Prof. Ishara De Silva',
+]
 const softInputClassName = 'border-[#d9e2db] bg-[#f8fbf9]'
 const pageContentByMode = {
   create: {
@@ -251,22 +263,24 @@ function CourseCreatePage() {
               />
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <CourseFormField
+                <CourseSelectField
                   id="coordinator"
                   name="coordinator"
                   label="Coordinator Name"
-                  placeholder="Name of the course coordinator"
+                  placeholder="Select Coordinator Name"
+                  options={coordinatorOptions}
                   value={formData.coordinator}
                   onChange={handleChange}
                   disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
-                <CourseFormField
+                <CourseSelectField
                   id="lecturers"
                   name="lecturers"
                   label="Lecturer Name(s)"
-                  placeholder="One or more lecturers teaching the course"
+                  placeholder="Select Lecturer Name(s)"
+                  options={lecturerOptions}
                   value={formData.lecturers}
                   onChange={handleChange}
                   disabled={isViewMode}
