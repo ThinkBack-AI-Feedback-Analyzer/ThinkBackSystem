@@ -48,7 +48,7 @@ function HeroSection({ stats }) {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
-          <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-5xl">
             Transform student feedback into{' '}
             <span className="text-[#d5eadc]">
               smarter curriculum decisions
