@@ -13,8 +13,8 @@ function buildInitialFormData(courseInfo) {
   return {
     courseTitle: courseInfo?.courseName ?? '',
     courseCode: courseInfo?.courseCode ?? '',
-    department: courseInfo?.department ?? '',
-    semester: courseInfo?.semester ?? '',
+    facultyName: courseInfo?.facultyName ?? '',
+    academicYear: courseInfo?.academicYear ?? '',
     description: courseInfo?.description ?? '',
     coordinator: courseInfo?.coordinatorName ?? '',
     lecturers: courseInfo?.lecturerName ?? '',
@@ -22,8 +22,30 @@ function buildInitialFormData(courseInfo) {
   }
 }
 
-const semesterOptions = ['Semester 1', 'Semester 2', 'Year 1', 'Year 2']
+const academicYearOptions = ['2024-2025', '2025-2026', '2026-2027', '2027-2028']
 const softInputClassName = 'border-[#d9e2db] bg-[#f8fbf9]'
+const pageContentByMode = {
+  create: {
+    title: 'Create New Course',
+    description:
+      'Add a new course to your curriculum and upload student details when needed.',
+    submitLabel: 'Save Course',
+    successMessage: 'Course saved successfully.',
+  },
+  edit: {
+    title: 'Update Course',
+    description:
+      'Update this course information and keep the curriculum details accurate.',
+    submitLabel: 'Update Course',
+    successMessage: 'Course updated successfully.',
+  },
+  view: {
+    title: 'Course Details',
+    description: 'Review the selected course information for this specific course.',
+    submitLabel: 'Save Course',
+    successMessage: '',
+  },
+}
 
 function CourseCreatePage() {
   const location = useLocation()
@@ -45,8 +67,18 @@ function CourseCreatePage() {
     () => buildInitialFormData(location.state?.courseInfo),
     [location.state],
   )
+  const pageMode = location.state?.mode === 'edit' || location.state?.mode === 'view'
+    ? location.state.mode
+    : 'create'
+  const isViewMode = pageMode === 'view'
+  const pageContent = pageContentByMode[pageMode]
   const [formData, setFormData] = useState(initialFormData)
   const [statusMessage, setStatusMessage] = useState('')
+
+  useEffect(() => {
+    setFormData(initialFormData)
+    setStatusMessage('')
+  }, [initialFormData, pageMode])
 
   useEffect(() => {
     if (!authState.user) {
@@ -70,7 +102,7 @@ function CourseCreatePage() {
     (key) => {
       const routeMap = {
         dashboard: '/institution-dashboard',
-        courses: '/course-create',
+        courses: '/courses',
         feedback: '/feedbackForm',
         users: '/student-management',
       }
@@ -85,6 +117,10 @@ function CourseCreatePage() {
   )
 
   function handleChange(event) {
+    if (isViewMode) {
+      return
+    }
+
     const { name, value, files } = event.target
 
     if (name === 'studentFile') {
@@ -107,12 +143,17 @@ function CourseCreatePage() {
   }
 
   function handleCancel() {
-    navigate('/institution-dashboard')
+    navigate('/courses')
   }
 
   function handleSubmit(event) {
     event.preventDefault()
-    setStatusMessage('Course saved successfully.')
+
+    if (isViewMode) {
+      return
+    }
+
+    setStatusMessage(pageContent.successMessage)
   }
 
   if (!authState.user) {
@@ -139,24 +180,14 @@ function CourseCreatePage() {
         <section className="dashboard-page-intro px-4 pb-4 md:px-6 md:pb-6">
           <div className="mx-auto mb-5 max-w-6xl rounded-[24px] border border-[#d8e7dd] bg-white px-6 py-5 shadow-sm md:px-8">
             <h1 className="text-2xl font-bold text-[#124f2f] md:text-3xl">
-              Create New Course
+              {pageContent.title}
             </h1>
             <p className="mt-2 text-sm text-slate-600 md:text-base">
-              Add a new course to your curriculum and upload student details when
-              needed.
+              {pageContent.description}
             </p>
           </div>
 
           <div className="mx-auto max-w-6xl rounded-[32px] bg-white px-6 py-7 shadow-md md:px-10 md:py-9">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-[#124f2f] md:text-4xl">
-                Create Course Details
-              </h2>
-              <p className="mt-1.5 text-xs leading-5 text-slate-500 md:text-sm">
-                Fill in the course information and upload student details if needed.
-              </p>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <CourseFormField
@@ -166,6 +197,7 @@ function CourseCreatePage() {
                   placeholder="Enter the official course title"
                   value={formData.courseTitle}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
@@ -176,27 +208,30 @@ function CourseCreatePage() {
                   placeholder="Enter the unique course code"
                   value={formData.courseCode}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
                 <CourseFormField
-                  id="department"
-                  name="department"
-                  label="Department / Faculty Name"
-                  placeholder="Name of the faculty"
-                  value={formData.department}
+                  id="facultyName"
+                  name="facultyName"
+                  label="Faculty Name"
+                  placeholder="Enter the faculty name"
+                  value={formData.facultyName}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
                 <CourseSelectField
-                  id="semester"
-                  name="semester"
-                  label="Semester / Academic Year"
-                  placeholder="Select Semester"
-                  options={semesterOptions}
-                  value={formData.semester}
+                  id="academicYear"
+                  name="academicYear"
+                  label="Academic Year"
+                  placeholder="Select Academic Year"
+                  options={academicYearOptions}
+                  value={formData.academicYear}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
@@ -209,6 +244,7 @@ function CourseCreatePage() {
                 placeholder="A short summary of what the course is about."
                 value={formData.description}
                 onChange={handleChange}
+                disabled={isViewMode}
                 compact
                 rows={4}
                 inputClassName={softInputClassName}
@@ -222,6 +258,7 @@ function CourseCreatePage() {
                   placeholder="Name of the course coordinator"
                   value={formData.coordinator}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
@@ -232,6 +269,7 @@ function CourseCreatePage() {
                   placeholder="One or more lecturers teaching the course"
                   value={formData.lecturers}
                   onChange={handleChange}
+                  disabled={isViewMode}
                   compact
                   inputClassName={softInputClassName}
                 />
@@ -240,6 +278,7 @@ function CourseCreatePage() {
               <CourseFileUpload
                 selectedFileName={formData.studentFile?.name}
                 onChange={handleChange}
+                disabled={isViewMode}
               />
 
               {statusMessage ? (
@@ -251,6 +290,10 @@ function CourseCreatePage() {
               <CourseFormActions
                 onReset={handleReset}
                 onCancel={handleCancel}
+                submitLabel={pageContent.submitLabel}
+                hideSubmit={isViewMode}
+                hideReset={isViewMode}
+                cancelLabel={isViewMode ? 'Back to Courses' : 'Cancel'}
               />
             </form>
           </div>

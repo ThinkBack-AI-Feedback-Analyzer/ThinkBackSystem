@@ -6,6 +6,7 @@ function CourseSelectField({
   onChange,
   options,
   placeholder,
+  disabled = false,
   compact = false,
   inputClassName = 'border-slate-300 bg-white',
 }) {
@@ -34,6 +35,7 @@ function CourseSelectField({
           name={name}
           value={value}
           onChange={onChange}
+          disabled={disabled}
           className={`${selectClassName} ${inputClassName}`}
         >
           <option value="">{placeholder}</option>

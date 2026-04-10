@@ -5,6 +5,7 @@ function CourseFormTextarea({
   placeholder,
   value,
   onChange,
+  disabled = false,
   rows = 5,
   compact = false,
   inputClassName = 'border-slate-300 bg-white',
@@ -31,6 +32,7 @@ function CourseFormTextarea({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        disabled={disabled}
         className={`${textareaClassName} ${inputClassName}`}
       />
     </div>

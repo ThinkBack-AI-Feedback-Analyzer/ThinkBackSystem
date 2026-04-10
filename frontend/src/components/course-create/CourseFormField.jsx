@@ -5,6 +5,7 @@ function CourseFormField({
   placeholder,
   value,
   onChange,
+  disabled = false,
   type = 'text',
   compact = false,
   inputClassName = 'border-slate-300 bg-white',
@@ -31,6 +32,7 @@ function CourseFormField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        disabled={disabled}
         className={`${fieldClassName} ${inputClassName}`}
       />
     </div>

@@ -1,4 +1,4 @@
-function CourseFileUpload({ selectedFileName, onChange }) {
+function CourseFileUpload({ selectedFileName, onChange, disabled = false }) {
   return (
     <div className="group relative block">
       <label
@@ -23,9 +23,13 @@ function CourseFileUpload({ selectedFileName, onChange }) {
           </div>
           <label
             htmlFor="studentFile"
-            className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-[#184d35] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(24,77,53,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
+            className={`inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(24,77,53,0.2)] transition ${
+              disabled
+                ? 'cursor-not-allowed bg-slate-400 shadow-none'
+                : 'cursor-pointer bg-[#184d35] hover:-translate-y-0.5 hover:brightness-105'
+            }`}
           >
-            Choose File
+            {disabled ? 'File Locked' : 'Choose File'}
           </label>
         </div>
         <input
@@ -35,6 +39,7 @@ function CourseFileUpload({ selectedFileName, onChange }) {
           onChange={onChange}
           className="hidden"
           accept=".csv,.xls,.xlsx"
+          disabled={disabled}
         />
       </div>
       {selectedFileName ? (

@@ -146,7 +146,7 @@ const InstitutionDashboardPage = () => {
   const handleSidebarNavigation = useCallback((key) => {
     const routeMap = {
       dashboard: "/institution-dashboard",
-      courses: "/course-create",
+      courses: "/courses",
       feedback: "/feedbackForm",
       users: "/student-management",
     };

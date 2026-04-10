@@ -710,12 +710,21 @@ function InstitutionRegisterPage() {
                 </label>
               </section>
 
-              <button
-                type="submit"
+              <section className={`${sectionCardClassName} space-y-5`}>
+                <SectionTitle
+                  title="Register Institution"
+                  description="Review your details, then submit the form to create the institution and admin account."
+                />
 
-              >
-                {isSubmitting ? 'Saving...' : 'Register Institution'}
-              </button>
+                <button
+                  type="submit"
+                  aria-label="Register Institution"
+                  disabled={isSubmitting}
+                  className="inline-flex w-full items-center justify-center rounded-[24px] bg-[#184d35] px-6 py-4 text-base font-semibold text-white shadow-[0_18px_32px_rgba(24,77,53,0.24)] transition duration-200 hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+                >
+                  {isSubmitting ? 'Saving...' : 'Register Institution'}
+                </button>
+              </section>
             </form>
           </div>
         </main>
