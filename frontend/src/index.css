@@ -43,6 +43,10 @@ a {
   min-height: 100vh;
 }
 
+.landing-page {
+  font-family: 'Ranade', 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
 /* Dashboard Styles */
 .dash-wrapper {
   display: flex;
