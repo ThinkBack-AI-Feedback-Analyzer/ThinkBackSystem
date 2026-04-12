@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaEye, FaPen, FaTrash } from 'react-icons/fa'
+import { FaEye, FaFilter, FaPen, FaTrash } from 'react-icons/fa'
 import DashboardSidebar from '../components/common/DashboardSidebar'
 import DashboardTopBar from '../components/common/DashboardTopBar'
 import institutionLogo from '../assets/Logo_4.png'
@@ -11,6 +11,9 @@ const initialCourses = [
     title: 'Introduction to Software Engineering',
     code: 'SE201',
     facultyName: 'Faculty of Engineering',
+    departmentName: 'Department of Software Engineering',
+    semester: 'Semester 1',
+    year: '2025',
     academicYear: '2025-2026',
     description:
       'Foundations of software development processes, teamwork, modeling, and testing practices.',
@@ -22,6 +25,9 @@ const initialCourses = [
     title: 'Database Management Systems',
     code: 'CS312',
     facultyName: 'Faculty of Science',
+    departmentName: 'Department of Computer Science',
+    semester: 'Semester 2',
+    year: '2025',
     academicYear: '2025-2026',
     description:
       'Relational database design, SQL, indexing, normalization, and transaction processing concepts.',
@@ -33,6 +39,9 @@ const initialCourses = [
     title: 'Human Computer Interaction',
     code: 'IT224',
     facultyName: 'Faculty of Computing',
+    departmentName: 'Department of Information Technology',
+    semester: 'Semester 1',
+    year: '2026',
     academicYear: '2026-2027',
     description:
       'Designing accessible and user-centered interfaces with usability evaluation methods.',
@@ -44,6 +53,9 @@ const initialCourses = [
     title: 'Data Structures and Algorithms',
     code: 'CS210',
     facultyName: 'Faculty of Science',
+    departmentName: 'Department of Computer Science',
+    semester: 'Semester 2',
+    year: '2026',
     academicYear: '2026-2027',
     description:
       'Core data structures, algorithm analysis, recursion, graph traversal, and optimization techniques.',
@@ -59,6 +71,14 @@ function truncateText(text, maxLength = 30) {
 
   return `${text.slice(0, maxLength).trimEnd()}...`
 }
+
+const filterColumns = [
+  { value: 'title', label: 'Course Title' },
+  { value: 'code', label: 'Course Code' },
+  { value: 'departmentName', label: 'Department Name' },
+  { value: 'semester', label: 'Semester' },
+  { value: 'year', label: 'Year' },
+]
 
 function CoursesPage() {
   const navigate = useNavigate()
@@ -76,6 +96,10 @@ function CoursesPage() {
     }
   })
   const [courses, setCourses] = useState(initialCourses)
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [selectedColumn, setSelectedColumn] = useState(filterColumns[0].value)
+  const [selectedValue, setSelectedValue] = useState('')
+  const [filteredCourses, setFilteredCourses] = useState(initialCourses)
 
   useEffect(() => {
     if (!authState.user) {
@@ -158,10 +182,51 @@ function CoursesPage() {
   )
 
   const handleDeleteCourse = useCallback((courseId) => {
-    setCourses((currentCourses) =>
-      currentCourses.filter((course) => course.id !== courseId),
-    )
+    setCourses((currentCourses) => {
+      const updatedCourses = currentCourses.filter((course) => course.id !== courseId)
+
+      setFilteredCourses((currentFilteredCourses) =>
+        currentFilteredCourses.filter((course) => course.id !== courseId),
+      )
+
+      return updatedCourses
+    })
   }, [])
+
+  const availableFilterValues = Array.from(
+    new Set(
+      courses
+        .map((course) => course[selectedColumn])
+        .filter((value) => value !== undefined && value !== null && value !== ''),
+    ),
+  )
+
+  const handleColumnChange = useCallback((event) => {
+    setSelectedColumn(event.target.value)
+    setSelectedValue('')
+  }, [])
+
+  const handleApplyFilter = useCallback(() => {
+    if (!selectedValue) {
+      setFilteredCourses(courses)
+      setIsFilterPanelOpen(false)
+      return
+    }
+
+    const nextFilteredCourses = courses.filter(
+      (course) => course[selectedColumn] === selectedValue,
+    )
+
+    setFilteredCourses(nextFilteredCourses)
+    setIsFilterPanelOpen(false)
+  }, [courses, selectedColumn, selectedValue])
+
+  const handleClearFilter = useCallback(() => {
+    setSelectedColumn(filterColumns[0].value)
+    setSelectedValue('')
+    setFilteredCourses(courses)
+    setIsFilterPanelOpen(false)
+  }, [courses])
 
   if (!authState.user) {
     return <div className="loading">Loading...</div>
@@ -205,6 +270,85 @@ function CoursesPage() {
             </button>
           </div>
 
+          <div className="mx-auto mb-4 flex max-w-7xl justify-center sm:justify-end">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsFilterPanelOpen((current) => !current)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#cfe0d5] bg-[#f6fbf8] px-4 py-2 text-sm font-semibold text-[#124f2f] shadow-sm transition hover:border-[#13462D] hover:bg-[#edf7f1]"
+              >
+                <FaFilter className="text-xs" />
+                Filter
+              </button>
+
+              {isFilterPanelOpen ? (
+                <div className="absolute right-0 top-14 z-20 w-[min(20rem,calc(100vw-3rem))] rounded-2xl border border-[#d8e7dd] bg-white p-4 shadow-xl">
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="course-filter-column"
+                        className="mb-1.5 block text-sm font-semibold text-[#124f2f]"
+                      >
+                        Filter Column
+                      </label>
+                      <select
+                        id="course-filter-column"
+                        value={selectedColumn}
+                        onChange={handleColumnChange}
+                        className="w-full rounded-xl border border-[#cfe0d5] bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#13462D] focus:ring-2 focus:ring-[#d8e7dd]"
+                      >
+                        {filterColumns.map((column) => (
+                          <option key={column.value} value={column.value}>
+                            {column.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="course-filter-value"
+                        className="mb-1.5 block text-sm font-semibold text-[#124f2f]"
+                      >
+                        Filter Value
+                      </label>
+                      <select
+                        id="course-filter-value"
+                        value={selectedValue}
+                        onChange={(event) => setSelectedValue(event.target.value)}
+                        className="w-full rounded-xl border border-[#cfe0d5] bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#13462D] focus:ring-2 focus:ring-[#d8e7dd]"
+                      >
+                        <option value="">Select a value</option>
+                        {availableFilterValues.map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={handleClearFilter}
+                        className="inline-flex items-center justify-center rounded-xl border border-[#cfe0d5] bg-white px-4 py-2 text-sm font-semibold text-[#124f2f] transition hover:bg-[#f6fbf8]"
+                      >
+                        Clear Filter
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleApplyFilter}
+                        className="inline-flex items-center justify-center rounded-xl bg-[#13462D] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3a26]"
+                      >
+                        Apply Filter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
           <div className="mx-auto max-w-7xl rounded-[32px] bg-white shadow-md">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left">
@@ -222,7 +366,7 @@ function CoursesPage() {
                 </thead>
 
                 <tbody>
-                  {courses.map((course) => (
+                  {filteredCourses.map((course) => (
                     <tr
                       key={course.id}
                       className="border-b border-[#e3ece6] text-sm text-slate-700 transition hover:bg-[#f6fbf8]"
@@ -275,9 +419,11 @@ function CoursesPage() {
               </table>
             </div>
 
-            {courses.length === 0 ? (
+            {filteredCourses.length === 0 ? (
               <div className="px-6 py-10 text-center text-sm text-slate-500">
-                No courses available right now.
+                {courses.length === 0
+                  ? 'No courses available right now.'
+                  : 'No matching courses found for the selected filter.'}
               </div>
             ) : null}
           </div>
