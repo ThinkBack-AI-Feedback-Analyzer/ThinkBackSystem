@@ -50,6 +50,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    invitation_token = models.CharField(max_length=64, unique=True, null=True, blank=True, db_index=True)
+    invitation_token_expires = models.DateTimeField(null=True, blank=True)
+    must_change_password = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 

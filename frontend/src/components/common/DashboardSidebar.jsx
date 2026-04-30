@@ -7,6 +7,7 @@ import {
   FaBook,
   FaComments,
   FaUsers,
+  FaUserPlus,
   FaCog,
   FaChartBar,
   FaSignOutAlt,
@@ -14,255 +15,214 @@ import {
 } from "react-icons/fa";
 
 const DEFAULT_NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard", icon: FaHome, group: "menu" },
-  { key: "courses", label: "Courses", icon: FaBook, group: "menu" },
-  { key: "feedback", label: "Feedback", icon: FaComments, group: "menu", badge: "12" },
-  { key: "analytics", label: "Analytics", icon: FaChartBar, group: "menu" },
-  { key: "users", label: "Team", icon: FaUsers, group: "menu" },
-  { key: "settings", label: "Settings", icon: FaCog, group: "general" },
+  { key: "dashboard", label: "Dashboard",    icon: FaHome,      group: "main" },
+  { key: "courses",   label: "Courses",      icon: FaBook,      group: "main" },
+  { key: "feedback",  label: "Feedback",     icon: FaComments,  group: "main", badge: "12" },
+  { key: "analytics", label: "Analytics",    icon: FaChartBar,  group: "main" },
+  { key: "users",     label: "Staff",        icon: FaUsers,     group: "main" },
+  { key: "invite",    label: "Add Staff",    icon: FaUserPlus,  group: "main" },
+  { key: "settings",  label: "Settings",     icon: FaCog,       group: "settings" },
 ];
 
-const sidebarBg = {
-  background:
-    "linear-gradient(135deg, rgba(232,247,237,0.92) 0%, rgba(186,223,198,0.78) 42%, rgba(108,169,130,0.58) 100%)",
-  boxShadow: "0 24px 54px rgba(24,77,53,0.18), 0 0 32px rgba(73,161,116,0.1)",
-  border: "1px solid rgba(158,196,171,0.7)",
-};
-
-const collapseBtnBg = {
-  background: "linear-gradient(180deg, #ffffff 0%, #f1f6f3 100%)",
-};
-
-const logoBg = {
-  background: "linear-gradient(145deg, #198055, #11593b)",
-};
-
-const activeIndicatorStyle = {
-  background: "linear-gradient(180deg, #10b981 0%, #059669 100%)",
-  boxShadow: "0 0 10px rgba(16,185,129,0.4)",
-};
-
 const DashboardSidebar = ({
-  logoText = "TB",
+  logoText      = "TB",
   logoSrc,
   logoAlt,
-  brandName = "Think Back",
-  navItems = DEFAULT_NAV_ITEMS,
-  activeNav: activeNavProp,
+  brandName     = "Think Back",
+  navItems      = DEFAULT_NAV_ITEMS,
+  activeNav:    activeNavProp,
   onNavChange,
   onLogout,
-  logoutIcon: LogoutIcon = FaSignOutAlt,
-  isCollapsed: isCollapsedProp,
+  isCollapsed:  isCollapsedProp,
   onToggleCollapse,
 }) => {
-  const [internalActiveNav, setInternalActiveNav] = useState("dashboard");
+  const [internalActive,   setInternalActive]   = useState("dashboard");
   const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen,        setMobileOpen]        = useState(false);
 
-  const activeNav = activeNavProp ?? internalActiveNav;
-  const isCollapsed = isCollapsedProp ?? internalCollapsed;
+  const activeNav   = activeNavProp    ?? internalActive;
+  const isCollapsed = isCollapsedProp  ?? internalCollapsed;
 
-  const menuItems = navItems.filter((i) => (i.group || "menu") === "menu");
-  const generalItems = navItems.filter((i) => i.group === "general");
+  const mainItems     = navItems.filter((i) => (i.group || "main") === "main");
+  const settingsItems = navItems.filter((i) => i.group === "settings");
 
-  const handleNavChange = (key) => {
-    setInternalActiveNav(key);
+  const handleNav = (key) => {
+    setInternalActive(key);
     onNavChange?.(key);
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      setMobileOpen(false);
-    }
+    if (window.innerWidth < 768) setMobileOpen(false);
   };
 
-  const handleToggleCollapse = () => {
+  const handleCollapse = () => {
     if (onToggleCollapse) { onToggleCollapse(); return; }
-    setInternalCollapsed((prev) => !prev);
+    setInternalCollapsed((p) => !p);
   };
 
-  const renderNavItem = (item) => {
-    const Icon = item.icon;
+  /* ── single nav button ── */
+  const NavBtn = ({ item }) => {
+    const Icon     = item.icon;
     const isActive = activeNav === item.key;
 
     return (
       <button
-        key={item.key}
         type="button"
-        onClick={() => handleNavChange(item.key)}
-        aria-label={item.label}
-        title={item.label}
+        onClick={() => handleNav(item.key)}
+        title={isCollapsed ? item.label : undefined}
         className={[
-          "relative w-full min-h-[54px] rounded-[14px] border flex items-center gap-[14px] text-[16px] cursor-pointer transition-all duration-[250ms] text-left bg-transparent",
-          isCollapsed ? "justify-center px-0" : "pl-6 pr-[14px]",
+          "group relative flex items-center w-full rounded-lg text-sm font-medium transition-all duration-150 outline-none",
+          isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5",
           isActive
-            ? "border-transparent text-emerald-500 font-bold"
-            : "border-transparent text-[#8a9390] font-semibold hover:text-[#5f6963]",
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800",
         ].join(" ")}
       >
-        {isActive && (
-          <span
-            className="absolute left-[10px] top-1/2 -translate-y-1/2 w-[6px] h-6 rounded-[4px] z-[2]"
-            style={activeIndicatorStyle}
-          />
+        <Icon className={`shrink-0 text-base ${isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
+
+        {!isCollapsed && (
+          <span className="truncate">{item.label}</span>
         )}
-        <span
-          className={[
-            "inline-flex items-center justify-center transition-all duration-[250ms]",
-            isCollapsed ? "w-[34px] h-[34px] text-[22px]" : "w-6 h-6 text-[18px]",
-          ].join(" ")}
-        >
-          <Icon />
-        </span>
-        {!isCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
+
         {!isCollapsed && item.badge && (
-          <span className="ml-auto bg-[#dff2e9] text-emerald-500 text-[10px] leading-none rounded-full px-[7px] py-[3px] font-bold">
+          <span className={`ml-auto text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
+            isActive ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"
+          }`}>
             {item.badge}
+          </span>
+        )}
+
+        {/* tooltip when collapsed */}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
+            {item.label}
           </span>
         )}
       </button>
     );
   };
 
+  /* ── sidebar inner content (shared desktop + mobile) ── */
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+
+      {/* Brand header */}
+      <div className={`flex items-center mb-6 ${isCollapsed ? "justify-center px-2 pt-5" : "gap-3 px-4 pt-5"}`}>
+        <div className={`shrink-0 rounded-xl overflow-hidden flex items-center justify-center ${
+          isCollapsed ? "w-9 h-9" : "w-9 h-9"
+        } ${!logoSrc ? "bg-emerald-600" : "bg-white border border-slate-200"}`}>
+          {logoSrc
+            ? <img src={logoSrc} alt={logoAlt || brandName} className="w-full h-full object-contain" />
+            : <span className="text-white font-bold text-sm">{logoText}</span>
+          }
+        </div>
+
+        {!isCollapsed && (
+          <div className="min-w-0">
+            <p className="font-semibold text-slate-800 text-sm truncate">{brandName}</p>
+            <p className="text-xs text-slate-400 truncate">Dashboard</p>
+          </div>
+        )}
+      </div>
+
+      {/* Main nav */}
+      <div className="px-3 flex-1 overflow-y-auto space-y-0.5">
+        {!isCollapsed && (
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 px-3 mb-2">
+            Main
+          </p>
+        )}
+        {mainItems.map((item) => <NavBtn key={item.key} item={item} />)}
+
+        {settingsItems.length > 0 && (
+          <>
+            <div className="my-3 border-t border-slate-100" />
+            {!isCollapsed && (
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 px-3 mb-2">
+                Settings
+              </p>
+            )}
+            {settingsItems.map((item) => <NavBtn key={item.key} item={item} />)}
+          </>
+        )}
+      </div>
+
+      {/* Footer — logout */}
+      <div className="px-3 pb-4 pt-3 border-t border-slate-100">
+        <button
+          type="button"
+          onClick={onLogout}
+          title={isCollapsed ? "Logout" : undefined}
+          className={[
+            "group relative flex items-center w-full rounded-lg text-sm font-medium text-slate-500 transition-all duration-150 hover:bg-red-50 hover:text-red-600",
+            isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5",
+          ].join(" ")}
+        >
+          <FaSignOutAlt className="shrink-0 text-base text-slate-400 group-hover:text-red-500" />
+          {!isCollapsed && <span>Logout</span>}
+          {isCollapsed && (
+            <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
+              Logout
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      {/* Mobile launcher */}
-      {!mobileOpen && (
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open sidebar menu"
-          title="Open menu"
-          className="md:hidden fixed left-3 top-3 w-[42px] h-[42px] border border-[#b8d8c7] rounded-[12px] bg-white text-[#0f7f52] inline-flex items-center justify-center z-[70] shadow-[0_8px_20px_rgba(20,63,47,0.18)]"
-        >
-          <FaBars />
-        </button>
-      )}
+      {/* ── Mobile hamburger ── */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-50 w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-600 shadow-sm"
+        aria-label="Open menu"
+      >
+        <FaBars />
+      </button>
 
-      {/* Mobile backdrop */}
+      {/* ── Mobile backdrop ── */}
       {mobileOpen && (
-        <button
-          type="button"
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
-          aria-label="Close sidebar menu"
-          className="md:hidden fixed inset-0 bg-[rgba(15,23,42,0.32)] z-[55] border-none cursor-default"
         />
       )}
 
+      {/* ── Mobile drawer ── */}
       <aside
-        style={sidebarBg}
         className={[
-          // base
-          "relative flex flex-col overflow-hidden rounded-3xl backdrop-blur-sm [scrollbar-width:none] [-ms-overflow-style:none] transition-all duration-[280ms] ease-[ease]",
-          // desktop
-          "md:sticky md:top-[18px] md:h-[calc(100vh-36px)] md:overflow-y-auto",
-          isCollapsed ? "md:px-3 md:py-5" : "md:px-[18px] md:py-[26px]",
-          // mobile: slide-in drawer
-          "max-md:fixed max-md:left-0 max-md:top-0 max-md:h-screen max-md:max-h-screen max-md:rounded-r-[18px] max-md:rounded-l-none max-md:w-[min(86vw,320px)] max-md:z-[60] max-md:overflow-y-auto max-md:px-4 max-md:py-4",
-          mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-[110%]",
+          "md:hidden fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-slate-200 shadow-xl transition-transform duration-300 font-[Sora,sans-serif]",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
-        {/* Decorative blobs (replaces ::before / ::after) */}
-        <div className="pointer-events-none absolute -left-7 -top-6 w-[140px] h-[100px] rounded-full bg-[rgba(247,255,250,0.58)] blur-[26px]" />
-        <div className="pointer-events-none absolute -right-[26px] -bottom-7 w-[150px] h-[110px] rounded-full bg-[rgba(27,90,61,0.16)] blur-[30px]" />
+        <button
+          type="button"
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+          aria-label="Close menu"
+        >
+          <FaTimes />
+        </button>
+        <SidebarContent />
+      </aside>
 
-        {/* Content above blobs */}
-        <div className="relative z-[1] flex flex-col h-full">
+      {/* ── Desktop sidebar ── */}
+      <aside
+        className={[
+          "hidden md:flex flex-col bg-white border-r border-slate-200 h-screen sticky top-0 transition-all duration-300 overflow-hidden font-[Sora,sans-serif]",
+          isCollapsed ? "w-[68px]" : "w-[240px]",
+        ].join(" ")}
+      >
+        {/* Collapse toggle */}
+        <button
+          type="button"
+          onClick={handleCollapse}
+          className="absolute top-5 -right-3 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm hover:bg-slate-50 hover:text-emerald-600 transition-colors"
+          aria-label={isCollapsed ? "Expand" : "Collapse"}
+        >
+          {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
+        </button>
 
-          {/* Header */}
-          <div
-            className={[
-              "flex items-center gap-[10px] mb-6",
-              isCollapsed ? "flex-col" : "justify-between",
-            ].join(" ")}
-          >
-            {/* Brand */}
-            <div className={`flex items-center min-w-0 ${isCollapsed ? "justify-start gap-[10px]" : "gap-[14px]"}`}>
-              <div
-                className={[
-                  "w-[52px] h-[52px] rounded-[16px] flex items-center justify-center flex-shrink-0 shadow-[0_8px_16px_rgba(22,119,78,0.22)]",
-                  logoSrc ? "bg-[rgba(255,255,255,0.94)] p-2" : "",
-                ].join(" ")}
-                style={!logoSrc ? logoBg : {}}
-              >
-                {logoSrc ? (
-                  <img
-                    src={logoSrc}
-                    alt={logoAlt || `${brandName} logo`}
-                    className="w-full h-full object-contain block"
-                  />
-                ) : (
-                  <span className="text-white font-bold text-[18px]">{logoText}</span>
-                )}
-              </div>
-              {!isCollapsed && (
-                <h2 className="m-0 text-[20px] text-[#1e2722] font-bold">{brandName}</h2>
-              )}
-            </div>
-
-            {/* Desktop collapse button */}
-            <button
-              type="button"
-              onClick={handleToggleCollapse}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={isCollapsed ? "Expand" : "Collapse"}
-              style={collapseBtnBg}
-              className="hidden md:inline-flex w-[38px] h-[38px] rounded-[12px] border border-[#d7e2dc] items-center justify-center cursor-pointer transition-all duration-[250ms] flex-shrink-0 text-[#365046] shadow-[0_8px_16px_rgba(20,63,47,0.1)] hover:border-[#a7c4b5] hover:text-[#0f7f52] hover:-translate-y-[1px] hover:shadow-[0_10px_20px_rgba(20,63,47,0.16)]"
-            >
-              {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
-            </button>
-
-            {/* Mobile close button */}
-            <button
-              type="button"
-              onClick={() => setMobileOpen(false)}
-              aria-label="Close sidebar menu"
-              title="Close menu"
-              className="md:hidden inline-flex w-10 h-10 rounded-[12px] border border-[#b8d8c7] bg-white text-[#0f7f52] items-center justify-center z-[3]"
-            >
-              <FaTimes />
-            </button>
-          </div>
-
-          {/* Nav sections */}
-          <div className="flex flex-col flex-1">
-            {!isCollapsed && (
-              <span className="text-[#98a19d] uppercase tracking-[0.08em] text-[11px] font-bold mx-[10px] mt-3 mb-2">
-                Menu
-              </span>
-            )}
-            <nav className="flex flex-col gap-2 mb-[14px]">
-              {menuItems.map(renderNavItem)}
-            </nav>
-
-            {!isCollapsed && generalItems.length > 0 && (
-              <span className="text-[#98a19d] uppercase tracking-[0.08em] text-[11px] font-bold mx-[10px] mt-3 mb-2">
-                General
-              </span>
-            )}
-            <nav className="flex flex-col gap-2 mb-auto">
-              {generalItems.map(renderNavItem)}
-            </nav>
-
-            {/* Logout */}
-            <button
-              type="button"
-              onClick={onLogout}
-              aria-label="Logout"
-              title="Logout"
-              className={[
-                "w-full min-h-[54px] bg-transparent border border-transparent rounded-[14px] text-[#7c8882] text-[16px] cursor-pointer transition-all duration-[250ms] flex items-center gap-[14px] font-semibold hover:bg-[#fdf0f1] hover:border-[#f8d6dc] hover:text-[#b0415d]",
-                isCollapsed ? "justify-center px-0" : "px-[14px]",
-              ].join(" ")}
-            >
-              <span
-                className={`inline-flex items-center justify-center ${
-                  isCollapsed ? "w-[34px] h-[34px] text-[22px]" : "w-6 h-6 text-[18px]"
-                }`}
-              >
-                {LogoutIcon ? <LogoutIcon /> : "L"}
-              </span>
-              {!isCollapsed && <span className="whitespace-nowrap">Logout</span>}
-            </button>
-          </div>
-        </div>
+        <SidebarContent />
       </aside>
     </>
   );

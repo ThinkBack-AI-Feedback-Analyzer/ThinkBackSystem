@@ -19,20 +19,20 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['password_confirm']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
-        
+
         if User.objects.filter(email=data['email']).exists():
             raise serializers.ValidationError({"email": "This email is already registered."})
-        
+
         return data
 
     def create(self, validated_data: Dict[str, Any]) -> User:
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
-        
+
         user: User = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
-        
+
         return user
 
 
@@ -71,13 +71,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Verify password
         if not user.check_password(password):
             raise serializers.ValidationError({"password": "Invalid password."})
-        
+
         if not user.is_active:
             raise serializers.ValidationError({"detail": "User account is inactive."})
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
-        
+
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -85,3 +85,51 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         }
 
 
+class InviteUserSerializer(serializers.Serializer):
+    full_name = serializers.CharField(required=True, allow_blank=False)
+    email = serializers.EmailField(required=True)
+    role = serializers.ChoiceField(choices=['lecturer', 'coordinator'])
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+
+class AcceptInvitationSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, min_length=8)
+    password_confirm = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({"password": "Passwords do not match."})
+        return data
+
+
+class InstitutionUserSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'full_name', 'email', 'role', 'is_active', 'status', 'created_at')
+        read_only_fields = ('created_at',)
+
+    def get_status(self, obj):
+        if not obj.is_active and obj.invitation_token:
+            return 'Invited'
+        return 'Active'
+
+
+class ResendInvitationSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True)
+
+
+class UpdateStaffSerializer(serializers.Serializer):
+    full_name = serializers.CharField(required=False, allow_blank=False)
+    role = serializers.ChoiceField(choices=['lecturer', 'coordinator'], required=False)
+
+    def validate(self, data):
+        if not data:
+            raise serializers.ValidationError("Nothing to update.")
+        return data

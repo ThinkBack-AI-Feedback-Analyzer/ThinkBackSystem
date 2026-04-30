@@ -150,8 +150,8 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
 }
 
 # CORS Configuration
@@ -163,11 +163,22 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5177",
 ]
 
-# Allow any local Vite/dev port (e.g. 5178, 5179) on different machines.
-# CORS_ALLOWED_ORIGIN_REGEXES = [
-#     r"^http://localhost:\d+$",
-#     r"^http://127\.0\.0\.1:\d+$",
-# ]
+# Also allow WSL2 bridge IPs and any local dev port
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://localhost:\d+$",
+    r"^http://127\.0\.0\.1:\d+$",
+    r"^http://172\.\d+\.\d+\.\d+:\d+$",
+]
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
+
+# Email Configuration
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_FROM = os.getenv('EMAIL_FROM', 'noreply@thinkback.com')
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')

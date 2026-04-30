@@ -82,7 +82,7 @@ const StatCard = ({ stat }) => {
   return (
     <div
       ref={cardRef}
-      className="stat-card-3d relative overflow-hidden flex flex-col bg-white rounded-[40px] border border-[rgba(24,80,55,0.14)] p-9 cursor-pointer [transform-style:preserve-3d]"
+      className="stat-card-3d relative overflow-hidden flex flex-col bg-white rounded-2xl border border-[rgba(24,80,55,0.14)] p-5 cursor-pointer [transform-style:preserve-3d]"
       style={{
         "--circle-color": stat.trendUp
           ? "rgba(16,185,129,0.07)"
@@ -96,16 +96,16 @@ const StatCard = ({ stat }) => {
 
       <div className="relative z-[1] flex flex-col h-full">
         {/* Icon + mini chart */}
-        <div className="flex items-start justify-between mb-7">
-          <div className="w-[62px] h-[62px] rounded-[24px] flex items-center justify-center text-[24px] bg-[#f0fdf9] text-emerald-500">
+        <div className="flex items-start justify-between mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base bg-[#f0fdf9] text-emerald-500">
             {stat.icon}
           </div>
-          <div className="flex items-end gap-[5px] h-[38px] p-1">
+          <div className="flex items-end gap-[3px] h-7">
             {stat.chartData.map((h, i) => (
               <div
                 key={i}
-                className={`w-[7px] rounded-[4px] transition-[height] duration-[800ms] [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
-                  i === stat.chartData.length - 1 ? "bg-emerald-500" : "bg-[#f1f5f9]"
+                className={`w-[5px] rounded-sm transition-[height] duration-[800ms] [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
+                  i === stat.chartData.length - 1 ? "bg-emerald-500" : "bg-slate-100"
                 }`}
                 style={{ height: `${h}%` }}
               />
@@ -113,31 +113,31 @@ const StatCard = ({ stat }) => {
           </div>
         </div>
 
-        <div className="text-[13px] text-[#64748b] font-bold uppercase tracking-[0.1em] mb-3">
+        <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest mb-1">
           {stat.label}
         </div>
-        <div className="text-[48px] font-[800] text-[#0f172a] mb-[14px] leading-none tracking-[-0.04em]">
+        <div className="text-3xl font-bold text-slate-800 mb-3 leading-none tracking-tight">
           {stat.value}
         </div>
 
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-2 mb-4">
           <div
-            className={`inline-flex items-center gap-[6px] px-[14px] py-[6px] rounded-full text-[13px] font-bold ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
               stat.trendUp
-                ? "bg-[#dcfce7] text-[#15803d]"
-                : "bg-[#fee2e2] text-[#b91c1c]"
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-red-50 text-red-600"
             }`}
           >
-            {stat.trendUp ? <FaArrowUp size={8} /> : <FaArrowDown size={8} />}
+            {stat.trendUp ? <FaArrowUp size={7} /> : <FaArrowDown size={7} />}
             {stat.trend}
           </div>
-          <div className="text-[14px] text-[#64748b]">{stat.trendText}</div>
+          <div className="text-xs text-slate-400">{stat.trendText}</div>
         </div>
 
         <div className="mt-auto w-full">
-          <div className="w-full h-[4px] bg-[#f8fafc] rounded-[4px]">
+          <div className="w-full h-1 bg-slate-100 rounded-full">
             <div
-              className="h-full bg-emerald-500 rounded-[4px]"
+              className="h-full bg-emerald-500 rounded-full"
               style={{ width: `${stat.progress}%` }}
             />
           </div>
@@ -149,8 +149,6 @@ const StatCard = ({ stat }) => {
 
 const InstitutionDashboardPage = () => {
   const navigate = useNavigate();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   const [state] = useState(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) return { user: null };
@@ -178,11 +176,15 @@ const InstitutionDashboardPage = () => {
 
   const handleSidebarNavigation = useCallback(
     (key) => {
+      if (key === 'invite') {
+        navigate('/manage-users', { state: { openInvite: true } })
+        return
+      }
       const routes = {
         dashboard: "/institution-dashboard",
         courses: "/courses",
         feedback: "/feedbackForm",
-        users: "/student-management",
+        users: "/manage-users",
       };
       if (routes[key]) navigate(routes[key]);
     },
@@ -244,30 +246,22 @@ const InstitutionDashboardPage = () => {
     <>
       <style>{CARD_STYLES}</style>
 
-      <div
-        className={[
-          "grid min-h-screen bg-white p-[18px] gap-[18px] transition-[grid-template-columns] duration-[280ms]",
-          sidebarCollapsed ? "grid-cols-[110px_1fr]" : "grid-cols-[290px_1fr]",
-          "max-md:grid-cols-1 max-md:p-3 max-md:gap-3",
-        ].join(" ")}
-      >
+      <div className="flex h-screen bg-slate-50 overflow-hidden">
         <DashboardSidebar
           activeNav="dashboard"
           onNavChange={handleSidebarNavigation}
           onLogout={handleLogout}
           logoSrc={institutionLogo}
           logoAlt="ThinkBack logo"
-          isCollapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed((p) => !p)}
         />
 
-        <main className="min-w-0 max-md:pt-[60px]">
+        <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
           <DashboardTopBar
             userName={state.user.full_name}
             userEmail={state.user.email}
           />
 
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-8 p-10">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 p-6">
             {stats.map((stat, i) => (
               <StatCard key={i} stat={stat} />
             ))}

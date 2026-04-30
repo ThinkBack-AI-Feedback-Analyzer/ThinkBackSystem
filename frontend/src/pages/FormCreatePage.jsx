@@ -74,11 +74,15 @@ export default function FeedbackFormBuilder() {
   }, [navigate]);
 
   const handleSidebarNavigation = useCallback((key) => {
+    if (key === 'invite') {
+      navigate('/manage-users', { state: { openInvite: true } })
+      return
+    }
     const routeMap = {
       dashboard: "/institution-dashboard",
       courses: "/courses",
       feedback: "/feedbackForm",
-      users: "/student-management",
+      users: "/manage-users",
     };
 
     const targetRoute = routeMap[key];

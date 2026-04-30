@@ -9,18 +9,21 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('is_active', 'role', 'institution')
     search_fields = ('email', 'full_name')
     ordering = ('-created_at',)
-    
+
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal Information', {'fields': ('full_name', 'phone_number', 'designation')}),
-        ('Organization', {'fields': ('institution', 'department')}),
+        ('Organization', {'fields': ('institution',)}),
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser')}),
+        ('Invitation', {'fields': ('invitation_token', 'invitation_token_expires', 'must_change_password')}),
         ('Important Dates', {'fields': ('last_login', 'created_at', 'updated_at')}),
     )
-    
+
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
             'fields': ('email', 'password1', 'password2', 'full_name', 'role'),
         }),
     )
+
+    readonly_fields = ('created_at', 'updated_at', 'last_login')

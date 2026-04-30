@@ -10,6 +10,8 @@ import FormCreatePage from "./pages/FormCreatePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import StudentManagement from "./pages/StudentManagementPage";
+import ManageUsersPage from "./pages/ManageUsersPage";
+import SetPasswordPage from "./pages/SetPasswordPage";
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
       <Route path="/portal" element={<StudentPortal />} />
       <Route path="/feedbackForm" element={<FormCreatePage />} />
       <Route path="/student-management" element={<StudentManagement />} />
+      <Route path="/manage-users" element={<ManageUsersPage />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
