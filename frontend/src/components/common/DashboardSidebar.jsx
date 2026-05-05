@@ -17,7 +17,7 @@ import {
 const DEFAULT_NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard",    icon: FaHome,      group: "main" },
   { key: "courses",   label: "Courses",      icon: FaBook,      group: "main" },
-  { key: "feedback",  label: "Feedback",     icon: FaComments,  group: "main", badge: "12" },
+  { key: "feedback",  label: "Feedback Forms", icon: FaComments, group: "main" },
   { key: "analytics", label: "Analytics",    icon: FaChartBar,  group: "main" },
   { key: "users",     label: "Staff",        icon: FaUsers,     group: "main" },
   { key: "invite",    label: "Add Staff",    icon: FaUserPlus,  group: "main" },

@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import LandingFooter from '../components/landing/LandingFooter'
-import LandingHeader from '../components/landing/LandingHeader'
-import HeroSection from '../components/landing/HeroSection'
-import PlatformOverviewSection from '../components/landing/PlatformOverviewSection'
-import { modules, navItems, stats, steps } from '../data/landingPage'
+import LandingFooter from '../../components/landing/LandingFooter'
+import LandingHeader from '../../components/landing/LandingHeader'
+import HeroSection from '../../components/landing/HeroSection'
+import PlatformOverviewSection from '../../components/landing/PlatformOverviewSection'
+import { modules, navItems, stats, steps } from '../../data/landingPage'
 
 function LandingPage() {
   const location = useLocation()

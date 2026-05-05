@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { FaEnvelope, FaPen, FaTrash } from 'react-icons/fa'
-import { RowActions } from '../components/ui/RowActions'
+import { RowActions } from '../../components/ui/RowActions'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { createColumnHelper } from '@tanstack/react-table'
-import DashboardSidebar from '../components/common/DashboardSidebar'
-import DashboardTopBar from '../components/common/DashboardTopBar'
-import InviteUserModal from '../components/modals/InviteUserModal'
-import EditStaffModal from '../components/modals/EditStaffModal'
-import { DataTable } from '../components/ui/DataTable'
-import institutionLogo from '../assets/Logo_4.png'
-import { getInstitutionUsers, resendInvitation, deleteStaff } from '../services/users'
+import DashboardSidebar from '../../components/common/DashboardSidebar'
+import DashboardTopBar from '../../components/common/DashboardTopBar'
+import InviteUserModal from '../../components/modals/InviteUserModal'
+import EditStaffModal from '../../components/modals/EditStaffModal'
+import { DataTable } from '../../components/ui/DataTable'
+import institutionLogo from '../../assets/Logo_4.png'
+import { getInstitutionUsers, resendInvitation, deleteStaff } from '../../services/users'
 
 const ROLE_BADGE = {
   lecturer:    'bg-sky-50 text-sky-700 border-sky-200',
@@ -36,10 +38,11 @@ function ManageUsersPage() {
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [fetchError, setFetchError] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(() => location.state?.openInvite === true)
-  const [editingUser, setEditingUser] = useState(null)
-  const [resendingId, setResendingId] = useState(null)
-  const [deletingId, setDeletingId] = useState(null)
+  const [isModalOpen, setIsModalOpen]   = useState(() => location.state?.openInvite === true)
+  const [editingUser, setEditingUser]   = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null) // { id, full_name }
+  const [resendingId, setResendingId]   = useState(null)
+  const [deletingId, setDeletingId]     = useState(null)
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
@@ -75,7 +78,7 @@ function ManageUsersPage() {
     const routeMap = {
       dashboard: '/institution-dashboard',
       courses: '/courses',
-      feedback: '/feedbackForm',
+      feedback: '/feedback-forms',
       users: '/manage-users',
     }
     const route = routeMap[key]
@@ -86,30 +89,33 @@ function ManageUsersPage() {
     setResendingId(userId)
     try {
       await resendInvitation(userId)
-      alert('Invitation resent successfully.')
+      toast.success('Invitation resent successfully.')
     } catch {
-      alert('Failed to resend invitation.')
+      toast.error('Failed to resend invitation.')
     } finally {
       setResendingId(null)
     }
   }, [])
 
-  const handleDelete = useCallback(async (userId, userName) => {
-    if (!window.confirm(`Remove "${userName}" from your institution? This cannot be undone.`)) return
-    setDeletingId(userId)
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return
+    setDeletingId(deleteTarget.id)
     try {
-      await deleteStaff(userId)
-      setUsers((prev) => prev.filter((u) => u.id !== userId))
+      await deleteStaff(deleteTarget.id)
+      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id))
+      toast.success(`"${deleteTarget.full_name}" removed successfully.`)
     } catch {
-      alert('Failed to delete staff member.')
+      toast.error('Failed to remove staff member.')
     } finally {
       setDeletingId(null)
+      setDeleteTarget(null)
     }
-  }, [])
+  }, [deleteTarget])
 
   const handleInviteSuccess = useCallback(() => {
     setIsModalOpen(false)
     fetchUsers()
+    toast.success('Invitation sent successfully.')
   }, [fetchUsers])
 
   const columns = useMemo(() => [
@@ -170,13 +176,13 @@ function ManageUsersPage() {
             icon: FaTrash,
             variant: 'danger',
             disabled: deletingId === user.id,
-            onClick: () => handleDelete(user.id, user.full_name),
+            onClick: () => setDeleteTarget({ id: user.id, full_name: user.full_name }),
           },
         ]
         return <RowActions actions={actions} />
       },
     }),
-  ], [handleResend, handleDelete, resendingId, deletingId])
+  ], [handleResend, handleDeleteConfirm, resendingId, deletingId])
 
   if (!authState.user) {
     return <div className="flex items-center justify-center min-h-screen text-slate-400 text-sm">Loading...</div>
@@ -247,7 +253,16 @@ function ManageUsersPage() {
         isOpen={!!editingUser}
         user={editingUser}
         onClose={() => setEditingUser(null)}
-        onSuccess={() => { setEditingUser(null); fetchUsers() }}
+        onSuccess={() => { setEditingUser(null); fetchUsers(); toast.success('Staff member updated successfully.') }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Remove Staff Member"
+        description={`Are you sure you want to remove "${deleteTarget?.full_name}" from your institution? This cannot be undone.`}
+        confirmLabel="Remove"
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   )

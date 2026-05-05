@@ -1,40 +1,59 @@
 import { Route, Routes, Navigate } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
-import CourseCreatePage from './pages/CourseCreatePage'
-import CoursesPage from './pages/CoursesPage'
-import LoginPage from "./pages/LoginPage";
-import InstitutionRegisterPage from "./pages/InstitutionRegisterPage";
-import InstitutionDashboardPage from "./pages/InstitutionDashboardPage";
-import StudentPortal from "./pages/StudentPortal";
-import FormCreatePage from "./pages/FormCreatePage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import StudentManagement from "./pages/StudentManagementPage";
-import ManageUsersPage from "./pages/ManageUsersPage";
-import SetPasswordPage from "./pages/SetPasswordPage";
+import { Toaster } from 'sonner'
+
+import LandingPage              from './pages/landing/LandingPage'
+import AboutPage                from './pages/landing/AboutPage'
+import ContactPage              from './pages/landing/ContactPage'
+
+import LoginPage                from './pages/auth/LoginPage'
+import InstitutionRegisterPage  from './pages/auth/InstitutionRegisterPage'
+import SetPasswordPage          from './pages/auth/SetPasswordPage'
+
+import InstitutionDashboardPage from './pages/dashboard/InstitutionDashboardPage'
+import StaffDashboardPage       from './pages/dashboard/StaffDashboardPage'
+
+import CoursesPage              from './pages/courses/CoursesPage'
+import CourseCreatePage         from './pages/courses/CourseCreatePage'
+
+import ManageUsersPage          from './pages/staff/ManageUsersPage'
+
+import FeedbackFormsPage        from './pages/feedback/FeedbackFormsPage'
+import FormCreatePage           from './pages/feedback/FormCreatePage'
+
+import StudentPortal            from './pages/student/StudentPortal'
+import StudentManagement        from './pages/student/StudentManagementPage'
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/courses" element={<CoursesPage />} />
-      <Route path="/course-create" element={<CourseCreatePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/institutions/register" element={<InstitutionRegisterPage />} />
-      <Route
-        path="/register"
-        element={<Navigate to="/institutions/register" replace />}
-      />
-      <Route path="/institution-dashboard" element={<InstitutionDashboardPage />} />
-      <Route path="/portal" element={<StudentPortal />} />
-      <Route path="/feedbackForm" element={<FormCreatePage />} />
-      <Route path="/student-management" element={<StudentManagement />} />
-      <Route path="/manage-users" element={<ManageUsersPage />} />
-      <Route path="/set-password" element={<SetPasswordPage />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Toaster position="top-right" richColors closeButton />
+      <Routes>
+        <Route path="/"                      element={<LandingPage />} />
+        <Route path="/about"                 element={<AboutPage />} />
+        <Route path="/contact"               element={<ContactPage />} />
+
+        <Route path="/login"                 element={<LoginPage />} />
+        <Route path="/institutions/register" element={<InstitutionRegisterPage />} />
+        <Route path="/register"              element={<Navigate to="/institutions/register" replace />} />
+        <Route path="/set-password"          element={<SetPasswordPage />} />
+
+        <Route path="/institution-dashboard" element={<InstitutionDashboardPage />} />
+        <Route path="/staff-dashboard"       element={<StaffDashboardPage />} />
+
+        <Route path="/courses"               element={<CoursesPage />} />
+        <Route path="/course-create"         element={<CourseCreatePage />} />
+
+        <Route path="/manage-users"          element={<ManageUsersPage />} />
+
+        <Route path="/feedback-forms"        element={<FeedbackFormsPage />} />
+        <Route path="/feedbackForm"          element={<FormCreatePage />} />
+
+        <Route path="/portal"                element={<StudentPortal />} />
+        <Route path="/student-management"    element={<StudentManagement />} />
+
+        <Route path="*"                      element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 

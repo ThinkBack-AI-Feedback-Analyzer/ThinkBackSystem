@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Institution
+from .models import Course, Institution
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
@@ -16,3 +16,10 @@ class InstitutionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         institution = Institution.objects.create(**validated_data)
         return institution
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ('id', 'title', 'code', 'faculty_name', 'academic_year', 'description', 'coordinator', 'lecturer', 'created_at')
+        read_only_fields = ('id', 'created_at')

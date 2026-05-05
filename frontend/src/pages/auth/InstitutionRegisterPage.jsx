@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as Select from '@radix-ui/react-select'
 import { toast } from 'sonner'
-import brandLogo from '../assets/Thinkback logo2-cropped.png'
-import { countries } from '../data/countries'
-import { createInstitution } from '../services/institutions'
-import { register } from '../services/auth'
+import brandLogo from '../../assets/Thinkback logo2-cropped.png'
+import { countries } from '../../data/countries'
+import { createInstitution } from '../../services/institutions'
+import { register } from '../../services/auth'
 
 const institutionTypes = [
   'University',

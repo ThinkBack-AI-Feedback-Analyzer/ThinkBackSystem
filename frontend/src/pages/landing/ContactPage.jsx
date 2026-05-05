@@ -1,6 +1,6 @@
-import LandingHeader from "../components/landing/LandingHeader";
-import LandingFooter from "../components/landing/LandingFooter";
-import { navItems } from "../data/landingPage";
+import LandingHeader from "../../components/landing/LandingHeader";
+import LandingFooter from "../../components/landing/LandingFooter";
+import { navItems } from "../../data/landingPage";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebookF, FaTwitter, FaLinkedinIn } from "react-icons/fa";
 
 function ContactPage() {

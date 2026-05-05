@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { acceptInvitation } from '../services/users'
+import { acceptInvitation } from '../../services/users'
 
 const DASHBOARD_ROUTES = {
   institution_admin: '/institution-dashboard',
-  lecturer: '/lecturer-dashboard',
-  coordinator: '/coordinator-dashboard',
+  coordinator:       '/staff-dashboard',
+  lecturer:          '/staff-dashboard',
 }
 
 function SetPasswordPage() {

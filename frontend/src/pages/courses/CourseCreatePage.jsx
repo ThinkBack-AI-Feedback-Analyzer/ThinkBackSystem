@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaBook, FaCloudUploadAlt, FaFile, FaTimes, FaUsers } from 'react-icons/fa'
-import DashboardSidebar from '../components/common/DashboardSidebar'
-import DashboardTopBar from '../components/common/DashboardTopBar'
-import { Select } from '../components/ui/Select'
-import { SearchSelect } from '../components/ui/SearchSelect'
-import institutionLogo from '../assets/Logo_4.png'
-import { getInstitutionUsers } from '../services/users'
+import DashboardSidebar from '../../components/common/DashboardSidebar'
+import DashboardTopBar from '../../components/common/DashboardTopBar'
+import { Select } from '../../components/ui/Select'
+import { SearchSelect } from '../../components/ui/SearchSelect'
+import institutionLogo from '../../assets/Logo_4.png'
+import { toast } from 'sonner'
+import { getInstitutionUsers } from '../../services/users'
+import { createCourse, updateCourse } from '../../services/courses'
 
 const ACADEMIC_YEARS = ['2024-2025', '2025-2026', '2026-2027', '2027-2028']
 
@@ -111,7 +113,7 @@ function CourseCreatePage() {
 
   const handleNav = useCallback((key) => {
     if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const map = { dashboard: '/institution-dashboard', courses: '/courses', feedback: '/feedbackForm', users: '/manage-users' }
+    const map = { dashboard: '/institution-dashboard', courses: '/courses', feedback: '/feedback-forms', users: '/manage-users' }
     if (map[key]) navigate(map[key])
   }, [navigate])
 
@@ -132,13 +134,35 @@ function CourseCreatePage() {
     return e
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (isView) return
     const e2 = validate()
     if (Object.keys(e2).length) { setErrors(e2); return }
-    setSaved(true)
-    if (pageMode === 'create') setTimeout(() => navigate('/courses'), 1200)
+
+    const payload = {
+      title:         form.courseTitle,
+      code:          form.courseCode,
+      faculty_name:  form.facultyName,
+      academic_year: form.academicYear,
+      description:   form.description,
+      coordinator:   form.coordinator,
+      lecturer:      form.lecturer,
+    }
+
+    try {
+      if (pageMode === 'create') {
+        await createCourse(payload)
+        toast.success('Course created successfully.')
+      } else {
+        await updateCourse(prefill.id, payload)
+        toast.success('Course updated successfully.')
+      }
+      setSaved(true)
+      setTimeout(() => navigate('/courses'), 1200)
+    } catch {
+      setErrors({ submit: 'Failed to save course. Please try again.' })
+    }
   }
 
   if (!authState.user) {
@@ -356,6 +380,11 @@ function CourseCreatePage() {
             {saved && (
               <span className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
                 ✓ {pageMode === 'create' ? 'Course saved! Redirecting…' : 'Course updated successfully.'}
+              </span>
+            )}
+            {errors.submit && (
+              <span className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">
+                {errors.submit}
               </span>
             )}
           </div>

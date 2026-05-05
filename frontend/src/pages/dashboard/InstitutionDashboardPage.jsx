@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardSidebar from "../components/common/DashboardSidebar";
-import DashboardTopBar from "../components/common/DashboardTopBar";
-import institutionLogo from "../assets/Logo_4.png";
+import DashboardSidebar from "../../components/common/DashboardSidebar";
+import DashboardTopBar from "../../components/common/DashboardTopBar";
+import institutionLogo from "../../assets/Logo_4.png";
 import {
   FaUsers,
   FaChartLine,
@@ -183,7 +183,7 @@ const InstitutionDashboardPage = () => {
       const routes = {
         dashboard: "/institution-dashboard",
         courses: "/courses",
-        feedback: "/feedbackForm",
+        feedback: "/feedback-forms",
         users: "/manage-users",
       };
       if (routes[key]) navigate(routes[key]);

@@ -1,55 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { FaBook, FaBuilding, FaCalendarAlt, FaEye, FaPen, FaPlus, FaTrash } from 'react-icons/fa'
 import { createColumnHelper } from '@tanstack/react-table'
-import { RowActions } from '../components/ui/RowActions'
-import DashboardSidebar from '../components/common/DashboardSidebar'
-import DashboardTopBar from '../components/common/DashboardTopBar'
-import { DataTable } from '../components/ui/DataTable'
-import institutionLogo from '../assets/Logo_4.png'
-
-const initialCourses = [
-  {
-    id: 1,
-    title: 'Introduction to Software Engineering',
-    code: 'SE201',
-    facultyName: 'Faculty of Engineering',
-    academicYear: '2025-2026',
-    description: 'Foundations of software development processes, teamwork, modeling, and testing practices.',
-    coordinator: 'Dr. Nadeesha Perera',
-    lecturer: 'Prof. Malith Jayasinghe',
-  },
-  {
-    id: 2,
-    title: 'Database Management Systems',
-    code: 'CS312',
-    facultyName: 'Faculty of Science',
-    academicYear: '2025-2026',
-    description: 'Relational database design, SQL, indexing, normalization, and transaction processing concepts.',
-    coordinator: 'Dr. Hasini Fernando',
-    lecturer: 'Ms. Tharushi Wickramasinghe',
-  },
-  {
-    id: 3,
-    title: 'Human Computer Interaction',
-    code: 'IT224',
-    facultyName: 'Faculty of Computing',
-    academicYear: '2026-2027',
-    description: 'Designing accessible and user-centered interfaces with usability evaluation methods.',
-    coordinator: 'Mr. Dilshan Rathnayake',
-    lecturer: 'Dr. Sachini Gunawardena',
-  },
-  {
-    id: 4,
-    title: 'Data Structures and Algorithms',
-    code: 'CS210',
-    facultyName: 'Faculty of Science',
-    academicYear: '2026-2027',
-    description: 'Core data structures, algorithm analysis, recursion, graph traversal, and optimization techniques.',
-    coordinator: 'Dr. Kavindu Abeysekera',
-    lecturer: 'Prof. Ishara De Silva',
-  },
-]
+import { RowActions } from '../../components/ui/RowActions'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import DashboardSidebar from '../../components/common/DashboardSidebar'
+import DashboardTopBar from '../../components/common/DashboardTopBar'
+import { DataTable } from '../../components/ui/DataTable'
+import institutionLogo from '../../assets/Logo_4.png'
+import { getCourses, deleteCourse } from '../../services/courses'
 
 const columnHelper = createColumnHelper()
 
@@ -79,12 +39,23 @@ function CoursesPage() {
     try { return { user: JSON.parse(storedUser) } }
     catch { return { user: null } }
   })
-  const [courses, setCourses] = useState(initialCourses)
+  const [courses, setCourses]         = useState([])
+  const [isLoading, setIsLoading]     = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState(null) // { id, title }
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
     if (authState.user.role !== 'institution_admin') navigate('/')
   }, [authState.user, navigate])
+
+  useEffect(() => {
+    if (!authState.user) return
+    setIsLoading(true)
+    getCourses()
+      .then((data) => setCourses(Array.isArray(data) ? data : []))
+      .catch(() => toast.error('Failed to load courses.'))
+      .finally(() => setIsLoading(false))
+  }, [authState.user])
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('access_token')
@@ -98,33 +69,49 @@ function CoursesPage() {
     const routeMap = {
       dashboard: '/institution-dashboard',
       courses: '/courses',
-      feedback: '/feedbackForm',
+      feedback: '/feedback-forms',
       users: '/manage-users',
     }
     const route = routeMap[key]
     if (route) navigate(route)
   }, [navigate])
 
+  const courseInfo = (course) => ({
+    id:              course.id,
+    courseName:      course.title,
+    courseCode:      course.code,
+    facultyName:     course.faculty_name,
+    academicYear:    course.academic_year,
+    description:     course.description,
+    coordinatorName: course.coordinator,
+    lecturerName:    course.lecturer,
+  })
+
   const handleView = useCallback((course) => {
-    navigate('/course-create', {
-      state: { mode: 'view', courseInfo: { courseName: course.title, courseCode: course.code, facultyName: course.facultyName, academicYear: course.academicYear, description: course.description, coordinatorName: course.coordinator, lecturerName: course.lecturer } },
-    })
+    navigate('/course-create', { state: { mode: 'view', courseInfo: courseInfo(course) } })
   }, [navigate])
 
   const handleEdit = useCallback((course) => {
-    navigate('/course-create', {
-      state: { mode: 'edit', courseInfo: { courseName: course.title, courseCode: course.code, facultyName: course.facultyName, academicYear: course.academicYear, description: course.description, coordinatorName: course.coordinator, lecturerName: course.lecturer } },
-    })
+    navigate('/course-create', { state: { mode: 'edit', courseInfo: courseInfo(course) } })
   }, [navigate])
 
-  const handleDelete = useCallback((courseId) => {
-    setCourses((prev) => prev.filter((c) => c.id !== courseId))
-  }, [])
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteCourse(deleteTarget.id)
+      setCourses((prev) => prev.filter((c) => c.id !== deleteTarget.id))
+      toast.success(`"${deleteTarget.title}" deleted successfully.`)
+    } catch {
+      toast.error('Failed to delete course.')
+    } finally {
+      setDeleteTarget(null)
+    }
+  }, [deleteTarget])
 
   const stats = useMemo(() => ({
-    total:    courses.length,
-    faculties: new Set(courses.map((c) => c.facultyName)).size,
-    years:    new Set(courses.map((c) => c.academicYear)).size,
+    total:     courses.length,
+    faculties: new Set(courses.map((c) => c.faculty_name)).size,
+    years:     new Set(courses.map((c) => c.academic_year)).size,
   }), [courses])
 
   const columns = useMemo(() => [
@@ -137,8 +124,8 @@ function CoursesPage() {
         </div>
       ),
     }),
-    columnHelper.accessor('facultyName', { header: 'Faculty' }),
-    columnHelper.accessor('academicYear', {
+    columnHelper.accessor('faculty_name', { header: 'Faculty' }),
+    columnHelper.accessor('academic_year', {
       header: 'Academic Year',
       cell: (info) => (
         <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
@@ -155,15 +142,11 @@ function CoursesPage() {
     }),
     columnHelper.accessor('coordinator', {
       header: 'Coordinator',
-      cell: (info) => (
-        <span className="text-sm text-slate-600">{info.getValue()}</span>
-      ),
+      cell: (info) => <span className="text-sm text-slate-600">{info.getValue()}</span>,
     }),
     columnHelper.accessor('lecturer', {
       header: 'Lecturer',
-      cell: (info) => (
-        <span className="text-sm text-slate-600">{info.getValue()}</span>
-      ),
+      cell: (info) => <span className="text-sm text-slate-600">{info.getValue()}</span>,
     }),
     columnHelper.display({
       id: 'actions',
@@ -175,12 +158,12 @@ function CoursesPage() {
           <RowActions actions={[
             { label: 'View',   icon: FaEye,   onClick: () => handleView(course) },
             { label: 'Edit',   icon: FaPen,   onClick: () => handleEdit(course) },
-            { label: 'Delete', icon: FaTrash, variant: 'danger', onClick: () => handleDelete(course.id) },
+            { label: 'Delete', icon: FaTrash, variant: 'danger', onClick: () => setDeleteTarget({ id: course.id, title: course.title }) },
           ]} />
         )
       },
     }),
-  ], [handleView, handleEdit, handleDelete])
+  ], [handleView, handleEdit])
 
   if (!authState.user) {
     return <div className="flex items-center justify-center min-h-screen text-slate-400 text-sm">Loading...</div>
@@ -205,14 +188,12 @@ function CoursesPage() {
 
         {/* ── Hero banner ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
-          {/* Decorative circles */}
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
 
           <div className="relative mx-auto max-w-7xl">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              {/* Title block */}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/50">
                   Course Management
@@ -221,16 +202,12 @@ function CoursesPage() {
                 <p className="mt-2 max-w-md text-sm text-white/60">
                   Manage and maintain your institution&apos;s full course catalog in one place.
                 </p>
-
-                {/* Stat pills */}
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <StatPill icon={FaBook}        label="Total Courses" value={stats.total} />
-                  <StatPill icon={FaBuilding}    label="Faculties"     value={stats.faculties} />
+                  <StatPill icon={FaBook}        label="Total Courses"  value={stats.total} />
+                  <StatPill icon={FaBuilding}    label="Faculties"      value={stats.faculties} />
                   <StatPill icon={FaCalendarAlt} label="Academic Years" value={stats.years} />
                 </div>
               </div>
-
-              {/* CTA */}
               <button
                 type="button"
                 onClick={() => navigate('/course-create')}
@@ -246,15 +223,30 @@ function CoursesPage() {
         {/* ── Table ── */}
         <div className="px-4 py-6 md:px-6 md:py-8">
           <div className="mx-auto max-w-7xl">
-            <DataTable
-              columns={columns}
-              data={courses}
-              searchPlaceholder="Search by title, code, faculty…"
-              pageSize={8}
-            />
+            {isLoading ? (
+              <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-slate-400">
+                Loading courses…
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={courses}
+                searchPlaceholder="Search by title, code, faculty…"
+                pageSize={8}
+              />
+            )}
           </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Delete Course"
+        description={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   )
 }
