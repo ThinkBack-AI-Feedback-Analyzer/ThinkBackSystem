@@ -8,13 +8,19 @@ from .serializers import FeedbackFormSerializer, FeedbackFormWriteSerializer
 
 
 class FeedbackFormListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsInstitutionAdmin]
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsInstitutionAdmin()]
 
     def get(self, request):
         forms = FeedbackForm.objects.filter(institution=request.user.institution)
         return Response(FeedbackFormSerializer(forms, many=True).data)
 
     def post(self, request):
+        allowed = ['institution_admin', 'coordinator', 'lecturer']
+        if request.user.role not in allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = FeedbackFormWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(institution=request.user.institution)

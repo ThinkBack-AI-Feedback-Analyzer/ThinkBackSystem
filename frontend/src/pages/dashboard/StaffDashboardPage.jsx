@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  FaHome, FaBook, FaChartBar, FaCog,
+  FaHome, FaBook, FaChartBar, FaCog, FaGraduationCap,
   FaClipboardList, FaComments, FaCheckCircle, FaChartLine,
   FaArrowUp, FaArrowDown,
 } from 'react-icons/fa'
@@ -43,10 +43,11 @@ const CARD_STYLES = `
 `
 
 const STAFF_NAV = [
-  { key: 'dashboard', label: 'Dashboard',       icon: FaHome,     group: 'main' },
-  { key: 'courses',   label: 'My Courses',       icon: FaBook,     group: 'main' },
-  { key: 'feedback',  label: 'Feedback Results', icon: FaChartBar, group: 'main' },
-  { key: 'settings',  label: 'Settings',         icon: FaCog,      group: 'settings' },
+  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
+  { key: 'courses',   label: 'My Courses',        icon: FaBook,          group: 'main' },
+  { key: 'students',  label: 'Students',          icon: FaGraduationCap, group: 'main' },
+  { key: 'feedback',  label: 'Feedback Results',  icon: FaChartBar,      group: 'main' },
+  { key: 'settings',  label: 'Settings',          icon: FaCog,           group: 'settings' },
 ]
 
 const ROLE_META = {
@@ -200,6 +201,7 @@ export default function StaffDashboardPage() {
     const map = {
       dashboard: '/staff-dashboard',
       courses:   '/courses',
+      students:  '/students',
       feedback:  '/feedback-forms',
     }
     if (map[key]) navigate(map[key])

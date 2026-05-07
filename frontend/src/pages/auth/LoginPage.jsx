@@ -66,6 +66,8 @@ const LoginPage = () => {
       const userRole = response.user.role;
       if (userRole === 'institution_admin') {
         navigate("/institution-dashboard");
+      } else if (userRole === 'coordinator' || userRole === 'lecturer') {
+        navigate("/staff-dashboard");
       } else {
         navigate("/");
       }

@@ -22,10 +22,27 @@ class InstitutionViewSet(viewsets.ModelViewSet):
 
 
 class CourseListCreateView(APIView):
-    permission_classes = [IsAuthenticated, IsInstitutionAdmin]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsInstitutionAdmin()]
 
     def get(self, request):
-        courses = Course.objects.filter(institution=request.user.institution)
+        role = request.user.role
+        if role == 'institution_admin':
+            courses = Course.objects.filter(institution=request.user.institution)
+        elif role == 'coordinator':
+            courses = Course.objects.filter(
+                institution=request.user.institution,
+                coordinator=request.user.full_name,
+            )
+        elif role == 'lecturer':
+            courses = Course.objects.filter(
+                institution=request.user.institution,
+                lecturer=request.user.full_name,
+            )
+        else:
+            return Response([], status=status.HTTP_200_OK)
         return Response(CourseSerializer(courses, many=True).data)
 
     def post(self, request):

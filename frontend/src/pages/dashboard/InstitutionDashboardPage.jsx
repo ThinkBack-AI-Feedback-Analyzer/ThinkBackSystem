@@ -182,9 +182,10 @@ const InstitutionDashboardPage = () => {
       }
       const routes = {
         dashboard: "/institution-dashboard",
-        courses: "/courses",
-        feedback: "/feedback-forms",
-        users: "/manage-users",
+        courses:   "/courses",
+        students:  "/students",
+        feedback:  "/feedback-forms",
+        users:     "/manage-users",
       };
       if (routes[key]) navigate(routes[key]);
     },

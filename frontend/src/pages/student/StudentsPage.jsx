@@ -1,0 +1,504 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import {
+  FaBook, FaChartBar, FaCog, FaDownload, FaGraduationCap,
+  FaHome, FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
+  FaUsers, FaUserPlus, FaComments, FaFilter,
+} from 'react-icons/fa'
+import DashboardSidebar from '../../components/common/DashboardSidebar'
+import DashboardTopBar from '../../components/common/DashboardTopBar'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import institutionLogo from '../../assets/Logo_4.png'
+import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
+import { getCourses } from '../../services/courses'
+
+/* ── Nav configs ── */
+const ADMIN_NAV = [
+  { key: 'dashboard', label: 'Dashboard',      icon: FaHome,          group: 'main' },
+  { key: 'courses',   label: 'Courses',         icon: FaBook,          group: 'main' },
+  { key: 'students',  label: 'Students',        icon: FaGraduationCap, group: 'main' },
+  { key: 'feedback',  label: 'Feedback Forms',  icon: FaComments,      group: 'main' },
+  { key: 'users',     label: 'Staff',           icon: FaUsers,         group: 'main' },
+  { key: 'invite',    label: 'Add Staff',       icon: FaUserPlus,      group: 'main' },
+  { key: 'settings',  label: 'Settings',        icon: FaCog,           group: 'settings' },
+]
+const STAFF_NAV = [
+  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
+  { key: 'courses',   label: 'My Courses',       icon: FaBook,          group: 'main' },
+  { key: 'students',  label: 'Students',         icon: FaGraduationCap, group: 'main' },
+  { key: 'feedback',  label: 'Feedback Results', icon: FaChartBar,      group: 'main' },
+  { key: 'settings',  label: 'Settings',         icon: FaCog,           group: 'settings' },
+]
+
+/* ── CSV helpers ── */
+const normalize = (str) =>
+  str?.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+
+const detectColumn = (headers, ...candidates) => {
+  const norm = headers.map(normalize)
+  for (const c of candidates) {
+    const idx = norm.findIndex((h) => h.includes(c))
+    if (idx !== -1) return headers[idx]
+  }
+  return null
+}
+
+function StatPill({ icon: Icon, label, value }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+        <Icon className="text-sm text-white/90" />
+      </div>
+      <div>
+        <p className="text-lg font-bold leading-none text-white">{value}</p>
+        <p className="mt-0.5 text-[11px] font-medium text-white/60">{label}</p>
+      </div>
+    </div>
+  )
+}
+
+/* ════════════════════════════════════════════
+   CSV IMPORT PANEL
+   ════════════════════════════════════════════ */
+function ImportPanel({ courses, isAdmin, onImported }) {
+  const fileRef = useRef()
+  const [fileName,   setFileName]   = useState('')
+  const [csvRows,    setCsvRows]    = useState([])
+  const [csvHeaders, setCsvHeaders] = useState([])
+  const [idCol,      setIdCol]      = useState('')
+  const [nameCol,    setNameCol]    = useState('')
+  const [emailCol,   setEmailCol]   = useState('')
+  const [courseId,   setCourseId]   = useState('')
+  const [isSaving,   setIsSaving]   = useState(false)
+
+  const reset = () => {
+    setFileName(''); setCsvRows([]); setCsvHeaders([])
+    setIdCol(''); setNameCol(''); setEmailCol(''); setCourseId('')
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setFileName(file.name)
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const lines = ev.target.result.split('\n').filter(Boolean)
+      if (!lines.length) return
+      const rawHeaders = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''))
+      setCsvHeaders(rawHeaders)
+      setIdCol(detectColumn(rawHeaders,   'student_id', 'id', 'reg', 'number') ?? '')
+      setNameCol(detectColumn(rawHeaders, 'name', 'full_name', 'student_name') ?? '')
+      setEmailCol(detectColumn(rawHeaders,'email') ?? '')
+      const rows = lines.slice(1).map((line) => {
+        const cols = line.split(',')
+        const obj  = {}
+        rawHeaders.forEach((h, i) => { obj[normalize(h)] = cols[i]?.trim().replace(/^"|"$/g, '') ?? '' })
+        return obj
+      })
+      setCsvRows(rows)
+    }
+    reader.readAsText(file)
+  }
+
+  const handleSave = async () => {
+    if (!csvRows.length) { toast.error('No rows to import.'); return }
+    if (!idCol)          { toast.error('Please select the Student ID column.'); return }
+    if (!nameCol)        { toast.error('Please select the Name column.'); return }
+    setIsSaving(true)
+    try {
+      const students = csvRows.map((row) => ({
+        student_id: row[normalize(idCol)]    ?? '',
+        full_name:  row[normalize(nameCol)]  ?? '',
+        email:      row[normalize(emailCol)] ?? '',
+      }))
+      const res = await bulkCreate({ students, course_id: courseId || null })
+      toast.success(`Imported ${res.created} new, updated ${res.updated}.`)
+      if (res.errors?.length) toast.error(`${res.errors.length} rows skipped.`)
+      reset()
+      onImported()
+    } catch {
+      toast.error('Import failed.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+      {/* Step 1 + 2: Course picker & file upload — always visible */}
+      <div className="p-6 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800 mb-0.5">Import from CSV</h3>
+          <p className="text-xs text-slate-400">Select the course, then upload a CSV with student_id, name, and email columns.</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+          {/* Course dropdown — always visible */}
+          <div className="flex-1 min-w-0">
+            <label className="mb-1 block text-xs font-semibold text-slate-500">Assign to Course</label>
+            <select
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            >
+              <option value="">— select a course —</option>
+              {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
+            </select>
+          </div>
+
+          {/* File picker */}
+          <div className="flex items-center gap-3 shrink-0">
+            {fileName && (
+              <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 max-w-[180px] truncate">
+                {fileName}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 rounded-xl border border-[#13462D] bg-white px-4 py-2.5 text-sm font-semibold text-[#13462D] transition hover:bg-emerald-50"
+            >
+              <FaUpload className="text-xs" /> Browse CSV
+            </button>
+            <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
+          </div>
+        </div>
+      </div>
+
+      {/* Step 3: Column mapping + preview — shown after upload */}
+      {csvRows.length > 0 && (
+        <div className="border-t border-slate-100 p-6 space-y-5">
+          {/* Column mapping */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Student ID column *', value: idCol,    setter: setIdCol },
+              { label: 'Name column *',        value: nameCol,  setter: setNameCol },
+              { label: 'Email column',         value: emailCol, setter: setEmailCol },
+            ].map(({ label, value, setter }) => (
+              <div key={label}>
+                <label className="mb-1 block text-xs font-semibold text-slate-500">{label}</label>
+                <select
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                >
+                  <option value="">— not mapped —</option>
+                  {csvHeaders.map((h) => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+
+          {/* Preview table */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 mb-2">Preview — first 5 rows</p>
+            <div className="overflow-x-auto rounded-xl border border-slate-100">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold">Student ID</th>
+                    <th className="px-3 py-2 text-left font-semibold">Full Name</th>
+                    <th className="px-3 py-2 text-left font-semibold">Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvRows.slice(0, 5).map((row, i) => (
+                    <tr key={i} className="border-t border-slate-100">
+                      <td className="px-3 py-2 text-slate-700">{idCol    ? row[normalize(idCol)]    : '—'}</td>
+                      <td className="px-3 py-2 text-slate-700">{nameCol  ? row[normalize(nameCol)]  : '—'}</td>
+                      <td className="px-3 py-2 text-slate-400">{emailCol ? row[normalize(emailCol)] : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {csvRows.length > 5 && (
+              <p className="mt-1.5 text-xs text-slate-400">…and {csvRows.length - 5} more rows</p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={handleSave}
+              className="flex items-center gap-2 rounded-xl bg-[#13462D] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f3a26] disabled:opacity-50"
+            >
+              <FaDownload className="text-xs" /> {isSaving ? 'Importing…' : `Import ${csvRows.length} Students`}
+            </button>
+            <button
+              type="button"
+              onClick={reset}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ════════════════════════════════════════════
+   PAGE
+   ════════════════════════════════════════════ */
+export default function StudentsPage() {
+  const navigate   = useNavigate()
+  const [authState] = useState(() => {
+    const s = localStorage.getItem('user')
+    if (!s) return { user: null }
+    try { return { user: JSON.parse(s) } } catch { return { user: null } }
+  })
+
+  const isAdmin = authState.user?.role === 'institution_admin'
+
+  const [students,      setStudents]      = useState([])
+  const [courses,       setCourses]       = useState([])
+  const [isLoading,     setIsLoading]     = useState(true)
+  const [search,        setSearch]        = useState('')
+  const [filterCourse,  setFilterCourse]  = useState('')
+  const [showImport,    setShowImport]    = useState(false)
+  const [deleteTarget,  setDeleteTarget]  = useState(null)
+
+  useEffect(() => {
+    if (!authState.user) { navigate('/login'); return }
+    const allowed = ['institution_admin', 'coordinator', 'lecturer']
+    if (!allowed.includes(authState.user.role)) navigate('/')
+  }, [authState.user, navigate])
+
+  const loadStudents = useCallback((course) => {
+    setIsLoading(true)
+    getStudents(course ? { course } : {})
+      .then((r) => setStudents(Array.isArray(r) ? r : []))
+      .catch(() => toast.error('Failed to load students.'))
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!authState.user) return
+    getCourses()
+      .then((r) => setCourses(Array.isArray(r) ? r : []))
+      .catch(() => {})
+    loadStudents()
+  }, [authState.user, loadStudents])
+
+  const handleCourseFilter = (courseId) => {
+    setFilterCourse(courseId)
+    loadStudents(courseId)
+  }
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }, [navigate])
+
+  const handleSidebarNav = useCallback((key) => {
+    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
+    const map = {
+      dashboard: isAdmin ? '/institution-dashboard' : '/staff-dashboard',
+      courses:   '/courses',
+      students:  '/students',
+      feedback:  isAdmin ? '/feedback-forms' : '/feedback-forms',
+      users:     '/manage-users',
+    }
+    if (map[key]) navigate(map[key])
+  }, [navigate, isAdmin])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteStudent(deleteTarget.id)
+      setStudents((p) => p.filter((s) => s.id !== deleteTarget.id))
+      toast.success(`"${deleteTarget.full_name}" removed.`)
+    } catch {
+      toast.error('Failed to delete student.')
+    } finally {
+      setDeleteTarget(null)
+    }
+  }, [deleteTarget])
+
+  const filtered = students.filter((s) => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      s.student_id?.toLowerCase().includes(q) ||
+      s.full_name?.toLowerCase().includes(q)  ||
+      s.email?.toLowerCase().includes(q)
+    )
+  })
+
+  const stats = {
+    total:   students.length,
+    courses: new Set(students.map((s) => s.course).filter(Boolean)).size,
+  }
+
+  if (!authState.user) return null
+
+  return (
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      <DashboardSidebar
+        navItems={isAdmin ? ADMIN_NAV : STAFF_NAV}
+        activeNav="students"
+        onNavChange={handleSidebarNav}
+        onLogout={handleLogout}
+        logoSrc={institutionLogo}
+        logoAlt="ThinkBack logo"
+      />
+
+      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
+        <DashboardTopBar
+          userName={authState.user.full_name}
+          userEmail={authState.user.email}
+          searchPlaceholder="Search students"
+        />
+
+        {/* ── Hero ── */}
+        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/50">
+                {isAdmin ? 'Student Management' : 'My Students'}
+              </p>
+              <h1 className="text-3xl font-bold text-white md:text-4xl">Students</h1>
+              <p className="mt-2 max-w-md text-sm text-white/60">
+                {isAdmin
+                  ? 'Manage all students across your institution. Import via CSV or add individually.'
+                  : 'Students enrolled in your assigned courses.'}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <StatPill icon={FaGraduationCap} label="Total Students"   value={stats.total} />
+                <StatPill icon={FaBook}          label="Courses Covered"  value={stats.courses} />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowImport((v) => !v)}
+              className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50 lg:self-auto"
+            >
+              {showImport ? <FaTimes className="text-xs" /> : <FaUpload className="text-xs" />}
+              {showImport ? 'Close Import' : 'Import CSV'}
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4 py-6 md:px-6 md:py-8 space-y-5">
+
+          {/* ── CSV import panel ── */}
+          {showImport && (
+            <ImportPanel
+              courses={courses}
+              isAdmin={isAdmin}
+              onImported={() => { setShowImport(false); loadStudents(filterCourse) }}
+            />
+          )}
+
+          {/* ── Filters ── */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by ID, name or email…"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 shadow-sm"
+              />
+            </div>
+            <div className="relative">
+              <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+              <select
+                value={filterCourse}
+                onChange={(e) => handleCourseFilter(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-white pl-8 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 shadow-sm"
+              >
+                <option value="">All Courses</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* ── Table ── */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+            {isLoading ? (
+              <div className="px-6 py-16 text-center text-sm text-slate-400">Loading students…</div>
+            ) : filtered.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <FaGraduationCap className="mx-auto mb-3 text-3xl text-slate-200" />
+                <p className="text-sm font-medium text-slate-400">
+                  {students.length === 0 ? 'No students yet. Import a CSV to get started.' : 'No students match your search.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Student ID</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Full Name</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Email</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Course</th>
+                      <th className="px-5 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.map((s) => (
+                      <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <span className="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                            {s.student_id}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 font-medium text-slate-800">{s.full_name}</td>
+                        <td className="px-5 py-3.5 text-slate-400 text-xs">{s.email || '—'}</td>
+                        <td className="px-5 py-3.5">
+                          {s.course_title ? (
+                            <span className="text-xs text-slate-600">
+                              {s.course_title}
+                              {s.course_code && <span className="ml-1 text-slate-400">({s.course_code})</span>}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-300 italic">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(s)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                          >
+                            <FaTrash className="text-[10px]" /> Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
+                  Showing {filtered.length} of {students.length} students
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </main>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Remove Student"
+        description={`Are you sure you want to remove "${deleteTarget?.full_name}" (${deleteTarget?.student_id})? This cannot be undone.`}
+        confirmLabel="Remove"
+        onConfirm={handleDeleteConfirm}
+      />
+    </div>
+  )
+}

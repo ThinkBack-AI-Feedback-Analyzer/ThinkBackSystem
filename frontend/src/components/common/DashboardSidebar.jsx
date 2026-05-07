@@ -6,6 +6,7 @@ import {
   FaHome,
   FaBook,
   FaComments,
+  FaGraduationCap,
   FaUsers,
   FaUserPlus,
   FaCog,
@@ -15,13 +16,13 @@ import {
 } from "react-icons/fa";
 
 const DEFAULT_NAV_ITEMS = [
-  { key: "dashboard", label: "Dashboard",    icon: FaHome,      group: "main" },
-  { key: "courses",   label: "Courses",      icon: FaBook,      group: "main" },
-  { key: "feedback",  label: "Feedback Forms", icon: FaComments, group: "main" },
-  { key: "analytics", label: "Analytics",    icon: FaChartBar,  group: "main" },
-  { key: "users",     label: "Staff",        icon: FaUsers,     group: "main" },
-  { key: "invite",    label: "Add Staff",    icon: FaUserPlus,  group: "main" },
-  { key: "settings",  label: "Settings",     icon: FaCog,       group: "settings" },
+  { key: "dashboard", label: "Dashboard",    icon: FaHome,          group: "main" },
+  { key: "courses",   label: "Courses",      icon: FaBook,          group: "main" },
+  { key: "students",  label: "Students",     icon: FaGraduationCap, group: "main" },
+  { key: "feedback",  label: "Feedback Forms", icon: FaComments,    group: "main" },
+  { key: "users",     label: "Staff",        icon: FaUsers,         group: "main" },
+  { key: "invite",    label: "Add Staff",    icon: FaUserPlus,      group: "main" },
+  { key: "settings",  label: "Settings",     icon: FaCog,           group: "settings" },
 ];
 
 const DashboardSidebar = ({
