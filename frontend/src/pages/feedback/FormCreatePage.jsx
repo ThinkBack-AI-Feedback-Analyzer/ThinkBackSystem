@@ -3,12 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FaArrowLeft, FaEye, FaEdit, FaSave, FaGlobe,
-  FaPlus, FaTrash, FaStar, FaRegStar,
+  FaPlus, FaTrash, FaStar, FaRegStar, FaPaperPlane, FaTimes,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
-import { getFeedbackForm, createFeedbackForm, updateFeedbackForm } from '../../services/feedback'
+import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
+import { getCourses } from '../../services/courses'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
 const Q_TYPES      = ['open_ended', 'multiple_choice', 'yes_no', 'rating']
@@ -43,6 +44,14 @@ export default function FormCreatePage() {
   const [answers,     setAnswers]     = useState({})
   const [isSaving,    setIsSaving]    = useState(false)
   const [isLoading,   setIsLoading]   = useState(mode !== 'create')
+
+  // Distribution modal
+  const [distributeModal,   setDistributeModal]   = useState(false)
+  const [publishedFormId,   setPublishedFormId]   = useState(null)
+  const [courses,           setCourses]           = useState([])
+  const [selectedCourses,   setSelectedCourses]   = useState([])
+  const [distributeAll,     setDistributeAll]     = useState(false)
+  const [isDistributing,    setIsDistributing]    = useState(false)
 
   // Editable template questions
   const [editableTemplates, setEditableTemplates] = useState([...TEMPLATES['Exam']])
@@ -167,19 +176,48 @@ export default function FormCreatePage() {
     }
 
     try {
+      let savedForm
       if (formId && mode === 'edit') {
-        await updateFeedbackForm(formId, payload)
+        savedForm = await updateFeedbackForm(formId, payload)
         toast.success('Form updated successfully.')
       } else {
-        await createFeedbackForm(payload)
+        savedForm = await createFeedbackForm(payload)
         toast.success(status === 'published' ? 'Form published!' : 'Draft saved.')
       }
-      navigate('/feedback-forms')
+
+      if (status === 'published') {
+        setPublishedFormId(savedForm.id)
+        getCourses().then((data) => setCourses(Array.isArray(data) ? data : [])).catch(() => setCourses([]))
+        setSelectedCourses([])
+        setDistributeAll(false)
+        setDistributeModal(true)
+      } else {
+        navigate('/feedback-forms')
+      }
     } catch (err) {
       const msg = err?.response?.data ? JSON.stringify(err.response.data) : 'Failed to save form.'
       toast.error(msg)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // ── Distribute ──
+  const handleDistribute = async () => {
+    if (!publishedFormId) return
+    setIsDistributing(true)
+    try {
+      const payload = distributeAll
+        ? { all: true }
+        : { course_ids: selectedCourses }
+      const result = await distributeForm(publishedFormId, payload)
+      toast.success(`Emails queued for ${result.queued} student(s).`)
+    } catch {
+      toast.error('Distribution failed. You can retry from the form list.')
+    } finally {
+      setIsDistributing(false)
+      setDistributeModal(false)
+      navigate('/feedback-forms')
     }
   }
 
@@ -256,6 +294,67 @@ export default function FormCreatePage() {
   // ── Builder ──
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* ── Distribution modal ── */}
+      {distributeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <FaPaperPlane className="text-[#13462D] text-sm" /> Send to Students
+              </h2>
+              <button type="button" onClick={() => { setDistributeModal(false); navigate('/feedback-forms') }} className="text-slate-400 hover:text-slate-600">
+                <FaTimes />
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 mb-5">Choose who should receive this feedback form by email.</p>
+
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 mb-4 cursor-pointer hover:bg-slate-50">
+              <input
+                type="checkbox"
+                checked={distributeAll}
+                onChange={(e) => { setDistributeAll(e.target.checked); setSelectedCourses([]) }}
+                className="accent-emerald-600"
+              />
+              <span className="text-sm font-semibold text-slate-700">All students in institution</span>
+            </label>
+
+            {!distributeAll && courses.length > 0 && (
+              <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Or select specific courses</p>
+                {courses.map((c) => (
+                  <label key={c.id} className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 cursor-pointer transition ${selectedCourses.includes(c.id) ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100 hover:bg-slate-50'}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedCourses.includes(c.id)}
+                      onChange={(e) => setSelectedCourses((prev) => e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id))}
+                      className="accent-emerald-600"
+                    />
+                    <span className="text-sm text-slate-700">{c.code} — {c.title}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => { setDistributeModal(false); navigate('/feedback-forms') }}
+                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Skip for now
+              </button>
+              <button
+                type="button"
+                disabled={isDistributing || (!distributeAll && selectedCourses.length === 0)}
+                onClick={handleDistribute}
+                className="flex-1 rounded-xl bg-[#13462D] py-2.5 text-sm font-semibold text-white hover:bg-[#0f3a26] disabled:opacity-50"
+              >
+                {isDistributing ? 'Sending…' : 'Send Emails'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <DashboardSidebar activeNav="feedback" onNavChange={handleSidebarNavigation} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
 
       <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">

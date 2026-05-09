@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -9,6 +9,7 @@ import {
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { SearchSelect } from '../../components/ui/SearchSelect'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
 import { getCourses } from '../../services/courses'
@@ -138,14 +139,15 @@ function ImportPanel({ courses, isAdmin, onImported }) {
           {/* Course dropdown — always visible */}
           <div className="flex-1 min-w-0">
             <label className="mb-1 block text-xs font-semibold text-slate-500">Assign to Course</label>
-            <select
+            <SearchSelect
+              id="import-course-select"
+              name="courseId"
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="">— select a course —</option>
-              {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
-            </select>
+              options={courses.map((c) => ({ value: c.id, label: `${c.title} (${c.code})` }))}
+              placeholder="— select a course —"
+              searchPlaceholder="Search courses..."
+            />
           </div>
 
           {/* File picker */}
@@ -261,6 +263,8 @@ export default function StudentsPage() {
   const [isLoading,     setIsLoading]     = useState(true)
   const [search,        setSearch]        = useState('')
   const [filterCourse,  setFilterCourse]  = useState('')
+  const [filterYear,    setFilterYear]    = useState('')
+  const [currentPage,   setCurrentPage]   = useState(1)
   const [showImport,    setShowImport]    = useState(false)
   const [deleteTarget,  setDeleteTarget]  = useState(null)
 
@@ -324,18 +328,35 @@ export default function StudentsPage() {
   }, [deleteTarget])
 
   const filtered = students.filter((s) => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (
-      s.student_id?.toLowerCase().includes(q) ||
-      s.full_name?.toLowerCase().includes(q)  ||
-      s.email?.toLowerCase().includes(q)
-    )
+    if (search) {
+      const q = search.toLowerCase()
+      if (!s.student_id?.toLowerCase().includes(q) &&
+          !s.full_name?.toLowerCase().includes(q)  &&
+          !s.email?.toLowerCase().includes(q)) return false
+    }
+    if (filterYear) {
+      const hasYear = s.courses?.some(c => c.academic_year === filterYear)
+      if (!hasYear) return false
+    }
+    return true
   })
+
+  const uniqueYears = useMemo(() => {
+    const years = new Set(courses.map(c => c.academic_year).filter(Boolean))
+    return Array.from(years).sort().reverse()
+  }, [courses])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, filterYear, filterCourse])
+
+  const ITEMS_PER_PAGE = 10
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedStudents = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   const stats = {
     total:   students.length,
-    courses: new Set(students.map((s) => s.course).filter(Boolean)).size,
+    courses: new Set(students.flatMap((s) => s.courses?.map(c => c.id) || [])).size,
   }
 
   if (!authState.user) return null
@@ -412,16 +433,27 @@ export default function StudentsPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 shadow-sm"
               />
             </div>
-            <div className="relative">
-              <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
-              <select
+            <div className="relative w-full sm:w-48 shrink-0">
+              <SearchSelect
+                id="filter-year-select"
+                name="filterYear"
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                options={uniqueYears.map((y) => ({ value: y, label: y }))}
+                placeholder="All Years"
+                searchPlaceholder="Search year..."
+              />
+            </div>
+            <div className="relative w-full sm:w-64 shrink-0">
+              <SearchSelect
+                id="filter-course-select"
+                name="filterCourse"
                 value={filterCourse}
                 onChange={(e) => handleCourseFilter(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-white pl-8 pr-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 shadow-sm"
-              >
-                <option value="">All Courses</option>
-                {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
-              </select>
+                options={courses.map((c) => ({ value: c.id, label: `${c.title} (${c.code})` }))}
+                placeholder="All Courses"
+                searchPlaceholder="Search course..."
+              />
             </div>
           </div>
 
@@ -449,7 +481,7 @@ export default function StudentsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filtered.map((s) => (
+                    {paginatedStudents.map((s) => (
                       <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="px-5 py-3.5">
                           <span className="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
@@ -459,13 +491,16 @@ export default function StudentsPage() {
                         <td className="px-5 py-3.5 font-medium text-slate-800">{s.full_name}</td>
                         <td className="px-5 py-3.5 text-slate-400 text-xs">{s.email || '—'}</td>
                         <td className="px-5 py-3.5">
-                          {s.course_title ? (
-                            <span className="text-xs text-slate-600">
-                              {s.course_title}
-                              {s.course_code && <span className="ml-1 text-slate-400">({s.course_code})</span>}
-                            </span>
+                          {s.courses && s.courses.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {s.courses.map((c) => (
+                                <span key={c.id} className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                  {c.title} <span className="ml-1 text-slate-400">({c.code})</span>
+                                </span>
+                              ))}
+                            </div>
                           ) : (
-                            <span className="text-xs text-slate-300 italic">Unassigned</span>
+                            <span className="text-[11px] text-slate-400 italic">Unassigned</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-right">
@@ -481,8 +516,29 @@ export default function StudentsPage() {
                     ))}
                   </tbody>
                 </table>
-                <div className="px-5 py-3 border-t border-slate-100 text-xs text-slate-400">
-                  Showing {filtered.length} of {students.length} students
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-slate-100 bg-slate-50/50">
+                  <div className="text-xs text-slate-500">
+                    Showing {filtered.length === 0 ? 0 : ((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} students
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-emerald-600 transition"
+                    >
+                      Previous
+                    </button>
+                    <div className="text-xs font-medium text-slate-600 px-2 min-w-[5rem] text-center">
+                      Page {currentPage} of {totalPages || 1}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-emerald-600 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

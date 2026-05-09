@@ -48,7 +48,8 @@ function FeedbackFormsPage() {
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
-    if (authState.user.role !== 'institution_admin') navigate('/')
+    const allowed = ['institution_admin', 'coordinator', 'lecturer']
+    if (!allowed.includes(authState.user.role)) navigate('/')
   }, [authState.user, navigate])
 
   useEffect(() => {

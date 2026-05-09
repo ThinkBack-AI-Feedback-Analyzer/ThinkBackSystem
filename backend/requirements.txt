@@ -7,3 +7,5 @@ django-cors-headers
 Pillow
 transformers
 numpy
+celery[redis]
+redis

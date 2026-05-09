@@ -232,3 +232,6 @@ python manage.py migrate
 This project is part of ThinkBack educational feedback system.
 
 docker-compose down -v 
+
+// redis worker
+celery -A core worker --loglevel=info --pool=solo

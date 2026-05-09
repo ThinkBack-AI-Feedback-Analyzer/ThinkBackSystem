@@ -20,6 +20,7 @@ import ManageUsersPage          from './pages/staff/ManageUsersPage'
 import FeedbackFormsPage        from './pages/feedback/FeedbackFormsPage'
 import FormCreatePage           from './pages/feedback/FormCreatePage'
 import StaffFormCreatePage      from './pages/feedback/StaffFormCreatePage'
+import FeedbackRespondPage      from './pages/feedback/FeedbackRespondPage'
 
 import StudentPortal            from './pages/student/StudentPortal'
 import StudentManagement        from './pages/student/StudentManagementPage'
@@ -50,6 +51,8 @@ function App() {
         <Route path="/feedback-forms"        element={<FeedbackFormsPage />} />
         <Route path="/feedbackForm"          element={<FormCreatePage />} />
         <Route path="/staff-form-create"     element={<StaffFormCreatePage />} />
+
+        <Route path="/feedback/respond"      element={<FeedbackRespondPage />} />
 
         <Route path="/portal"                element={<StudentPortal />} />
         <Route path="/student-management"    element={<StudentManagement />} />

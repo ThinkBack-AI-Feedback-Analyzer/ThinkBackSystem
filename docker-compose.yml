@@ -12,6 +12,13 @@ services:
     ports:
       - "${DB_HOST_PORT}:5432"
 
+  redis:
+    image: redis:7-alpine
+    container_name: thinkback_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
   backend:
     build: ./backend
     container_name: thinkback_backend
@@ -23,10 +30,33 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     ports:
       - "${BACKEND_PORT}:8000"
     depends_on:
       - db
+      - redis
+    volumes:
+      - ./backend:/app
+
+  celery:
+    build: ./backend
+    container_name: thinkback_celery
+    restart: always
+    command: celery -A core worker --loglevel=info
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
     volumes:
       - ./backend:/app
 

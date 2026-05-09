@@ -14,7 +14,8 @@ const isPublicUrl = (url = '') =>
   url.startsWith('/auth/register/') ||
   url.startsWith('/auth/login/') ||
   url.startsWith('/auth/token/refresh/') ||
-  url.startsWith('/auth/accept-invitation/');
+  url.startsWith('/auth/accept-invitation/') ||
+  url.startsWith('/feedback/respond');
 
 // Attach access token to every non-public request
 api.interceptors.request.use((config) => {

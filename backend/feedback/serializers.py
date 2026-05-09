@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import FeedbackForm, FeedbackQuestion
+from .models import FeedbackForm, FeedbackQuestion, FormAnswer, FormResponse
 
 
 class FeedbackQuestionSerializer(serializers.ModelSerializer):
@@ -49,3 +49,12 @@ class FeedbackFormWriteSerializer(serializers.ModelSerializer):
                 FeedbackQuestion.objects.create(form=instance, **q)
 
         return instance
+
+
+class FormAnswerWriteSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+    answer      = serializers.CharField(allow_blank=True)
+
+
+class FormResponseWriteSerializer(serializers.Serializer):
+    answers = FormAnswerWriteSerializer(many=True)

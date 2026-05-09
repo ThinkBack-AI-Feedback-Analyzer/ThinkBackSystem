@@ -4,7 +4,7 @@ from institutions.models import Institution, Course
 
 class Student(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='students')
-    course      = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
+    courses     = models.ManyToManyField(Course, related_name='students', blank=True)
     student_id  = models.CharField(max_length=100)
     full_name   = models.CharField(max_length=255)
     email       = models.EmailField(blank=True, default='')

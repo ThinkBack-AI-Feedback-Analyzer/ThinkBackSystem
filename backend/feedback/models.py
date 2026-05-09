@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from institutions.models import Institution
 
@@ -38,3 +39,38 @@ class FeedbackQuestion(models.Model):
     class Meta:
         db_table = 'feedback_questions'
         ordering = ['order']
+
+
+class FormToken(models.Model):
+    form       = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='tokens')
+    student    = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='form_tokens')
+    token      = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    is_used    = models.BooleanField(default=False)
+    sent_at    = models.DateTimeField(null=True, blank=True)
+    used_at    = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table        = 'form_tokens'
+        unique_together = [('form', 'student')]
+
+    def __str__(self):
+        return f"{self.student} → {self.form}"
+
+
+class FormResponse(models.Model):
+    form         = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='responses')
+    token        = models.OneToOneField(FormToken, on_delete=models.CASCADE, related_name='response')
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'form_responses'
+
+
+class FormAnswer(models.Model):
+    response = models.ForeignKey(FormResponse, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(FeedbackQuestion, on_delete=models.CASCADE)
+    answer   = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'form_answers'

@@ -12,26 +12,26 @@ class StudentListView(APIView):
 
     def get(self, request):
         role = request.user.role
-        qs   = Student.objects.filter(institution=request.user.institution).select_related('course')
+        qs   = Student.objects.filter(institution=request.user.institution).prefetch_related('courses')
 
         if role == 'coordinator':
             courses = Course.objects.filter(
                 institution=request.user.institution,
                 coordinator=request.user.full_name,
             )
-            qs = qs.filter(course__in=courses)
+            qs = qs.filter(courses__in=courses)
         elif role == 'lecturer':
             courses = Course.objects.filter(
                 institution=request.user.institution,
                 lecturer=request.user.full_name,
             )
-            qs = qs.filter(course__in=courses)
+            qs = qs.filter(courses__in=courses)
         elif role != 'institution_admin':
             return Response([], status=status.HTTP_200_OK)
 
         course_id = request.query_params.get('course')
         if course_id:
-            qs = qs.filter(course_id=course_id)
+            qs = qs.filter(courses__id=course_id).distinct()
 
         return Response(StudentSerializer(qs, many=True).data)
 
@@ -53,15 +53,16 @@ class StudentBulkCreateView(APIView):
                 errors.append(f"Skipped row — missing student_id or full_name: {item}")
                 continue
             try:
-                _, was_created = Student.objects.update_or_create(
+                student, was_created = Student.objects.update_or_create(
                     institution=request.user.institution,
                     student_id=sid,
                     defaults={
                         'full_name': name,
                         'email':     str(item.get('email', '')).strip(),
-                        'course_id': course_id,
                     },
                 )
+                if course_id:
+                    student.courses.add(course_id)
                 if was_created:
                     created += 1
                 else:

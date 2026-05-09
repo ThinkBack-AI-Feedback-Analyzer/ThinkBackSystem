@@ -3,12 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FaArrowLeft, FaBook, FaChartBar, FaCog, FaEye,
-  FaGlobe, FaGraduationCap, FaHome, FaPlus, FaRegStar, FaSave, FaStar, FaTrash,
+  FaGlobe, FaGraduationCap, FaHome, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
-import { createFeedbackForm } from '../../services/feedback'
+import { createFeedbackForm, distributeForm } from '../../services/feedback'
 
 const STAFF_NAV = [
   { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
@@ -49,6 +49,10 @@ export default function StaffFormCreatePage() {
   const [isSaving,        setIsSaving]        = useState(false)
   const [previewMode,     setPreviewMode]     = useState(false)
   const [answers,         setAnswers]         = useState({})
+
+  const [distributeModal, setDistributeModal] = useState(false)
+  const [publishedFormId, setPublishedFormId] = useState(null)
+  const [isDistributing,  setIsDistributing]  = useState(false)
 
   const [editableTemplates, setEditableTemplates] = useState([...TEMPLATES['Course']])
   const [newTemplateQ,      setNewTemplateQ]      = useState('')
@@ -139,18 +143,40 @@ export default function StaffFormCreatePage() {
     if (!questions.length) { toast.error('Please add at least one question.'); return }
     setIsSaving(true)
     try {
-      await createFeedbackForm({
+      const savedForm = await createFeedbackForm({
         title:     title.trim(),
         form_type: formType,
         status,
         questions: questions.map((q, i) => ({ ...q, order: i })),
       })
       toast.success(status === 'published' ? 'Form published!' : 'Draft saved.')
-      navigate('/courses')
+      if (status === 'published') {
+        setPublishedFormId(savedForm.id)
+        setDistributeModal(true)
+      } else {
+        navigate('/courses')
+      }
     } catch {
       toast.error('Failed to save form.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  /* ── distribute ── */
+  const handleDistribute = async () => {
+    if (!publishedFormId) return
+    setIsDistributing(true)
+    try {
+      const payload = course ? { course_ids: [course.id] } : { all: true }
+      const result  = await distributeForm(publishedFormId, payload)
+      toast.success(`Emails queued for ${result.queued} student(s).`)
+    } catch {
+      toast.error('Distribution failed. You can retry later.')
+    } finally {
+      setIsDistributing(false)
+      setDistributeModal(false)
+      navigate('/courses')
     }
   }
 
@@ -228,6 +254,47 @@ export default function StaffFormCreatePage() {
   /* ── Builder ── */
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Distribution modal */}
+      {distributeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <FaPaperPlane className="text-[#13462D] text-sm" /> Send to Students
+              </h2>
+              <button type="button" onClick={() => { setDistributeModal(false); navigate('/courses') }} className="text-slate-400 hover:text-slate-600">
+                <FaTimes />
+              </button>
+            </div>
+
+            {course ? (
+              <p className="text-sm text-slate-600 mb-6">
+                Send this form to all students enrolled in <span className="font-semibold text-slate-800">{course.code} — {course.title}</span>.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-600 mb-6">Send this form to all students in your institution.</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setDistributeModal(false); navigate('/courses') }}
+                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Skip for now
+              </button>
+              <button
+                type="button"
+                disabled={isDistributing}
+                onClick={handleDistribute}
+                className="flex-1 rounded-xl bg-[#13462D] py-2.5 text-sm font-semibold text-white hover:bg-[#0f3a26] disabled:opacity-50"
+              >
+                {isDistributing ? 'Sending…' : 'Send Emails'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <DashboardSidebar
         navItems={STAFF_NAV}
         activeNav="courses"

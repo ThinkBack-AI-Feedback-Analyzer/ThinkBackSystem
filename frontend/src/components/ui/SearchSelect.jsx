@@ -35,11 +35,26 @@ export function SearchSelect({
 
   const openMenu = () => {
     if (disabled) return
-    const rect = btnRef.current.getBoundingClientRect()
-    setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width })
     setOpen(true)
     setQuery('')
   }
+
+  useEffect(() => {
+    if (!open) return
+    const updateCoords = () => {
+      if (btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect()
+        setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+      }
+    }
+    updateCoords()
+    window.addEventListener('resize', updateCoords)
+    window.addEventListener('scroll', updateCoords, true)
+    return () => {
+      window.removeEventListener('resize', updateCoords)
+      window.removeEventListener('scroll', updateCoords, true)
+    }
+  }, [open])
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
@@ -83,7 +98,7 @@ export function SearchSelect({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchPlaceholder}
-          className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+          className="flex-1 min-w-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
         />
         {query && (
           <button type="button" onClick={() => setQuery('')} className="text-slate-300 hover:text-slate-500 transition">
