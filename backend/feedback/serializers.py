@@ -9,16 +9,24 @@ class FeedbackQuestionSerializer(serializers.ModelSerializer):
 
 
 class FeedbackFormSerializer(serializers.ModelSerializer):
-    questions      = FeedbackQuestionSerializer(many=True, read_only=True)
-    question_count = serializers.SerializerMethodField()
+    questions          = FeedbackQuestionSerializer(many=True, read_only=True)
+    question_count     = serializers.SerializerMethodField()
+    distributed_count  = serializers.SerializerMethodField()
+    response_count     = serializers.SerializerMethodField()
 
     class Meta:
         model  = FeedbackForm
-        fields = ('id', 'title', 'form_type', 'status', 'question_count', 'questions', 'created_at', 'updated_at')
+        fields = ('id', 'title', 'form_type', 'status', 'question_count', 'distributed_count', 'response_count', 'questions', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def get_question_count(self, obj):
         return obj.questions.count()
+
+    def get_distributed_count(self, obj):
+        return obj.tokens.count()
+
+    def get_response_count(self, obj):
+        return obj.responses.count()
 
 
 class FeedbackFormWriteSerializer(serializers.ModelSerializer):

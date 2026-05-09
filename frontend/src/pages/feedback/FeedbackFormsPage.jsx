@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash } from 'react-icons/fa'
+import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash, FaUsers } from 'react-icons/fa'
 import { createColumnHelper } from '@tanstack/react-table'
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -137,6 +137,20 @@ function FeedbackFormsPage() {
       cell: (info) => (
         <span className="text-sm font-semibold text-slate-700">{info.getValue()}</span>
       ),
+    }),
+    columnHelper.display({
+      id: 'responses',
+      header: 'Responses',
+      cell: ({ row }) => {
+        const { response_count, distributed_count } = row.original
+        return (
+          <div className="flex items-center gap-1.5">
+            <FaUsers className="text-xs text-slate-400" />
+            <span className="text-sm font-semibold text-[#13462D]">{response_count}</span>
+            <span className="text-xs text-slate-400">/ {distributed_count}</span>
+          </div>
+        )
+      },
     }),
     columnHelper.accessor('created_at', {
       header: 'Created',

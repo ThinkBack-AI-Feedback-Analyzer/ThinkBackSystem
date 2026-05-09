@@ -1,3 +1,6 @@
+import requests
+from collections import defaultdict
+
 from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
@@ -29,3 +32,57 @@ def send_feedback_email(token_id):
     )
     ft.sent_at = timezone.now()
     ft.save(update_fields=['sent_at'])
+
+
+@shared_task
+def run_ai_analysis(form_id):
+    from .models import FeedbackForm, FormAnswer, AnalysisResult
+
+    try:
+        form = FeedbackForm.objects.get(id=form_id)
+    except FeedbackForm.DoesNotExist:
+        return
+
+    answers = (
+        FormAnswer.objects
+        .filter(response__form=form, question__question_type='open_ended')
+        .exclude(answer='')
+        .select_related('response__token__student')
+        .prefetch_related('response__token__student__courses')
+    )
+
+    course_texts = defaultdict(list)
+    for ans in answers:
+        student = ans.response.token.student
+        courses = list(student.courses.all())
+        if courses:
+            for course in courses:
+                course_texts[f"{course.code} — {course.title}"].append(ans.answer)
+        else:
+            course_texts['All Responses'].append(ans.answer)
+
+    if not course_texts:
+        AnalysisResult.objects.update_or_create(
+            form=form,
+            course_name='All Responses',
+            defaults={'results': []},
+        )
+        return
+
+    ai_url = getattr(settings, 'AI_SERVICE_URL', 'http://127.0.0.1:8001')
+
+    for course_name, texts in course_texts.items():
+        try:
+            resp = requests.post(
+                f'{ai_url}/analyze',
+                json={'course_name': course_name, 'texts': texts},
+                timeout=120,
+            )
+            if resp.status_code == 200:
+                AnalysisResult.objects.update_or_create(
+                    form=form,
+                    course_name=course_name,
+                    defaults={'results': resp.json().get('results', [])},
+                )
+        except Exception:
+            pass

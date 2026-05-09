@@ -1,0 +1,22 @@
+cd ai_service
+uvicorn app:app --reload --port 8001
+
+--------
+python test_api.py
+
+
+Test:
+
+open:
+http://127.0.0.1:8001/docs
+
+{
+  "course_name": "Software Engineering",
+  "texts": [
+    "Lectures are boring",
+    "LMS materials are unclear",
+    "Labs are useful",
+    "Too many assignments",
+    "Assignments stressful"
+  ]
+}

@@ -74,3 +74,14 @@ class FormAnswer(models.Model):
 
     class Meta:
         db_table = 'form_answers'
+
+
+class AnalysisResult(models.Model):
+    form        = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='analysis_results')
+    course_name = models.CharField(max_length=255, default='All Responses')
+    results     = models.JSONField()
+    analyzed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table        = 'analysis_results'
+        constraints     = [models.UniqueConstraint(fields=['form', 'course_name'], name='unique_form_course_analysis')]

@@ -6,7 +6,7 @@ from rest_framework import status
 
 from users.permissions import IsInstitutionAdmin
 from students.models import Student
-from .models import FeedbackForm, FeedbackQuestion, FormToken, FormResponse, FormAnswer
+from .models import FeedbackForm, FeedbackQuestion, FormToken, FormResponse, FormAnswer, AnalysisResult
 from .serializers import (
     FeedbackFormSerializer, FeedbackFormWriteSerializer,
     FormResponseWriteSerializer,
@@ -152,3 +152,39 @@ class FeedbackRespondView(APIView):
         ft.save(update_fields=['is_used', 'used_at'])
 
         return Response({'detail': 'Thank you for your feedback!'}, status=status.HTTP_201_CREATED)
+
+
+class FormAnalyzeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    _allowed = ['institution_admin', 'coordinator', 'lecturer']
+
+    def _get_form(self, form_id, institution):
+        try:
+            return FeedbackForm.objects.get(id=form_id, institution=institution)
+        except FeedbackForm.DoesNotExist:
+            return None
+
+    def post(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        if not self._get_form(form_id, request.user.institution):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        from .tasks import run_ai_analysis
+        run_ai_analysis.delay(form_id)
+        return Response({'detail': 'Analysis queued.'}, status=status.HTTP_202_ACCEPTED)
+
+    def get(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        if not self._get_form(form_id, request.user.institution):
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        results = AnalysisResult.objects.filter(form_id=form_id).order_by('course_name')
+        return Response([
+            {
+                'course_name': r.course_name,
+                'results':     r.results,
+                'analyzed_at': r.analyzed_at,
+            }
+            for r in results
+        ])
