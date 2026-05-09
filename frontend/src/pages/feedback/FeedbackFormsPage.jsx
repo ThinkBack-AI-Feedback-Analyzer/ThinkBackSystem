@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash, FaUsers } from 'react-icons/fa'
+import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash, FaUsers, FaChartBar } from 'react-icons/fa'
 import { createColumnHelper } from '@tanstack/react-table'
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -168,9 +168,10 @@ function FeedbackFormsPage() {
         const form = row.original
         return (
           <RowActions actions={[
-            { label: 'View',   icon: FaEye,   onClick: () => navigate('/feedbackForm', { state: { mode: 'view', formId: form.id } }) },
-            { label: 'Edit',   icon: FaPen,   onClick: () => navigate('/feedbackForm', { state: { mode: 'edit', formId: form.id } }) },
-            { label: 'Delete', icon: FaTrash, variant: 'danger', onClick: () => setDeleteTarget({ id: form.id, title: form.title }) },
+            { label: 'View',     icon: FaEye,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'view', formId: form.id } }) },
+            { label: 'Analysis', icon: FaChartBar, onClick: () => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } }) },
+            { label: 'Edit',     icon: FaPen,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'edit', formId: form.id } }) },
+            { label: 'Delete',   icon: FaTrash,    variant: 'danger', onClick: () => setDeleteTarget({ id: form.id, title: form.title }) },
           ]} />
         )
       },

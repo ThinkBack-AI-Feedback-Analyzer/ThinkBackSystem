@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FaArrowLeft, FaEye, FaEdit, FaSave, FaGlobe,
   FaPlus, FaTrash, FaStar, FaRegStar, FaPaperPlane, FaTimes,
-  FaChartBar, FaSync, FaUsers, FaCheckCircle, FaClock,
+  FaChartBar, FaUsers, FaCheckCircle, FaClock,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
-import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm, analyzeForm, getAnalysis } from '../../services/feedback'
+import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
 import { getCourses } from '../../services/courses'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
@@ -66,53 +66,6 @@ export default function FormCreatePage() {
   const [starCount,     setStarCount]     = useState(5)
 
   const isReadOnly = mode === 'view'
-
-  // ── Analysis ──
-  const [analysis,       setAnalysis]       = useState([])
-  const [analysisStatus, setAnalysisStatus] = useState('idle') // idle | running | done | timeout | error
-  const pollRef = useRef(null)
-
-  useEffect(() => {
-    if (mode !== 'view' || !formId) return
-    getAnalysis(formId)
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAnalysis(data)
-          setAnalysisStatus('done')
-        }
-      })
-      .catch(() => {})
-  }, [mode, formId])
-
-  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
-
-  const handleAnalyse = async () => {
-    setAnalysisStatus('running')
-    try {
-      await analyzeForm(formId)
-      const triggeredAt = new Date()
-      let attempts = 0
-      pollRef.current = setInterval(async () => {
-        attempts++
-        try {
-          const data = await getAnalysis(formId)
-          const hasNew = Array.isArray(data) && data.some((r) => new Date(r.analyzed_at) > triggeredAt)
-          if (hasNew) {
-            setAnalysis(data)
-            setAnalysisStatus('done')
-            clearInterval(pollRef.current)
-          } else if (attempts >= 24) {
-            setAnalysisStatus('timeout')
-            clearInterval(pollRef.current)
-          }
-        } catch {
-          if (attempts >= 24) { setAnalysisStatus('error'); clearInterval(pollRef.current) }
-        }
-      }, 5000)
-    } catch {
-      setAnalysisStatus('error')
-    }
-  }
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
@@ -443,14 +396,10 @@ export default function FormCreatePage() {
             {isReadOnly && (
               <button
                 type="button"
-                disabled={analysisStatus === 'running'}
-                onClick={handleAnalyse}
-                className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#13462D] shadow transition hover:bg-emerald-50 disabled:opacity-60"
+                onClick={() => navigate('/feedback-analysis', { state: { formId, formTitle: title } })}
+                className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#13462D] shadow transition hover:bg-emerald-50"
               >
-                {analysisStatus === 'running'
-                  ? <><FaSync className="text-xs animate-spin" /> Analysing…</>
-                  : <><FaChartBar className="text-xs" /> {analysis.length > 0 ? 'Re-run Analysis' : 'Analyse Responses'}</>
-                }
+                <FaChartBar className="text-xs" /> View Analysis
               </button>
             )}
           </div>
@@ -775,99 +724,24 @@ export default function FormCreatePage() {
                 )}
               </div>
 
-              {/* ── Analysis Results ── */}
+              {/* ── Analysis shortcut (view mode only) ── */}
               {isReadOnly && (
-                <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#13462D]/10 text-[#13462D]">
-                        <FaChartBar className="text-xs" />
-                      </div>
-                      <h2 className="font-semibold text-slate-800">AI Analysis</h2>
+                <button
+                  type="button"
+                  onClick={() => navigate('/feedback-analysis', { state: { formId, formTitle: title } })}
+                  className="w-full flex items-center justify-between rounded-2xl border border-[#13462D]/20 bg-[#13462D]/5 px-6 py-4 text-left transition hover:bg-[#13462D]/10"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#13462D]/10 text-[#13462D]">
+                      <FaChartBar className="text-sm" />
                     </div>
-                    {analysis.length > 0 && (
-                      <span className="text-[11px] text-slate-400">
-                        Last run: {new Date(analysis[0].analyzed_at).toLocaleString()}
-                      </span>
-                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-[#13462D]">View AI Analysis</p>
+                      <p className="text-xs text-slate-500">Sentiment, topics, and improvement suggestions</p>
+                    </div>
                   </div>
-
-                  {analysisStatus === 'idle' && (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">
-                      No analysis yet. Click <span className="font-semibold text-[#13462D]">Analyse Responses</span> to start.
-                    </div>
-                  )}
-
-                  {analysisStatus === 'running' && (
-                    <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 py-10 text-center text-sm text-emerald-600">
-                      <FaSync className="inline mr-2 animate-spin" />
-                      Analysis in progress — this may take up to a minute…
-                    </div>
-                  )}
-
-                  {analysisStatus === 'timeout' && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 py-6 text-center text-sm text-amber-600">
-                      Analysis is taking longer than expected. Refresh the page in a moment.
-                    </div>
-                  )}
-
-                  {analysisStatus === 'error' && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 py-6 text-center text-sm text-red-600">
-                      Analysis failed. Make sure the AI service is running and try again.
-                    </div>
-                  )}
-
-                  {analysisStatus === 'done' && analysis.map((group) => (
-                    <div key={group.course_name} className="mb-6 last:mb-0">
-                      <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">{group.course_name}</p>
-
-                      {group.results.length === 0 && (
-                        <p className="text-sm text-slate-400 italic">No open-ended responses found for this course.</p>
-                      )}
-
-                      <div className="space-y-3">
-                        {group.results.map((item) => (
-                          <div key={item.topic} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="rounded-full bg-[#13462D]/10 px-3 py-0.5 text-xs font-bold text-[#13462D]">
-                                {item.topic}
-                              </span>
-                              <span className="text-xs text-slate-400">{item.feedback_count} response{item.feedback_count !== 1 ? 's' : ''}</span>
-                            </div>
-
-                            <div className="flex gap-2 mb-3">
-                              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                                +{item.sentiment_summary.positive} positive
-                              </span>
-                              <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-                                {item.sentiment_summary.neutral} neutral
-                              </span>
-                              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">
-                                -{item.sentiment_summary.negative} negative
-                              </span>
-                            </div>
-
-                            {item.common_feedback.length > 0 && (
-                              <div className="mb-3 space-y-1">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Common feedback</p>
-                                {item.common_feedback.map((fb, i) => (
-                                  <p key={i} className="text-xs text-slate-600 before:content-['•_']">{fb}</p>
-                                ))}
-                              </div>
-                            )}
-
-                            {item.suggestion && (
-                              <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 mb-0.5">Suggestion</p>
-                                <p className="text-xs text-amber-800">{item.suggestion}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                  <span className="text-xs font-semibold text-[#13462D]">Open →</span>
+                </button>
               )}
 
               {/* Bottom action bar */}
