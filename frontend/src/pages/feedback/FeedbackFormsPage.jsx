@@ -10,6 +10,7 @@ import DashboardTopBar from '../../components/common/DashboardTopBar'
 import { DataTable } from '../../components/ui/DataTable'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getFeedbackForms, deleteFeedbackForm } from '../../services/feedback'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 const columnHelper = createColumnHelper()
 
@@ -36,12 +37,8 @@ const TYPE_COLORS = {
 
 function FeedbackFormsPage() {
   const navigate = useNavigate()
-  const [authState] = useState(() => {
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) return { user: null }
-    try { return { user: JSON.parse(storedUser) } }
-    catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
   const [forms, setForms]               = useState([])
   const [isLoading, setIsLoading]       = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -61,25 +58,6 @@ function FeedbackFormsPage() {
       .finally(() => setIsLoading(false))
   }, [authState.user])
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNavigation = useCallback((key) => {
-    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const routeMap = {
-      dashboard: '/institution-dashboard',
-      courses:   '/courses',
-      feedback:  '/feedback-forms',
-      users:     '/manage-users',
-    }
-    const route = routeMap[key]
-    if (route) navigate(route)
-  }, [navigate])
-
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return
     try {
@@ -92,6 +70,12 @@ function FeedbackFormsPage() {
       setDeleteTarget(null)
     }
   }, [deleteTarget])
+
+  const handleBulkDelete = useCallback(async (rows) => {
+    await Promise.all(rows.map((r) => deleteFeedbackForm(r.id)))
+    setForms((prev) => prev.filter((f) => !rows.some((r) => r.id === f.id)))
+    toast.success(`${rows.length} form${rows.length > 1 ? 's' : ''} deleted.`)
+  }, [])
 
   const stats = useMemo(() => ({
     total:     forms.length,
@@ -185,8 +169,9 @@ function FeedbackFormsPage() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <DashboardSidebar
+        navItems={navItems}
         activeNav="feedback"
-        onNavChange={handleSidebarNavigation}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
@@ -200,7 +185,7 @@ function FeedbackFormsPage() {
         />
 
         {/* ── Hero banner ── */}
-        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
+        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
@@ -246,6 +231,8 @@ function FeedbackFormsPage() {
                 data={forms}
                 searchPlaceholder="Search by title, type…"
                 pageSize={8}
+                onDeleteSelected={handleBulkDelete}
+                onRowClick={(form) => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } })}
               />
             )}
           </div>

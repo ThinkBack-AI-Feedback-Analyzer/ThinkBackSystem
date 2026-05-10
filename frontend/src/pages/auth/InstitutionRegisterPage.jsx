@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import * as Select from '@radix-ui/react-select'
 import { toast } from 'sonner'
+import { FaChevronDown, FaCheck } from 'react-icons/fa'
 import brandLogo from '../../assets/Thinkback logo2-cropped.png'
 import { countries } from '../../data/countries'
 import { createInstitution } from '../../services/institutions'
@@ -21,173 +22,115 @@ const onboardingTips = [
   'Keep your institution address, logo, and authorization confirmation ready before submitting.',
 ]
 
-const sectionCardClassName =
-  'rounded-[30px] border border-[#dde4db] bg-[linear-gradient(180deg,#ffffff_0%,#f6f5ef_100%)] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)] sm:p-7'
+const INPUT = 'w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400'
+const INPUT_ERROR = 'w-full rounded-xl border border-red-300 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-400/20 placeholder:text-slate-400'
 
-const inputClassName =
-  'w-full rounded-[24px] border border-[#d1d9cf] bg-[linear-gradient(180deg,#ffffff_0%,#f4f7f2_100%)] px-5 py-3 text-base text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-[#b9c8bc] hover:bg-white hover:shadow-md focus:border-[#185237] focus:bg-white focus:shadow-[0_0_0_4px_rgba(24,77,53,0.12),0_18px_36px_rgba(24,77,53,0.14)]'
-
-const selectClassName = `${inputClassName} appearance-none pr-16`
-
-function ChevronDownIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
-function FieldShell({
-  label,
-  htmlFor,
-  className = '',
-  hint = '',
-  required = false,
-  children,
-}) {
-  return (
-    <div className={`group relative block ${className}`}>
-      <span className="pointer-events-none absolute inset-x-3 bottom-3 top-3 rounded-3xl bg-[radial-gradient(circle_at_top,rgba(24,77,53,0.08),transparent_65%)] opacity-0 transition duration-300 group-focus-within:opacity-100" />
-      <label
-        htmlFor={htmlFor}
-        className="absolute left-5 top-0 z-10 -translate-y-1/2 rounded-full border border-[#dbe4db] bg-[#fcfbf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#244e39] shadow-sm"
-      >
-        {label}
-        {required ? (
-          <span className="ml-1 text-[#b42318]" aria-hidden="true">
-            *
-          </span>
-        ) : null}
-      </label>
-      <span className="pointer-events-none absolute right-5 top-5 z-10 h-2.5 w-2.5 rounded-full bg-[#c3d8c8] transition duration-300 group-focus-within:bg-[#184d35] group-focus-within:shadow-[0_0_0_7px_rgba(24,77,53,0.12)]" />
-      {children}
-      {hint ? (
-        <span className="mt-3 block pl-2 text-xs leading-5 text-[#61726a]">
-          {hint}
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
-function SectionTitle({ title, description }) {
+/* ── Reusable field wrapper ── */
+function Field({ label, required, error, children }) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-[#184d35]">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+      <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+        {label}{required && <span className="ml-1 text-red-500">*</span>}
+      </label>
+      {children}
+      {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
     </div>
   )
 }
 
-function SelectField({
-  id,
-  defaultLabel,
-  options,
-  value,
-  onValueChange,
-  searchable = false,
-  required = false,
-  hasError = false,
-}) {
-  const [open, setOpen] = useState(false)
-  const [searchText, setSearchText] = useState('')
+/* ── Section card ── */
+function SectionCard({ title, description, children }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm space-y-5">
+      <div>
+        <h2 className="text-base font-bold text-slate-800">{title}</h2>
+        <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
 
-  const filteredOptions = searchable
-    ? options.filter((option) =>
-        option.toLowerCase().includes(searchText.toLowerCase().trim())
-      )
+/* ── Radix Select with optional search ── */
+function RadixSelect({ value, onValueChange, options, placeholder, searchable = false, error }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = searchable
+    ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase().trim()))
     : options
+
+  const triggerClass = [
+    'flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm outline-none transition',
+    error
+      ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-400/20'
+      : 'border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
+    !value ? 'text-slate-400' : 'text-slate-800',
+  ].join(' ')
 
   return (
     <Select.Root
-      name={id}
-      required={required}
       value={value}
       open={open}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen)
-        if (!nextOpen) {
-          setSearchText('')
-        }
-      }}
+      onOpenChange={(o) => { setOpen(o); if (!o) setSearch('') }}
       onValueChange={onValueChange}
     >
-      <Select.Trigger
-        id={id}
-        className={`${selectClassName} flex items-center justify-between gap-3 text-left data-[placeholder]:text-slate-400 ${
-          hasError
-            ? 'border-[#b42318] focus:border-[#b42318] focus:shadow-[0_0_0_4px_rgba(180,35,24,0.12),0_18px_36px_rgba(180,35,24,0.12)]'
-            : ''
-        }`}
-      >
-        <Select.Value placeholder={defaultLabel} />
-        <Select.Icon asChild>
-          <span className="pointer-events-none flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e9f2ec] text-[#184d35] shadow-sm">
-            <ChevronDownIcon />
-          </span>
+      <Select.Trigger className={triggerClass}>
+        <Select.Value placeholder={placeholder} />
+        <Select.Icon>
+          <FaChevronDown className="text-xs text-slate-400" />
         </Select.Icon>
       </Select.Trigger>
 
       <Select.Portal>
         <Select.Content
           position="popper"
-          sideOffset={8}
-          className="z-50 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[20px] border border-[#d1d9cf] bg-white shadow-[0_20px_40px_rgba(15,23,42,0.16)]"
+          sideOffset={6}
+          className="z-50 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
         >
-          {searchable ? (
-            <div className="border-b border-[#e3e8df] p-2">
+          {searchable && (
+            <div className="border-b border-slate-100 p-2">
               <input
                 type="text"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full rounded-xl border border-[#d1d9cf] bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#185237]"
+                className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-emerald-400"
+                onKeyDown={(e) => e.stopPropagation()}
               />
             </div>
-          ) : null}
+          )}
 
-          <Select.ScrollUpButton className="flex h-7 items-center justify-center text-[#184d35]">
-            <ChevronDownIcon />
-          </Select.ScrollUpButton>
-
-          <Select.Viewport className="max-h-64 overflow-y-auto p-2">
-            {filteredOptions.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-slate-500">
-                No results found
-              </div>
-            ) : null}
-
-            {filteredOptions.map((option) => (
-              <Select.Item
-                key={option}
-                value={option}
-                className="relative flex cursor-pointer items-center rounded-xl px-4 py-3 text-sm text-slate-700 outline-none transition hover:bg-[#edf5ef] focus:bg-[#edf5ef] data-[state=checked]:bg-[#e2efe7] data-[state=checked]:text-[#184d35]"
-              >
-                <Select.ItemText>{option}</Select.ItemText>
-              </Select.Item>
-            ))}
+          <Select.Viewport className="max-h-56 overflow-y-auto p-1.5">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-slate-400">No results found</div>
+            ) : (
+              filtered.map((option) => (
+                <Select.Item
+                  key={option}
+                  value={option}
+                  className="relative flex cursor-pointer select-none items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-emerald-50 focus:bg-emerald-50 data-[state=checked]:text-emerald-700 data-[state=checked]:bg-emerald-50"
+                >
+                  <Select.ItemText>{option}</Select.ItemText>
+                  <Select.ItemIndicator>
+                    <FaCheck className="text-xs text-emerald-600" />
+                  </Select.ItemIndicator>
+                </Select.Item>
+              ))
+            )}
           </Select.Viewport>
-
-          <Select.ScrollDownButton className="flex h-7 items-center justify-center text-[#184d35]">
-            <ChevronDownIcon />
-          </Select.ScrollDownButton>
         </Select.Content>
       </Select.Portal>
     </Select.Root>
   )
 }
 
+/* ══════════════════════════════════════════════
+   PAGE
+══════════════════════════════════════════════ */
 function InstitutionRegisterPage() {
-  const [logoName, setLogoName] = useState('Upload PNG, JPG, or SVG')
+  const navigate = useNavigate()
+  const [logoName, setLogoName] = useState('')
   const [logoFile, setLogoFile] = useState(null)
   const [formData, setFormData] = useState({
     institutionName: '',
@@ -210,12 +153,8 @@ function InstitutionRegisterPage() {
     setFieldErrors((prev) => ({ ...prev, [name]: '' }))
   }
 
-  function getInputClass(errorKey) {
-    return `${inputClassName} ${
-      fieldErrors[errorKey]
-        ? 'border-[#b42318] focus:border-[#b42318] focus:shadow-[0_0_0_4px_rgba(180,35,24,0.12),0_18px_36px_rgba(180,35,24,0.12)]'
-        : ''
-    }`
+  function handleChange(e) {
+    updateField(e.target.name, e.target.value)
   }
 
   function validateForm() {
@@ -223,96 +162,60 @@ function InstitutionRegisterPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     const phoneRegex = /^[0-9+()\-\s]{7,20}$/
 
-    if (!formData.institutionName.trim()) {
-      errors.institutionName = 'Institution name is required.'
-    }
-    if (!formData.institutionType) {
-      errors.institutionType = 'Institution type is required.'
-    }
-    if (formData.institutionPhone.trim() && !phoneRegex.test(formData.institutionPhone.trim())) {
+    if (!formData.institutionName.trim()) errors.institutionName = 'Institution name is required.'
+    if (!formData.institutionType) errors.institutionType = 'Institution type is required.'
+    if (formData.institutionPhone.trim() && !phoneRegex.test(formData.institutionPhone.trim()))
       errors.institutionPhone = 'Enter a valid phone number.'
-    }
-    if (!formData.adminName.trim()) {
-      errors.adminName = 'Admin name is required.'
-    }
-    if (!formData.adminEmail.trim()) {
-      errors.adminEmail = 'Admin email is required.'
-    } else if (!emailRegex.test(formData.adminEmail.trim())) {
-      errors.adminEmail = 'Enter a valid email address.'
-    }
-    if (formData.adminPhone.trim() && !phoneRegex.test(formData.adminPhone.trim())) {
+    if (!formData.adminName.trim()) errors.adminName = 'Admin name is required.'
+    if (!formData.adminEmail.trim()) errors.adminEmail = 'Admin email is required.'
+    else if (!emailRegex.test(formData.adminEmail.trim())) errors.adminEmail = 'Enter a valid email address.'
+    if (formData.adminPhone.trim() && !phoneRegex.test(formData.adminPhone.trim()))
       errors.adminPhone = 'Enter a valid phone number.'
-    }
-    if (!formData.password) {
-      errors.password = 'Password is required.'
-    } else if (formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters.'
-    }
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password.'
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Password and confirm password must match.'
-    }
-    if (logoFile && logoFile.size > 5 * 1024 * 1024) {
-      errors.logo = 'Logo must be 5MB or smaller.'
-    }
+    if (!formData.password) errors.password = 'Password is required.'
+    else if (formData.password.length < 8) errors.password = 'Password must be at least 8 characters.'
+    if (!formData.confirmPassword) errors.confirmPassword = 'Please confirm your password.'
+    else if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match.'
+    if (logoFile && logoFile.size > 5 * 1024 * 1024) errors.logo = 'Logo must be 5MB or smaller.'
 
     return errors
   }
 
   function getErrorMessage(error) {
     const apiError = error?.response?.data
-    if (!apiError) {
-      return 'Unable to reach backend from browser. Check backend server, CORS settings, and API URL.'
-    }
-    if (typeof apiError === 'string') {
-      return apiError
-    }
+    if (!apiError) return 'Unable to reach backend. Check your server and CORS settings.'
+    if (typeof apiError === 'string') return apiError
     const firstValue = Object.values(apiError)[0]
-    if (Array.isArray(firstValue) && firstValue.length > 0) {
-      return String(firstValue[0])
-    }
-    if (typeof firstValue === 'string') {
-      return firstValue
-    }
-    return 'Unable to save form data. Please check the form and try again.'
+    if (Array.isArray(firstValue) && firstValue.length > 0) return String(firstValue[0])
+    if (typeof firstValue === 'string') return firstValue
+    return 'Something went wrong. Please check the form and try again.'
   }
 
-  function handleLogoChange(event) {
-    const file = event.target.files?.[0]
+  function handleLogoChange(e) {
+    const file = e.target.files?.[0]
     setLogoFile(file || null)
-    setLogoName(file ? file.name : 'Upload PNG, JPG, or SVG')
+    setLogoName(file ? file.name : '')
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  async function handleSubmit(e) {
+    e.preventDefault()
     setSubmitError('')
-
     const errors = validateForm()
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) {
-      const firstError = Object.values(errors)[0]
-      setSubmitError(String(firstError))
+      setSubmitError(String(Object.values(errors)[0]))
       return
     }
-
     setIsSubmitting(true)
-
     try {
-      const institutionPayload = new FormData()
-      institutionPayload.append('institution_name', formData.institutionName.trim())
-      institutionPayload.append('institution_type', formData.institutionType)
-      institutionPayload.append('phone_number', formData.institutionPhone.trim())
-      institutionPayload.append('address', formData.address.trim())
-      if (formData.country) {
-        institutionPayload.append('country', formData.country)
-      }
-      if (logoFile) {
-        institutionPayload.append('logo', logoFile)
-      }
+      const payload = new FormData()
+      payload.append('institution_name', formData.institutionName.trim())
+      payload.append('institution_type', formData.institutionType)
+      payload.append('phone_number', formData.institutionPhone.trim())
+      payload.append('address', formData.address.trim())
+      if (formData.country) payload.append('country', formData.country)
+      if (logoFile) payload.append('logo', logoFile)
 
-      const institution = await createInstitution(institutionPayload)
-
+      const institution = await createInstitution(payload)
       await register({
         full_name: formData.adminName.trim(),
         email: formData.adminEmail.trim(),
@@ -323,21 +226,8 @@ function InstitutionRegisterPage() {
         institution: institution.id,
       })
 
-      toast.success('Institution and admin account saved successfully.')
-      setFormData({
-        institutionName: '',
-        institutionType: '',
-        country: '',
-        address: '',
-        institutionPhone: '',
-        adminName: '',
-        adminEmail: '',
-        adminPhone: '',
-        password: '',
-        confirmPassword: '',
-      })
-      setLogoFile(null)
-      setLogoName('Upload PNG, JPG, or SVG')
+      toast.success('Institution registered successfully!')
+      setTimeout(() => navigate('/login'), 1500)
     } catch (error) {
       setSubmitError(getErrorMessage(error))
     } finally {
@@ -346,388 +236,275 @@ function InstitutionRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f1efe8] text-slate-900">
-      <div className="grid min-h-screen lg:grid-cols-[0.43fr_0.57fr]">
-        <aside className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#2b8c63_0%,#1b5a3f_42%,#102f22_100%)] px-6 py-8 text-white sm:px-8 lg:px-12 lg:py-12">
-          <div className="pointer-events-none absolute -left-16 top-12 h-48 w-48 rounded-full bg-emerald-200/15 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-16 right-0 h-56 w-56 rounded-full bg-emerald-100/10 blur-3xl" />
-          <div className="absolute inset-y-0 right-0 hidden w-px bg-white/10 lg:block" />
-          <div className="relative mx-auto flex h-full w-full max-w-[30rem] flex-col justify-between">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="grid min-h-screen lg:grid-cols-[420px_1fr]">
+
+        {/* ── Left sidebar ── */}
+        <aside className="relative flex flex-col overflow-hidden bg-[#0d2b1d] px-8 py-10 text-white lg:px-10 lg:py-14">
+
+          {/* Background layers */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#1a5c3a_0%,transparent_60%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,#0f3d26_0%,transparent_65%)]" />
+          <div className="pointer-events-none absolute left-0 top-0 h-full w-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMwLTkuOTQtOC4wNi0xOC0xOC0xOFYwaDQydjQySDE4YzkuOTQgMCAxOC04LjA2IDE4LTE4eiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIvPjwvZz48L3N2Zz4=')] opacity-40" />
+
+          {/* Glowing orbs */}
+          <div className="pointer-events-none absolute -top-20 -left-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-10 right-[-60px] h-80 w-80 rounded-full bg-emerald-700/15 blur-3xl" />
+          <div className="pointer-events-none absolute top-1/2 left-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/5 blur-2xl" />
+
+          {/* Subtle right border */}
+          <div className="absolute inset-y-0 right-0 hidden w-px bg-gradient-to-b from-transparent via-white/10 to-transparent lg:block" />
+
+          <div className="relative flex flex-1 flex-col justify-between">
             <div>
-              <img
-                src={brandLogo}
-                alt="ThinkBack AI"
-                className="h-14 w-auto object-contain sm:h-16"
-              />
-              <p className="mt-7 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
-                Institution Onboarding
-              </p>
+              {/* Logo */}
+              <img src={brandLogo} alt="ThinkBack" className="h-11 w-auto object-contain" />
 
-              <div className="mt-7 rounded-[30px] border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.07)_100%)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.15)] backdrop-blur">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100/90">
-                  Quick Guide
-                </p>
-                <h2 className="mt-3 text-[1.65rem] font-semibold leading-tight">
-                  What to prepare before you start
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-emerald-50/85">
-                  Having a few official details ready will make registration
-                  faster and help you complete the form in one go.
-                </p>
-
-                <div className="mt-5 space-y-3">
-                  {onboardingTips.map((tip, index) => (
-                    <div
-                      key={tip}
-                      className="flex gap-3 rounded-[22px] border border-white/10 bg-black/10 px-4 py-3"
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-semibold text-white">
-                        0{index + 1}
-                      </span>
-                      <p className="text-sm leading-6 text-emerald-50/85">
-                        {tip}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              {/* Badge */}
+              <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.6)]" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-emerald-300">Institution Onboarding</span>
               </div>
 
-              <div className="mt-10 w-full text-left">
-                <h1 className="max-w-md text-4xl font-semibold leading-tight sm:text-[2.8rem]">
-                  Register Your Institution
-                </h1>
-                <p className="mt-4 max-w-md text-base leading-7 text-emerald-50/85 sm:text-lg sm:leading-8">
-                  Create your institution account to start collecting and
-                  analyzing student feedback with a secure, AI-powered
-                  academic workflow.
-                </p>
+              {/* Headline */}
+              <h1 className="mt-6 text-3xl font-bold leading-snug tracking-tight lg:text-[2.2rem]">
+                Register Your<br />
+                <span className="text-emerald-400">Institution</span>
+              </h1>
+              <p className="mt-3 max-w-xs text-sm leading-7 text-white/55">
+                Set up your institution and start collecting AI-powered student feedback in minutes.
+              </p>
+
+              {/* Divider */}
+              <div className="my-8 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+
+              {/* Tips */}
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-emerald-400/80">
+                Before you start
+              </p>
+              <div className="space-y-3">
+                {onboardingTips.map((tip, i) => (
+                  <div key={i} className="group flex gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4 transition hover:bg-white/[0.07]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-xs font-bold text-emerald-300 ring-1 ring-emerald-500/30">
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <p className="text-sm leading-6 text-white/60 group-hover:text-white/75 transition">{tip}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stats row */}
+              <div className="mt-8 grid grid-cols-3 gap-3">
+                {[
+                  { value: '50+', label: 'Institutions' },
+                  { value: '10K+', label: 'Students' },
+                  { value: '98%', label: 'Satisfaction' },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-3 text-center">
+                    <p className="text-lg font-bold text-emerald-400">{s.value}</p>
+                    <p className="mt-0.5 text-[11px] text-white/45">{s.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="flex flex-col items-start justify-between gap-3 text-sm text-emerald-50/75 sm:flex-row sm:items-center">
-              <span>Setup takes only a few minutes.</span>
+            {/* Footer */}
+            <div className="mt-10 flex items-center justify-between border-t border-white/[0.08] pt-6 text-sm">
+              <span className="text-white/40">Takes only a few minutes</span>
               <Link
                 to="/"
-                className="rounded-full border border-white/20 px-4 py-2 font-medium text-white transition hover:bg-white/10"
+                className="flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold text-white/70 transition hover:border-white/40 hover:text-white"
               >
-                Back to Home
+                ← Back to Home
               </Link>
             </div>
           </div>
         </aside>
 
-        <main className="flex items-center justify-center px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
-          <div className="w-full max-w-4xl rounded-[34px] border border-[#d8ddd3] bg-[#fcfbf7] p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] sm:p-8 lg:p-10">
-            <div className="text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#56836c]">
-                Create Institution Account
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold text-[#184d35]">
-                Complete your institution registration.
-              </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-500">
-                Quickly set up your institution, academic structure, admin contact, and account.
-              </p>
+        {/* ── Right form ── */}
+        <main className="flex items-start justify-center overflow-y-auto px-4 py-10 lg:px-12 lg:py-14">
+          <div className="w-full max-w-2xl">
+
+            <div className="mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Create Account</p>
+              <h2 className="mt-1 text-2xl font-bold text-slate-800">Complete your institution registration</h2>
+              <p className="mt-1 text-sm text-slate-500">Fill in the details below to set up your institution on ThinkBack.</p>
             </div>
 
-            <form className="mt-10 space-y-10" onSubmit={handleSubmit}>
-              {submitError ? (
-                <div className="rounded-2xl border border-[#f1c9cc] bg-[#fff1f2] px-4 py-3 text-sm text-[#9f1239]">
-                  {submitError}
-                </div>
-              ) : null}
+            {submitError && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {submitError}
+              </div>
+            )}
 
-              <section className={`${sectionCardClassName} space-y-6`}>
-                <SectionTitle
-                  title="Institution"
-                  description="Tell us about the institution you are registering on ThinkBack AI."
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FieldShell
-                    label="Institution Name"
-                    htmlFor="institution-name"
-                    required
-                    className="md:col-span-2"
-                  >
-                    <input
-                      id="institution-name"
-                      type="text"
-                      placeholder="Name of the institution"
-                      className={getInputClass('institutionName')}
-                      value={formData.institutionName}
-                      onChange={(event) =>
-                        updateField('institutionName', event.target.value)
-                      }
-                      required
-                    />
-                    {fieldErrors.institutionName ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.institutionName}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                  <FieldShell
-                    label="Institution Type"
-                    htmlFor="institution-type"
-                    required
-                  >
-                    <SelectField
-                      id="institution-type"
-                      defaultLabel="Select institution type"
-                      options={institutionTypes}
-                      value={formData.institutionType}
-                      onValueChange={(value) =>
-                        updateField('institutionType', value)
-                      }
-                      required
-                      hasError={Boolean(fieldErrors.institutionType)}
-                    />
-                    {fieldErrors.institutionType ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.institutionType}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                  <FieldShell label="Country" htmlFor="country">
-                    <SelectField
-                      id="country"
-                      defaultLabel="Select country"
-                      options={countries}
-                      value={formData.country}
-                      onValueChange={(value) => updateField('country', value)}
-                      searchable
-                    />
-                  </FieldShell>
-
-                  <FieldShell
-                    label="Address"
-                    htmlFor="institution-address"
-                    className="md:col-span-2"
-                  
-                  >
-                    <textarea
-                      id="institution-address"
-                      placeholder="Institution address"
-                      className={`${getInputClass('address')} min-h-28 resize-y leading-7`}
-                      value={formData.address}
-                      onChange={(event) => updateField('address', event.target.value)}
-                    />
-                    {fieldErrors.address ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.address}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                
-
-                  <FieldShell
-                    label="Institution Logo"
-                    htmlFor="institution-logo"
-                    className="md:col-span-2"
-                    hint="A square or transparent logo works best across the platform."
-                  >
-                    <div className="rounded-[26px] border border-dashed border-[#c7d3c9] bg-[linear-gradient(180deg,#ffffff_0%,#f3f7f2_100%)] p-5 shadow-sm transition duration-200 hover:border-[#9db7a5] hover:shadow-md">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#56836c]">
-                            Brand Identity
-                          </p>
-                          <p className="mt-2 font-semibold text-slate-800">
-                            Upload institution logo
-                          </p>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {logoName}
-                          </p>
-                          {fieldErrors.logo ? (
-                            <p className="mt-2 text-xs text-[#b42318]">{fieldErrors.logo}</p>
-                          ) : null}
-                        </div>
-                        <label
-                          htmlFor="institution-logo"
-                          className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-[#184d35] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(24,77,53,0.2)] transition hover:-translate-y-0.5 hover:brightness-105"
-                        >
-                          Choose File
-                        </label>
-                      </div>
-                      <input
-                        id="institution-logo"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLogoChange}
-                      />
-                    </div>
-                  </FieldShell>
-
-                    <FieldShell
-                    label="Institution Phone"
-                    htmlFor="institution-phone"
-                  >
-                    <input
-                      id="institution-phone"
-                      type="tel"
-                      placeholder="+94 11 000 0000"
-                      className={getInputClass('institutionPhone')}
-                      value={formData.institutionPhone}
-                      onChange={(event) =>
-                        updateField('institutionPhone', event.target.value)
-                      }
-                    />
-                    {fieldErrors.institutionPhone ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.institutionPhone}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-                </div>
-              </section>
-
-              <section className={`${sectionCardClassName} space-y-6`}>
-                <SectionTitle
-                  title="Admin"
-                  description="Provide the official contact details of the person managing the registration."
-                />
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FieldShell label="Full Name" htmlFor="admin-name" required>
-                    <input
-                      id="admin-name"
-                      type="text"
-                      placeholder="Full name"
-                      className={getInputClass('adminName')}
-                      value={formData.adminName}
-                      onChange={(event) => updateField('adminName', event.target.value)}
-                      required
-                    />
-                    {fieldErrors.adminName ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.adminName}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                  <FieldShell label="Official Email" htmlFor="admin-email" required>
-                    <input
-                      id="admin-email"
-                      type="email"
-                      placeholder="name@institution.edu"
-                      className={getInputClass('adminEmail')}
-                      value={formData.adminEmail}
-                      onChange={(event) => updateField('adminEmail', event.target.value)}
-                      required
-                    />
-                    {fieldErrors.adminEmail ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.adminEmail}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                  <FieldShell label="Phone Number" htmlFor="admin-phone">
-                    <input
-                      id="admin-phone"
-                      type="tel"
-                      placeholder="+94 77 000 0000"
-                      className={getInputClass('adminPhone')}
-                      value={formData.adminPhone}
-                      onChange={(event) => updateField('adminPhone', event.target.value)}
-                    />
-                    {fieldErrors.adminPhone ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.adminPhone}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-                </div>
-              </section>
-
-              <section className={`${sectionCardClassName} space-y-6`}>
-                <SectionTitle
-                  title="Account"
-                  description="Create the login credentials for the institution admin account."
-                />
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FieldShell label="Password" htmlFor="password" required>
-                    <input
-                      id="password"
-                      type="password"
-                      placeholder="Create password"
-                      className={getInputClass('password')}
-                      value={formData.password}
-                      onChange={(event) => updateField('password', event.target.value)}
-                      required
-                    />
-                    {fieldErrors.password ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.password}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-
-                  <FieldShell
-                    label="Confirm Password"
-                    htmlFor="confirm-password"
-                    required
-                  >
-                    <input
-                      id="confirm-password"
-                      type="password"
-                      placeholder="Confirm password"
-                      className={getInputClass('confirmPassword')}
-                      value={formData.confirmPassword}
-                      onChange={(event) =>
-                        updateField('confirmPassword', event.target.value)
-                      }
-                      required
-                    />
-                    {fieldErrors.confirmPassword ? (
-                      <span className="mt-3 block pl-2 text-xs text-[#b42318]">
-                        {fieldErrors.confirmPassword}
-                      </span>
-                    ) : null}
-                  </FieldShell>
-                </div>
-              </section>
-
-              <section className={`${sectionCardClassName} space-y-5`}>
-                <SectionTitle
-                  title="Authorization"
-                  description="Confirm that you are permitted to submit the registration on behalf of the institution."
-                />
-
-                <label className="flex items-start gap-4 rounded-[26px] border border-[#d6ddd3] bg-[linear-gradient(180deg,#ffffff_0%,#f6f8f3_100%)] px-5 py-4 text-sm leading-6 text-slate-600 shadow-sm transition duration-200 hover:border-[#bccbbe] hover:shadow-md">
+              {/* ── Institution Details ── */}
+              <SectionCard title="Institution Details" description="Tell us about the institution you are registering.">
+                <Field label="Institution Name" required error={fieldErrors.institutionName}>
                   <input
-                    type="checkbox"
-                    required
-                    className="mt-1 h-5 w-5 rounded-md border-[#bfd0c3] bg-[#f6f8f2] text-[#184d35] shadow-sm focus:ring-[#184d35]"
+                    name="institutionName"
+                    type="text"
+                    placeholder="e.g. University of Moratuwa"
+                    value={formData.institutionName}
+                    onChange={handleChange}
+                    className={fieldErrors.institutionName ? INPUT_ERROR : INPUT}
                   />
-                  <span>I am authorized to register this institution</span>
-                </label>
-              </section>
+                </Field>
 
-              <section className={`${sectionCardClassName} space-y-5`}>
-                <SectionTitle
-                  title="Register Institution"
-                  description="Review your details, then submit the form to create the institution and admin account."
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Institution Type" required error={fieldErrors.institutionType}>
+                    <RadixSelect
+                      value={formData.institutionType}
+                      onValueChange={(v) => updateField('institutionType', v)}
+                      options={institutionTypes}
+                      placeholder="Select type"
+                      error={fieldErrors.institutionType}
+                    />
+                  </Field>
+
+                  <Field label="Country" error={fieldErrors.country}>
+                    <RadixSelect
+                      value={formData.country}
+                      onValueChange={(v) => updateField('country', v)}
+                      options={countries}
+                      placeholder="Select country"
+                      searchable
+                      error={fieldErrors.country}
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Institution Phone" error={fieldErrors.institutionPhone}>
+                    <input
+                      name="institutionPhone"
+                      type="tel"
+                      placeholder="+94 11 269 0000"
+                      value={formData.institutionPhone}
+                      onChange={handleChange}
+                      className={fieldErrors.institutionPhone ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+
+                  <Field label="Institution Logo" error={fieldErrors.logo}>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm transition hover:border-emerald-400">
+                      <span className="shrink-0 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        Choose File
+                      </span>
+                      <span className="truncate text-slate-400">{logoName || 'PNG, JPG or SVG — max 5MB'}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                    </label>
+                  </Field>
+                </div>
+
+                <Field label="Address" error={fieldErrors.address}>
+                  <textarea
+                    name="address"
+                    rows={3}
+                    placeholder="Street, City, Postal Code, Country"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className={`${INPUT} resize-none`}
+                  />
+                </Field>
+              </SectionCard>
+
+              {/* ── Admin Contact ── */}
+              <SectionCard title="Admin Contact" description="Details of the person who will manage this institution.">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Full Name" required error={fieldErrors.adminName}>
+                    <input
+                      name="adminName"
+                      type="text"
+                      placeholder="e.g. Kamal Perera"
+                      value={formData.adminName}
+                      onChange={handleChange}
+                      className={fieldErrors.adminName ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+
+                  <Field label="Official Email" required error={fieldErrors.adminEmail}>
+                    <input
+                      name="adminEmail"
+                      type="email"
+                      placeholder="e.g. admin@uom.lk"
+                      value={formData.adminEmail}
+                      onChange={handleChange}
+                      className={fieldErrors.adminEmail ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+
+                  <Field label="Phone Number" error={fieldErrors.adminPhone}>
+                    <input
+                      name="adminPhone"
+                      type="tel"
+                      placeholder="+94 77 123 4567"
+                      value={formData.adminPhone}
+                      onChange={handleChange}
+                      className={fieldErrors.adminPhone ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+                </div>
+              </SectionCard>
+
+              {/* ── Account Credentials ── */}
+              <SectionCard title="Account Credentials" description="Create login credentials for the admin account.">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Password" required error={fieldErrors.password}>
+                    <input
+                      name="password"
+                      type="password"
+                      placeholder="At least 8 characters"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={fieldErrors.password ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+
+                  <Field label="Confirm Password" required error={fieldErrors.confirmPassword}>
+                    <input
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="Repeat your password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={fieldErrors.confirmPassword ? INPUT_ERROR : INPUT}
+                    />
+                  </Field>
+                </div>
+              </SectionCard>
+
+              {/* ── Authorization ── */}
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-600 shadow-sm transition hover:border-emerald-300">
+                <input
+                  type="checkbox"
+                  required
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-emerald-600"
                 />
+                <span>I am authorized to register this institution on behalf of the organization.</span>
+              </label>
 
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-slate-500">
+                  Already have an account?{' '}
+                  <Link to="/login" className="font-semibold text-[#13462D] hover:text-[#0f3a26]">
+                    Sign in
+                  </Link>
+                </p>
                 <button
                   type="submit"
-                  aria-label="Register Institution"
                   disabled={isSubmitting}
-                  className="inline-flex w-full items-center justify-center rounded-[24px] bg-[#184d35] px-6 py-4 text-base font-semibold text-white shadow-[0_18px_32px_rgba(24,77,53,0.24)] transition duration-200 hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+                  className="rounded-xl bg-[#13462D] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3a26] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Saving...' : 'Register Institution'}
+                  {isSubmitting ? 'Registering…' : 'Register Institution'}
                 </button>
-              </section>
+              </div>
+
             </form>
           </div>
         </main>
+
       </div>
     </div>
   )

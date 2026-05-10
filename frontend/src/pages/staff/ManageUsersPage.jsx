@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FaEnvelope, FaPen, FaTrash } from 'react-icons/fa'
+import { FaEnvelope, FaPen, FaPlus, FaTrash, FaUsers, FaUserCheck, FaUserClock } from 'react-icons/fa'
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { createColumnHelper } from '@tanstack/react-table'
@@ -12,6 +12,7 @@ import EditStaffModal from '../../components/modals/EditStaffModal'
 import { DataTable } from '../../components/ui/DataTable'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getInstitutionUsers, resendInvitation, deleteStaff } from '../../services/users'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 const ROLE_BADGE = {
   lecturer:    'bg-sky-50 text-sky-700 border-sky-200',
@@ -28,12 +29,8 @@ const columnHelper = createColumnHelper()
 function ManageUsersPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [authState] = useState(() => {
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) return { user: null }
-    try { return { user: JSON.parse(storedUser) } }
-    catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
 
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -66,24 +63,6 @@ function ManageUsersPage() {
     if (authState.user) fetchUsers()
   }, [authState.user, fetchUsers])
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNavigation = useCallback((key) => {
-    if (key === 'invite') { setIsModalOpen(true); return }
-    const routeMap = {
-      dashboard: '/institution-dashboard',
-      courses: '/courses',
-      feedback: '/feedback-forms',
-      users: '/manage-users',
-    }
-    const route = routeMap[key]
-    if (route) navigate(route)
-  }, [navigate])
 
   const handleResend = useCallback(async (userId) => {
     setResendingId(userId)
@@ -111,6 +90,12 @@ function ManageUsersPage() {
       setDeleteTarget(null)
     }
   }, [deleteTarget])
+
+  const handleBulkDelete = useCallback(async (rows) => {
+    await Promise.all(rows.map((r) => deleteStaff(r.id)))
+    setUsers((prev) => prev.filter((u) => !rows.some((r) => r.id === u.id)))
+    toast.success(`${rows.length} staff member${rows.length > 1 ? 's' : ''} removed.`)
+  }, [])
 
   const handleInviteSuccess = useCallback(() => {
     setIsModalOpen(false)
@@ -191,8 +176,9 @@ function ManageUsersPage() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <DashboardSidebar
+        navItems={navItems}
         activeNav="users"
-        onNavChange={handleSidebarNavigation}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
@@ -205,24 +191,51 @@ function ManageUsersPage() {
           searchPlaceholder="Search staff"
         />
 
-        <section className="px-4 pb-4 md:px-6 md:pb-6">
-          <div className="mx-auto mb-5 flex max-w-7xl flex-col gap-4 rounded-[24px] border border-[#d8e7dd] bg-white px-6 py-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-[#124f2f] md:text-3xl">Staff Management</h1>
-              <p className="mt-2 text-sm text-slate-600 md:text-base">
-                Add and manage staff members — coordinators and lecturers — in your institution.
-              </p>
+        {/* ── Hero ── */}
+        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
+          <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
+          <div className="relative mx-auto max-w-7xl">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-white/50">Staff Management</p>
+                <h1 className="text-3xl font-bold text-white md:text-4xl">Manage Staff</h1>
+                <p className="mt-2 max-w-md text-sm text-white/60">
+                  Add and manage coordinators and lecturers in your institution.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {[
+                    { icon: FaUsers,     label: 'Total Staff',   value: users.length },
+                    { icon: FaUserCheck, label: 'Active',        value: users.filter((u) => u.status === 'Active').length },
+                    { icon: FaUserClock, label: 'Invited',       value: users.filter((u) => u.status === 'Invited').length },
+                  ].map((p) => (
+                    <div key={p.label} className="flex items-center gap-2.5 rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+                        <p.icon className="text-sm text-white/90" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold leading-none text-white">{p.value}</p>
+                        <p className="mt-0.5 text-[11px] font-medium text-white/60">{p.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50 lg:self-auto"
+              >
+                <FaPlus className="text-xs" />
+                Add Staff
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center rounded-xl bg-[#13462D] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3a26]"
-            >
-              + Add Staff
-            </button>
           </div>
+        </div>
 
-          <div className="mx-auto max-w-7xl">
+        <section className="px-4 pb-4 md:px-6 md:pb-6">
+          <div className="mx-auto max-w-7xl pt-6">
             {isLoading ? (
               <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-slate-400">
                 Loading staff members…
@@ -237,6 +250,7 @@ function ManageUsersPage() {
                 data={users}
                 searchPlaceholder="Search by name, email, role…"
                 pageSize={10}
+                onDeleteSelected={handleBulkDelete}
               />
             )}
           </div>

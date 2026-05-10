@@ -10,7 +10,7 @@ export const api = axios.create({
 });
 
 const isPublicUrl = (url = '') =>
-  url.startsWith('/institutions/') ||
+  (url.startsWith('/institutions/') && !url.startsWith('/institutions/settings')) ||
   url.startsWith('/auth/register/') ||
   url.startsWith('/auth/login/') ||
   url.startsWith('/auth/token/refresh/') ||

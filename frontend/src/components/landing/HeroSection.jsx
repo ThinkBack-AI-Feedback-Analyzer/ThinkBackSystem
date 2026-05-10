@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getPublicStats } from '../../services/feedback'
 import heroImage from '../../assets/Robot_2.png'
 import feedbackLoopImage from '../../assets/R1.png'
 import insightImage from '../../assets/R2.png'
@@ -36,7 +38,20 @@ function FloatingIconCard({
   )
 }
 
-function HeroSection({ stats }) {
+function HeroSection({ stats: staticStats }) {
+  const [stats, setStats] = useState(staticStats)
+
+  useEffect(() => {
+    getPublicStats()
+      .then((data) => setStats([
+        { label: 'Number of Institutions', value: String(data.institutions) },
+        { label: 'Created Courses',        value: String(data.courses)      },
+        { label: 'Activated Forms',        value: String(data.active_forms) },
+        { label: 'Feedback Collected',     value: String(data.responses)    },
+      ]))
+      .catch(() => {})
+  }, [])
+
   return (
     <section
       id="home"
@@ -57,7 +72,7 @@ function HeroSection({ stats }) {
             </h1>
 
             <p className="mt-4 max-w-xl text-sm leading-6 text-white/75 sm:text-base">
-              ThinkBack AI helps institutions collect honest and anonymous student feedback. Analyze sentiment, uncover key insights, and turn student feedback into smarter curriculum decisions—all in one simple platform.
+              ThinkBack AI helps institutions collect honest and anonymous student feedback. Analyze sentiment, uncover key insights, and turn student feedback into smarter curriculum decisions all in one simple platform.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">

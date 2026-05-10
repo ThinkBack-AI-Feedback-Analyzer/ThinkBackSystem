@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -10,6 +10,7 @@ import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 import { getCourses } from '../../services/courses'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
@@ -32,11 +33,8 @@ export default function FormCreatePage() {
   const location  = useLocation()
   const { mode = 'create', formId } = location.state ?? {}
 
-  const [authState] = useState(() => {
-    const s = localStorage.getItem('user')
-    if (!s) return { user: null }
-    try { return { user: JSON.parse(s) } } catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
 
   const [title,       setTitle]       = useState('')
   const [formType,    setFormType]    = useState('Exam')
@@ -86,24 +84,6 @@ export default function FormCreatePage() {
       .finally(() => setIsLoading(false))
   }, [formId, mode])
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNavigation = useCallback((key) => {
-    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const routeMap = {
-      dashboard: '/institution-dashboard',
-      courses:   '/courses',
-      feedback:  '/feedback-forms',
-      users:     '/manage-users',
-    }
-    const route = routeMap[key]
-    if (route) navigate(route)
-  }, [navigate])
 
   // Reset editable templates when form type changes (only for new forms)
   useEffect(() => {
@@ -232,7 +212,7 @@ export default function FormCreatePage() {
   if (previewMode) {
     return (
       <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <DashboardSidebar activeNav="feedback" onNavChange={handleSidebarNavigation} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
+        <DashboardSidebar navItems={navItems} activeNav="feedback" onNavChange={handleNav} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
         <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
           <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} searchPlaceholder="Search feedback forms" />
 
@@ -358,7 +338,7 @@ export default function FormCreatePage() {
           </div>
         </div>
       )}
-      <DashboardSidebar activeNav="feedback" onNavChange={handleSidebarNavigation} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
+      <DashboardSidebar navItems={navItems} activeNav="feedback" onNavChange={handleNav} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
 
       <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
         <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} searchPlaceholder="Search feedback forms" />

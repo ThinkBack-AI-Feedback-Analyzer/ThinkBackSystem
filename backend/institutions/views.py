@@ -7,6 +7,25 @@ from .serializers import CourseSerializer, InstitutionSerializer
 from users.permissions import IsInstitutionAdmin
 
 
+class InstitutionSettingsView(APIView):
+    permission_classes = [IsAuthenticated, IsInstitutionAdmin]
+
+    def get(self, request):
+        inst = request.user.institution
+        if not inst:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(InstitutionSerializer(inst).data)
+
+    def patch(self, request):
+        inst = request.user.institution
+        if not inst:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = InstitutionSerializer(inst, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
 class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer

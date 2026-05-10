@@ -1,22 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  FaArrowLeft, FaBook, FaChartBar, FaCog, FaEye,
-  FaGlobe, FaGraduationCap, FaHome, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
+  FaArrowLeft, FaEye,
+  FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
 import { createFeedbackForm, distributeForm } from '../../services/feedback'
-
-const STAFF_NAV = [
-  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'My Courses',        icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',          icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Results',  icon: FaChartBar,      group: 'main' },
-  { key: 'settings',  label: 'Settings',          icon: FaCog,           group: 'settings' },
-]
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
 const Q_TYPES      = ['open_ended', 'multiple_choice', 'yes_no', 'rating']
@@ -36,12 +29,8 @@ export default function StaffFormCreatePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const course   = location.state?.course ?? null
-
-  const [authState] = useState(() => {
-    const s = localStorage.getItem('user')
-    if (!s) return { user: null }
-    try { return { user: JSON.parse(s) } } catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
 
   const [title,           setTitle]           = useState(course ? `${course.title} Feedback` : '')
   const [formType,        setFormType]        = useState('Course')
@@ -72,22 +61,6 @@ export default function StaffFormCreatePage() {
     setEditableTemplates([...(TEMPLATES[formType] ?? [])])
   }, [formType])
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNav = useCallback((key) => {
-    const map = {
-      dashboard: '/staff-dashboard',
-      courses:   '/courses',
-      students:  '/students',
-      feedback:  '/feedback-forms',
-    }
-    if (map[key]) navigate(map[key])
-  }, [navigate])
 
   /* ── template helpers ── */
   const updateTemplateQ = (idx, val) => setEditableTemplates((p) => p.map((q, i) => i === idx ? val : q))
@@ -187,9 +160,9 @@ export default function StaffFormCreatePage() {
     return (
       <div className="flex h-screen bg-slate-50 overflow-hidden">
         <DashboardSidebar
-          navItems={STAFF_NAV}
+          navItems={navItems}
           activeNav="courses"
-          onNavChange={handleSidebarNav}
+          onNavChange={handleNav}
           onLogout={handleLogout}
           logoSrc={institutionLogo}
           logoAlt="ThinkBack logo"
@@ -296,9 +269,9 @@ export default function StaffFormCreatePage() {
         </div>
       )}
       <DashboardSidebar
-        navItems={STAFF_NAV}
+        navItems={navItems}
         activeNav="courses"
-        onNavChange={handleSidebarNav}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"

@@ -27,6 +27,9 @@ import StudentPortal            from './pages/student/StudentPortal'
 import StudentManagement        from './pages/student/StudentManagementPage'
 import StudentsPage             from './pages/student/StudentsPage'
 
+import ReportsPage              from './pages/reports/ReportsPage'
+import SettingsPage             from './pages/settings/SettingsPage'
+
 function App() {
   return (
     <>
@@ -59,6 +62,9 @@ function App() {
         <Route path="/portal"                element={<StudentPortal />} />
         <Route path="/student-management"    element={<StudentManagement />} />
         <Route path="/students"              element={<StudentsPage />} />
+
+        <Route path="/reports"               element={<ReportsPage />} />
+        <Route path="/settings"              element={<SettingsPage />} />
 
         <Route path="*"                      element={<Navigate to="/" replace />} />
       </Routes>

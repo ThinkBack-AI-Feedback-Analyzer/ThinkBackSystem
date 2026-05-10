@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -9,6 +9,7 @@ import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar  from '../../components/common/DashboardTopBar'
 import institutionLogo  from '../../assets/Logo_4.png'
 import { getFeedbackForm, analyzeForm, getAnalysis } from '../../services/feedback'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 // ── Donut chart (pure CSS conic-gradient) ─────────────────────────────────────
 function DonutChart({ positive, neutral, negative }) {
@@ -83,12 +84,8 @@ export default function FeedbackAnalysisPage() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const { formId, formTitle } = location.state ?? {}
-
-  const [authState] = useState(() => {
-    const s = localStorage.getItem('user')
-    if (!s) return { user: null }
-    try { return { user: JSON.parse(s) } } catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
 
   const [formStats, setFormStats] = useState({ distributed_count: 0, response_count: 0 })
   const [analysis,  setAnalysis]  = useState([])
@@ -150,20 +147,6 @@ export default function FeedbackAnalysisPage() {
     }
   }
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNavigation = useCallback((key) => {
-    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const routeMap = { dashboard: '/institution-dashboard', courses: '/courses', feedback: '/feedback-forms', users: '/manage-users' }
-    const route = routeMap[key]
-    if (route) navigate(route)
-  }, [navigate])
-
   const overall = analysis.reduce(
     (acc, group) => {
       group.results.forEach((item) => {
@@ -185,8 +168,9 @@ export default function FeedbackAnalysisPage() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <DashboardSidebar
+        navItems={navItems}
         activeNav="feedback"
-        onNavChange={handleSidebarNavigation}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
@@ -200,7 +184,7 @@ export default function FeedbackAnalysisPage() {
         />
 
         {/* ── Hero ── */}
-        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-6 md:px-10 md:py-7">
+        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
           <div className="relative mx-auto max-w-7xl flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
@@ -288,9 +272,9 @@ export default function FeedbackAnalysisPage() {
                     <DonutChart positive={overall.positive} neutral={overall.neutral} negative={overall.negative} />
                     <div className="space-y-4">
                       {[
-                        { label: 'Positive', value: overall.positive, dot: 'bg-emerald-400', text: 'text-emerald-700' },
-                        { label: 'Neutral',  value: overall.neutral,  dot: 'bg-slate-300',   text: 'text-slate-500'  },
-                        { label: 'Negative', value: overall.negative, dot: 'bg-red-400',     text: 'text-red-600'   },
+                        { label: 'Satisfied',   value: overall.positive, dot: 'bg-emerald-400', text: 'text-emerald-700' },
+                        { label: 'Mixed',       value: overall.neutral,  dot: 'bg-slate-300',   text: 'text-slate-500'  },
+                        { label: 'Unsatisfied', value: overall.negative, dot: 'bg-red-400',     text: 'text-red-600'   },
                       ].map(({ label, value, dot, text }) => (
                         <div key={label} className="flex items-center gap-3">
                           <div className={`h-3 w-3 rounded-full ${dot}`} />
@@ -324,9 +308,9 @@ export default function FeedbackAnalysisPage() {
                   {/* Mini breakdown */}
                   <div className="mt-4 grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
                     {[
-                      { label: 'Positive', value: overall.positive, cls: 'text-emerald-600 bg-emerald-50' },
-                      { label: 'Neutral',  value: overall.neutral,  cls: 'text-slate-500 bg-slate-50'    },
-                      { label: 'Negative', value: overall.negative, cls: 'text-red-500 bg-red-50'        },
+                      { label: 'Satisfied',   value: overall.positive, cls: 'text-emerald-600 bg-emerald-50' },
+                      { label: 'Mixed',       value: overall.neutral,  cls: 'text-slate-500 bg-slate-50'    },
+                      { label: 'Unsatisfied', value: overall.negative, cls: 'text-red-500 bg-red-50'        },
                     ].map(({ label, value, cls }) => (
                       <div key={label} className={`rounded-xl px-3 py-2 text-center ${cls}`}>
                         <p className="text-lg font-bold">{value}</p>

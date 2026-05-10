@@ -10,5 +10,7 @@ export const distributeForm     = (id, data)   => api.post(`/feedback/forms/${id
 export const getFormByToken     = (token)      => api.get(`/feedback/respond/?token=${token}`)
 export const submitFormResponse = (token, data) => api.post(`/feedback/respond/?token=${token}`, data)
 
-export const analyzeForm  = (id) => api.post(`/feedback/forms/${id}/analyze/`)
-export const getAnalysis  = (id) => api.get(`/feedback/forms/${id}/analyze/`)
+export const analyzeForm       = (id) => api.post(`/feedback/forms/${id}/analyze/`)
+export const getAnalysis       = (id) => api.get(`/feedback/forms/${id}/analyze/`)
+export const getDashboardStats  = ()   => api.get('/feedback/dashboard-stats/')
+export const getPublicStats     = ()   => api.get('/feedback/public-stats/')

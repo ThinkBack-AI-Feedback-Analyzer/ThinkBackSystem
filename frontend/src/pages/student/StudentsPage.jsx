@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  FaBook, FaChartBar, FaCog, FaDownload, FaGraduationCap,
-  FaHome, FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
-  FaUsers, FaUserPlus, FaComments, FaFilter,
+  FaBook, FaDownload, FaGraduationCap,
+  FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
+  FaUsers, FaFilter,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
@@ -13,24 +13,7 @@ import { SearchSelect } from '../../components/ui/SearchSelect'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
 import { getCourses } from '../../services/courses'
-
-/* ── Nav configs ── */
-const ADMIN_NAV = [
-  { key: 'dashboard', label: 'Dashboard',      icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'Courses',         icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',        icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Forms',  icon: FaComments,      group: 'main' },
-  { key: 'users',     label: 'Staff',           icon: FaUsers,         group: 'main' },
-  { key: 'invite',    label: 'Add Staff',       icon: FaUserPlus,      group: 'main' },
-  { key: 'settings',  label: 'Settings',        icon: FaCog,           group: 'settings' },
-]
-const STAFF_NAV = [
-  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'My Courses',       icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',         icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Results', icon: FaChartBar,      group: 'main' },
-  { key: 'settings',  label: 'Settings',         icon: FaCog,           group: 'settings' },
-]
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 /* ── CSV helpers ── */
 const normalize = (str) =>
@@ -250,11 +233,8 @@ function ImportPanel({ courses, isAdmin, onImported }) {
    ════════════════════════════════════════════ */
 export default function StudentsPage() {
   const navigate   = useNavigate()
-  const [authState] = useState(() => {
-    const s = localStorage.getItem('user')
-    if (!s) return { user: null }
-    try { return { user: JSON.parse(s) } } catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
 
   const isAdmin = authState.user?.role === 'institution_admin'
 
@@ -267,6 +247,9 @@ export default function StudentsPage() {
   const [currentPage,   setCurrentPage]   = useState(1)
   const [showImport,    setShowImport]    = useState(false)
   const [deleteTarget,  setDeleteTarget]  = useState(null)
+  const [selectedIds,     setSelectedIds]     = useState(new Set())
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
+  const [isBulkDeleting,  setIsBulkDeleting]  = useState(false)
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
@@ -295,24 +278,6 @@ export default function StudentsPage() {
     loadStudents(courseId)
   }
 
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNav = useCallback((key) => {
-    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const map = {
-      dashboard: isAdmin ? '/institution-dashboard' : '/staff-dashboard',
-      courses:   '/courses',
-      students:  '/students',
-      feedback:  isAdmin ? '/feedback-forms' : '/feedback-forms',
-      users:     '/manage-users',
-    }
-    if (map[key]) navigate(map[key])
-  }, [navigate, isAdmin])
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return
@@ -326,6 +291,22 @@ export default function StudentsPage() {
       setDeleteTarget(null)
     }
   }, [deleteTarget])
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds]
+    setIsBulkDeleting(true)
+    try {
+      await Promise.all(ids.map((id) => deleteStudent(id)))
+      setStudents((prev) => prev.filter((s) => !ids.includes(s.id)))
+      toast.success(`${ids.length} student${ids.length > 1 ? 's' : ''} removed.`)
+      setSelectedIds(new Set())
+    } catch {
+      toast.error('Failed to delete some students.')
+    } finally {
+      setIsBulkDeleting(false)
+      setBulkConfirmOpen(false)
+    }
+  }
 
   const filtered = students.filter((s) => {
     if (search) {
@@ -348,6 +329,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
+    setSelectedIds(new Set())
   }, [search, filterYear, filterCourse])
 
   const ITEMS_PER_PAGE = 10
@@ -359,14 +341,42 @@ export default function StudentsPage() {
     courses: new Set(students.flatMap((s) => s.courses?.map(c => c.id) || [])).size,
   }
 
+  const allPageSelected = paginatedStudents.length > 0 && paginatedStudents.every((s) => selectedIds.has(s.id))
+  const somePageSelected = !allPageSelected && paginatedStudents.some((s) => selectedIds.has(s.id))
+
+  const toggleAll = () => {
+    if (allPageSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        paginatedStudents.forEach((s) => next.delete(s.id))
+        return next
+      })
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        paginatedStudents.forEach((s) => next.add(s.id))
+        return next
+      })
+    }
+  }
+
+  const toggleRow = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   if (!authState.user) return null
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <DashboardSidebar
-        navItems={isAdmin ? ADMIN_NAV : STAFF_NAV}
+        navItems={navItems}
         activeNav="students"
-        onNavChange={handleSidebarNav}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
@@ -380,7 +390,7 @@ export default function StudentsPage() {
         />
 
         {/* ── Hero ── */}
-        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
+        <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
@@ -459,6 +469,30 @@ export default function StudentsPage() {
 
           {/* ── Table ── */}
           <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+            {selectedIds.size > 0 && (
+              <div className="flex items-center justify-between gap-3 px-5 py-3 bg-emerald-50 border-b border-emerald-100">
+                <span className="text-sm font-medium text-emerald-800">
+                  {selectedIds.size} {selectedIds.size === 1 ? 'student' : 'students'} selected
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkConfirmOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700 transition-colors"
+                  >
+                    <FaTrash className="text-[10px]" />
+                    Delete {selectedIds.size} selected
+                  </button>
+                </div>
+              </div>
+            )}
             {isLoading ? (
               <div className="px-6 py-16 text-center text-sm text-slate-400">Loading students…</div>
             ) : filtered.length === 0 ? (
@@ -473,6 +507,15 @@ export default function StudentsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="px-5 py-3 w-10">
+                        <input
+                          type="checkbox"
+                          checked={allPageSelected}
+                          ref={(el) => { if (el) el.indeterminate = somePageSelected }}
+                          onChange={toggleAll}
+                          className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-emerald-600"
+                        />
+                      </th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Student ID</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Full Name</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Email</th>
@@ -482,7 +525,15 @@ export default function StudentsPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {paginatedStudents.map((s) => (
-                      <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
+                      <tr key={s.id} className={`hover:bg-slate-50/60 transition-colors ${selectedIds.has(s.id) ? 'bg-emerald-50/60' : ''}`}>
+                        <td className="px-5 py-3.5 w-10" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(s.id)}
+                            onChange={() => toggleRow(s.id)}
+                            className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-emerald-600"
+                          />
+                        </td>
                         <td className="px-5 py-3.5">
                           <span className="inline-flex items-center rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
                             {s.student_id}
@@ -554,6 +605,15 @@ export default function StudentsPage() {
         description={`Are you sure you want to remove "${deleteTarget?.full_name}" (${deleteTarget?.student_id})? This cannot be undone.`}
         confirmLabel="Remove"
         onConfirm={handleDeleteConfirm}
+      />
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={(o) => !isBulkDeleting && setBulkConfirmOpen(o)}
+        title={`Remove ${selectedIds.size} ${selectedIds.size === 1 ? 'Student' : 'Students'}?`}
+        description="This action cannot be undone. All selected students will be permanently removed."
+        confirmLabel={isBulkDeleting ? 'Removing…' : `Remove ${selectedIds.size}`}
+        onConfirm={handleBulkDelete}
       />
     </div>
   )

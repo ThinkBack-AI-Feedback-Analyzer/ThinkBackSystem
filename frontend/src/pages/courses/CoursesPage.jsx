@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  FaBook, FaBuilding, FaCalendarAlt, FaChartBar, FaCog,
-  FaClipboardList, FaEye, FaGraduationCap, FaHome, FaLayerGroup,
+  FaBook, FaBuilding, FaCalendarAlt,
+  FaClipboardList, FaEye, FaLayerGroup,
   FaPen, FaPlus, FaTrash,
-  FaUsers, FaUserPlus, FaComments,
 } from 'react-icons/fa'
 import { createColumnHelper } from '@tanstack/react-table'
 import { RowActions } from '../../components/ui/RowActions'
@@ -15,26 +14,9 @@ import DashboardTopBar from '../../components/common/DashboardTopBar'
 import { DataTable } from '../../components/ui/DataTable'
 import institutionLogo from '../../assets/Logo_4.png'
 import { getCourses, deleteCourse } from '../../services/courses'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 const columnHelper = createColumnHelper()
-
-const ADMIN_NAV = [
-  { key: 'dashboard', label: 'Dashboard',      icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'Courses',         icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',        icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Forms',  icon: FaComments,      group: 'main' },
-  { key: 'users',     label: 'Staff',           icon: FaUsers,         group: 'main' },
-  { key: 'invite',    label: 'Add Staff',       icon: FaUserPlus,      group: 'main' },
-  { key: 'settings',  label: 'Settings',        icon: FaCog,           group: 'settings' },
-]
-
-const STAFF_NAV = [
-  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'My Courses',       icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',         icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Results', icon: FaChartBar,      group: 'main' },
-  { key: 'settings',  label: 'Settings',         icon: FaCog,           group: 'settings' },
-]
 
 function truncate(text, max = 40) {
   return text.length <= max ? text : `${text.slice(0, max).trimEnd()}…`
@@ -108,7 +90,7 @@ function StaffCoursesView({ courses, isLoading, user, stats, navigate }) {
 
   return (
     <>
-      <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
+      <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
@@ -154,10 +136,10 @@ function StaffCoursesView({ courses, isLoading, user, stats, navigate }) {
 }
 
 /* ── Admin view: full table with actions ── */
-function AdminCoursesView({ courses, isLoading, stats, navigate, columns }) {
+function AdminCoursesView({ courses, isLoading, stats, navigate, columns, onBulkDelete }) {
   return (
     <>
-      <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-8 md:px-10 md:py-10">
+      <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
@@ -199,6 +181,7 @@ function AdminCoursesView({ courses, isLoading, stats, navigate, columns }) {
               data={courses}
               searchPlaceholder="Search by title, code, faculty…"
               pageSize={8}
+              onDeleteSelected={onBulkDelete}
             />
           )}
         </div>
@@ -210,12 +193,8 @@ function AdminCoursesView({ courses, isLoading, stats, navigate, columns }) {
 /* ── Page ── */
 function CoursesPage() {
   const navigate = useNavigate()
-  const [authState] = useState(() => {
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) return { user: null }
-    try { return { user: JSON.parse(storedUser) } }
-    catch { return { user: null } }
-  })
+  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authState = { user: authUser }
   const [courses, setCourses]           = useState([])
   const [isLoading, setIsLoading]       = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -236,26 +215,6 @@ function CoursesPage() {
       .catch(() => toast.error('Failed to load courses.'))
       .finally(() => setIsLoading(false))
   }, [authState.user])
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleSidebarNavigation = useCallback((key) => {
-    if (key === 'invite') { navigate('/manage-users', { state: { openInvite: true } }); return }
-    const routeMap = {
-      dashboard: isAdmin ? '/institution-dashboard' : '/staff-dashboard',
-      courses:   '/courses',
-      students:  '/students',
-      feedback:  '/feedback-forms',
-      users:     '/manage-users',
-    }
-    const route = routeMap[key]
-    if (route) navigate(route)
-  }, [navigate, isAdmin])
 
   const courseInfo = (course) => ({
     id:              course.id,
@@ -288,6 +247,12 @@ function CoursesPage() {
       setDeleteTarget(null)
     }
   }, [deleteTarget])
+
+  const handleBulkDelete = useCallback(async (rows) => {
+    await Promise.all(rows.map((r) => deleteCourse(r.id)))
+    setCourses((prev) => prev.filter((c) => !rows.some((r) => r.id === c.id)))
+    toast.success(`${rows.length} course${rows.length > 1 ? 's' : ''} deleted.`)
+  }, [])
 
   const stats = useMemo(() => ({
     total:     courses.length,
@@ -351,9 +316,9 @@ function CoursesPage() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <DashboardSidebar
-        navItems={isAdmin ? ADMIN_NAV : STAFF_NAV}
+        navItems={navItems}
         activeNav="courses"
-        onNavChange={handleSidebarNavigation}
+        onNavChange={handleNav}
         onLogout={handleLogout}
         logoSrc={institutionLogo}
         logoAlt="ThinkBack logo"
@@ -373,6 +338,7 @@ function CoursesPage() {
             stats={stats}
             navigate={navigate}
             columns={columns}
+            onBulkDelete={handleBulkDelete}
           />
         ) : (
           <StaffCoursesView

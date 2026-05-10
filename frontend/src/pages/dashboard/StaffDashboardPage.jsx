@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  FaHome, FaBook, FaChartBar, FaCog, FaGraduationCap,
-  FaClipboardList, FaComments, FaCheckCircle, FaChartLine,
+  FaBook, FaChartBar, FaClipboardList, FaComments, FaCheckCircle, FaChartLine,
   FaArrowUp, FaArrowDown,
 } from 'react-icons/fa'
 import DashboardSidebar from '../../components/common/DashboardSidebar'
 import DashboardTopBar from '../../components/common/DashboardTopBar'
 import institutionLogo from '../../assets/Logo_4.png'
+import { useSidebarNav } from '../../hooks/useSidebarNav'
 
 /* ── Same 3-D card styles as institution dashboard ── */
 const CARD_STYLES = `
@@ -42,13 +42,6 @@ const CARD_STYLES = `
   .stat-card-3d:hover .stat-ghost-circle { transform: scale(1.2) translateZ(-1px); }
 `
 
-const STAFF_NAV = [
-  { key: 'dashboard', label: 'Dashboard',        icon: FaHome,          group: 'main' },
-  { key: 'courses',   label: 'My Courses',        icon: FaBook,          group: 'main' },
-  { key: 'students',  label: 'Students',          icon: FaGraduationCap, group: 'main' },
-  { key: 'feedback',  label: 'Feedback Results',  icon: FaChartBar,      group: 'main' },
-  { key: 'settings',  label: 'Settings',          icon: FaCog,           group: 'settings' },
-]
 
 const ROLE_META = {
   coordinator: {
@@ -158,7 +151,7 @@ function WelcomeHero({ user, meta }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-7 md:px-10 md:py-9">
+    <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
       <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute -bottom-20 right-32 h-48 w-48 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-32 w-96 -translate-x-1/2 rounded-full bg-white/[0.03]" />
@@ -179,33 +172,12 @@ function WelcomeHero({ user, meta }) {
 
 export default function StaffDashboardPage() {
   const navigate = useNavigate()
-  const [user] = useState(() => {
-    const s = localStorage.getItem('user')
-    if (!s) return null
-    try { return JSON.parse(s) } catch { return null }
-  })
+  const { navItems, handleNav, handleLogout, user } = useSidebarNav()
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     if (user.role !== 'coordinator' && user.role !== 'lecturer') navigate('/')
   }, [user, navigate])
-
-  const handleLogout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }, [navigate])
-
-  const handleNav = useCallback((key) => {
-    const map = {
-      dashboard: '/staff-dashboard',
-      courses:   '/courses',
-      students:  '/students',
-      feedback:  '/feedback-forms',
-    }
-    if (map[key]) navigate(map[key])
-  }, [navigate])
 
   if (!user) {
     return <div className="flex items-center justify-center min-h-screen text-slate-400 text-sm">Loading...</div>
@@ -263,7 +235,7 @@ export default function StaffDashboardPage() {
 
       <div className="flex h-screen bg-slate-50 overflow-hidden">
         <DashboardSidebar
-          navItems={STAFF_NAV}
+          navItems={navItems}
           activeNav="dashboard"
           onNavChange={handleNav}
           onLogout={handleLogout}

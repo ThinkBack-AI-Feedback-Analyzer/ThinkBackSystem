@@ -13,6 +13,64 @@ from .serializers import (
 )
 
 
+class PublicStatsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from institutions.models import Institution, Course as CourseModel
+        return Response({
+            'institutions': Institution.objects.count(),
+            'courses':      CourseModel.objects.count(),
+            'active_forms': FeedbackForm.objects.filter(status='published').count(),
+            'responses':    FormResponse.objects.count(),
+        })
+
+
+class DashboardStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    _allowed = ['institution_admin', 'coordinator', 'lecturer']
+
+    def get(self, request):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        institution = request.user.institution
+        from institutions.models import Course as CourseModel
+        from users.models import User
+
+        total_courses   = CourseModel.objects.filter(institution=institution).count()
+        total_staff     = User.objects.filter(institution=institution).count()
+        active_forms    = FeedbackForm.objects.filter(institution=institution, status='published').count()
+        total_responses = FormResponse.objects.filter(form__institution=institution).count()
+
+        analysis_qs = AnalysisResult.objects.filter(form__institution=institution)
+        sentiment   = {'positive': 0, 'neutral': 0, 'negative': 0}
+        topics_agg  = {}
+
+        for ar in analysis_qs:
+            sent = ar.results.get('sentiment_distribution', {})
+            for k in sentiment:
+                sentiment[k] += sent.get(k, 0)
+            for t in ar.results.get('topics', []):
+                name = t.get('topic', '')
+                topics_agg[name] = topics_agg.get(name, 0) + t.get('count', 0)
+
+        top_topics = sorted(
+            [{'topic': k, 'count': v} for k, v in topics_agg.items()],
+            key=lambda x: x['count'], reverse=True
+        )[:5]
+
+        return Response({
+            'total_courses':   total_courses,
+            'total_staff':     total_staff,
+            'active_forms':    active_forms,
+            'total_responses': total_responses,
+            'sentiment':       sentiment,
+            'top_topics':      top_topics,
+        })
+
+
 class FeedbackFormListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -20,7 +78,20 @@ class FeedbackFormListCreateView(APIView):
         allowed = ['institution_admin', 'coordinator', 'lecturer']
         if request.user.role not in allowed:
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
-        forms = FeedbackForm.objects.filter(institution=request.user.institution)
+
+        if request.user.role == 'lecturer':
+            from institutions.models import Course as CourseModel
+            lecturer_courses = CourseModel.objects.filter(
+                institution=request.user.institution,
+                lecturer=request.user.full_name,
+            )
+            forms = FeedbackForm.objects.filter(
+                institution=request.user.institution,
+                tokens__student__courses__in=lecturer_courses,
+            ).distinct()
+        else:
+            forms = FeedbackForm.objects.filter(institution=request.user.institution)
+
         return Response(FeedbackFormSerializer(forms, many=True).data)
 
     def post(self, request):
