@@ -30,6 +30,13 @@ import StudentsPage             from './pages/student/StudentsPage'
 import ReportsPage              from './pages/reports/ReportsPage'
 import SettingsPage             from './pages/settings/SettingsPage'
 
+import SuperAdminDashboardPage  from './pages/superadmin/SuperAdminDashboardPage'
+import InstitutionsPage         from './pages/superadmin/InstitutionsPage'
+import AdminsPage               from './pages/superadmin/AdminsPage'
+import UsersPage                from './pages/superadmin/UsersPage'
+import AuditLogPage             from './pages/superadmin/AuditLogPage'
+import ProfilePage              from './pages/superadmin/ProfilePage'
+
 function App() {
   return (
     <>
@@ -65,6 +72,13 @@ function App() {
 
         <Route path="/reports"               element={<ReportsPage />} />
         <Route path="/settings"              element={<SettingsPage />} />
+
+        <Route path="/superadmin"            element={<SuperAdminDashboardPage />} />
+        <Route path="/superadmin/institutions" element={<InstitutionsPage />} />
+        <Route path="/superadmin/admins"     element={<AdminsPage />} />
+        <Route path="/superadmin/users"      element={<UsersPage />} />
+        <Route path="/superadmin/audit"      element={<AuditLogPage />} />
+        <Route path="/superadmin/profile"    element={<ProfilePage />} />
 
         <Route path="*"                      element={<Navigate to="/" replace />} />
       </Routes>

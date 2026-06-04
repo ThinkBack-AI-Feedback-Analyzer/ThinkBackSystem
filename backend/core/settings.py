@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'feedback',
     'institutions',
     'students',
+    'superadmin',
 ]
 
 MIDDLEWARE = [

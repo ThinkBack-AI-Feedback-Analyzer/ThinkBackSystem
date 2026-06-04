@@ -61,7 +61,9 @@ const LoginPage = () => {
       localStorage.setItem('user', JSON.stringify(response.user));
       
       const userRole = response.user.role;
-      if (userRole === 'institution_admin') {
+      if (userRole === 'system_admin') {
+        navigate("/superadmin");
+      } else if (userRole === 'institution_admin') {
         navigate("/institution-dashboard");
       } else if (userRole === 'coordinator' || userRole === 'lecturer') {
         navigate("/staff-dashboard");
