@@ -41,9 +41,9 @@ npm install
 
 ### Step 2: Daily Development (3 Terminals)
 
-**Terminal 1: Start Database**
+**Terminal 1: Start Database & Redis**
 ```bash
-docker compose -f docker-compose.db-only.yml up
+docker compose up
 ```
 
 **Terminal 2: Start Backend**
@@ -65,15 +65,15 @@ Access the app at: `http://localhost:5174`
 ## Development Options
 
 ### Option 1: Hybrid (Recommended) 
-Database in Docker, code runs locally. Best for development.
+Database and Redis in Docker, code runs locally. Best for development.
 ```bash
-docker compose -f docker-compose.db-only.yml up
+docker compose up
 ```
 
 ### Option 2: Full Docker
 Everything containerized. Use for testing before push.
 ```bash
-docker compose up --build
+docker compose --profile app up --build
 ```
 
 ### Option 3: Full Local
@@ -209,7 +209,7 @@ SECRET_KEY=your-secret-key
 ## Troubleshooting
 
 **Backend can't connect to database?**
-- Ensure `docker compose -f docker-compose.db-only.yml up` is running.
+- Ensure `docker compose up` is running.
 - In Hybrid mode (local Django), `DB_PORT` in `.env` must match `DB_HOST_PORT` (e.g., `5433`).
 - In Full Dockerization, the backend uses internal Docker networking, so it ignores the host port mapping.
 
@@ -218,8 +218,8 @@ SECRET_KEY=your-secret-key
 
 **Need fresh database?**
 ```bash
-docker compose -f docker-compose.db-only.yml down -v
-docker compose -f docker-compose.db-only.yml up
+docker compose down -v
+docker compose up
 ```
 
 **Migrations issues?**

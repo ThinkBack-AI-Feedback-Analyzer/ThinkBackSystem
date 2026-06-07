@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Institution Registration</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#184d35 0%,#236547 100%);padding:32px 40px;">
+              <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">ThinkBack</p>
+              <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.7);">Super Admin Notification</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1e293b;">New Institution Awaiting Approval</h1>
+              <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
+                A new institution has registered on ThinkBack and is awaiting your approval.
+              </p>
+
+              <!-- Details card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;width:140px;">Institution</td>
+                        <td style="padding:6px 0;font-size:13px;font-weight:600;color:#1e293b;">{{ institution_name }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;">Type</td>
+                        <td style="padding:6px 0;font-size:13px;color:#1e293b;">{{ institution_type }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;">Country</td>
+                        <td style="padding:6px 0;font-size:13px;color:#1e293b;">{{ country }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;">Admin Name</td>
+                        <td style="padding:6px 0;font-size:13px;color:#1e293b;">{{ admin_name }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;">Admin Email</td>
+                        <td style="padding:6px 0;font-size:13px;color:#1e293b;">{{ admin_email }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 20px;font-size:14px;color:#64748b;">
+                Please log in to the Super Admin dashboard to review and approve or reject this registration.
+              </p>
+
+              <a href="{{ dashboard_url }}"
+                 style="display:inline-block;background:linear-gradient(135deg,#184d35,#236547);color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;">
+                Review in Dashboard →
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">
+                © 2026 ThinkBack AI · This email was sent to all Super Admins automatically.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

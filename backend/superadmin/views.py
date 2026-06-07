@@ -42,6 +42,7 @@ class SuperAdminStatsView(APIView):
         total_institutions  = Institution.objects.count()
         active_institutions = Institution.objects.filter(is_active=True).count()
         inactive_institutions = Institution.objects.filter(is_active=False).count()
+        pending_count = Institution.objects.filter(approval_status='pending').count()
         total_admins  = User.objects.filter(role='institution_admin').count()
         active_admins = User.objects.filter(role='institution_admin', is_active=True).count()
         total_users   = User.objects.exclude(role='system_admin').count()
@@ -53,7 +54,7 @@ class SuperAdminStatsView(APIView):
             'total_admins':  total_admins,
             'active_admins': active_admins,
             'total_users':   total_users,
-            'pending_institutions': inactive_institutions,
+            'pending_institutions': pending_count,
         }
         return Response(SuperAdminStatsSerializer(data).data)
 
@@ -145,6 +146,87 @@ class SuperAdminInstitutionDeleteView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ── Pending / Approve / Reject ────────────────────────────────────────────────
+
+class SuperAdminPendingInstitutionsView(APIView):
+    """Return all institutions still awaiting approval (in-app notification source)."""
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def get(self, request):
+        qs = Institution.objects.filter(approval_status='pending').order_by('-created_at')
+        return Response(
+            SuperAdminInstitutionSerializer(qs, many=True, context={'request': request}).data
+        )
+
+
+class SuperAdminApproveInstitutionView(APIView):
+    """Approve a pending institution — activates the institution and its admin account."""
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def post(self, request, pk):
+        institution = get_object_or_404(Institution, pk=pk)
+
+        if institution.approval_status == 'approved':
+            return Response({'detail': 'Institution is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        institution.is_active = True
+        institution.approval_status = 'approved'
+        institution.save()
+
+        admin_users = list(institution.users.filter(role='institution_admin'))
+        institution.users.filter(role='institution_admin').update(is_active=True)
+
+        try:
+            from users.emails import send_institution_approved_email
+            for admin in admin_users:
+                send_institution_approved_email(admin)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to send approval email")
+
+        _log(request.user, 'approve_institution', 'institution', pk, institution.institution_name)
+        return Response(
+            SuperAdminInstitutionSerializer(institution, context={'request': request}).data
+        )
+
+
+class SuperAdminRejectInstitutionView(APIView):
+    """Reject a pending institution registration."""
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def post(self, request, pk):
+        institution = get_object_or_404(Institution, pk=pk)
+
+        if institution.approval_status == 'rejected':
+            return Response({'detail': 'Institution is already rejected.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        institution_name = institution.institution_name
+        institution.approval_status = 'rejected'
+        institution.is_active = False
+        institution.save()
+
+        # Collect pending admin users before deleting them
+        pending_admins = list(institution.users.filter(role='institution_admin', is_active=False))
+
+        # Send rejection email BEFORE deleting the accounts
+        try:
+            from users.emails import send_institution_rejected_email
+            for admin in pending_admins:
+                send_institution_rejected_email(admin, institution_name)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to send rejection email")
+
+        # Delete the inactive admin accounts so their email is free for re-registration
+        for admin in pending_admins:
+            admin.delete()
+
+        _log(request.user, 'reject_institution', 'institution', pk, institution_name)
+        return Response(
+            SuperAdminInstitutionSerializer(institution, context={'request': request}).data
+        )
+
+
 # ── Institution Admins ────────────────────────────────────────────────────────
 
 class SuperAdminAdminListView(APIView):
@@ -175,7 +257,17 @@ class SuperAdminAdminToggleView(APIView):
         return Response(SuperAdminUserSerializer(user).data)
 
 
-# ── All Users ─────────────────────────────────────────────────────────────────
+class SuperAdminInstitutionDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def get(self, request, pk):
+        institution = get_object_or_404(Institution, pk=pk)
+        from .serializers import SuperAdminInstitutionDetailSerializer
+        serializer = SuperAdminInstitutionDetailSerializer(institution)
+        return Response(serializer.data)
+
+
+# ── Admins ────────────────────────────────────────────────────────────────────
 
 class SuperAdminAllUsersView(APIView):
     permission_classes = [IsAuthenticated, IsSystemAdmin]

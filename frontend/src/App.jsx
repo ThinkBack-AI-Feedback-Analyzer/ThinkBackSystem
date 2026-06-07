@@ -7,6 +7,7 @@ import ContactPage              from './pages/landing/ContactPage'
 
 import LoginPage                from './pages/auth/LoginPage'
 import InstitutionRegisterPage  from './pages/auth/InstitutionRegisterPage'
+import InstitutionRegistrationSuccessPage from './pages/auth/InstitutionRegistrationSuccessPage'
 import SetPasswordPage          from './pages/auth/SetPasswordPage'
 
 import InstitutionDashboardPage from './pages/dashboard/InstitutionDashboardPage'
@@ -32,6 +33,8 @@ import SettingsPage             from './pages/settings/SettingsPage'
 
 import SuperAdminDashboardPage  from './pages/superadmin/SuperAdminDashboardPage'
 import InstitutionsPage         from './pages/superadmin/InstitutionsPage'
+import InstitutionDetailsPage   from './pages/superadmin/InstitutionDetailsPage'
+import PendingApprovalsPage     from './pages/superadmin/PendingApprovalsPage'
 import AdminsPage               from './pages/superadmin/AdminsPage'
 import UsersPage                from './pages/superadmin/UsersPage'
 import AuditLogPage             from './pages/superadmin/AuditLogPage'
@@ -48,6 +51,7 @@ function App() {
 
         <Route path="/login"                 element={<LoginPage />} />
         <Route path="/institutions/register" element={<InstitutionRegisterPage />} />
+        <Route path="/institutions/registration-success" element={<InstitutionRegistrationSuccessPage />} />
         <Route path="/register"              element={<Navigate to="/institutions/register" replace />} />
         <Route path="/set-password"          element={<SetPasswordPage />} />
 
@@ -74,7 +78,9 @@ function App() {
         <Route path="/settings"              element={<SettingsPage />} />
 
         <Route path="/superadmin"            element={<SuperAdminDashboardPage />} />
+        <Route path="/superadmin/approvals"  element={<PendingApprovalsPage />} />
         <Route path="/superadmin/institutions" element={<InstitutionsPage />} />
+        <Route path="/superadmin/institutions/:id" element={<InstitutionDetailsPage />} />
         <Route path="/superadmin/admins"     element={<AdminsPage />} />
         <Route path="/superadmin/users"      element={<UsersPage />} />
         <Route path="/superadmin/audit"      element={<AuditLogPage />} />

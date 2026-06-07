@@ -7,6 +7,8 @@ class AuditLog(models.Model):
         ('activate_institution',   'Activate Institution'),
         ('deactivate_institution', 'Deactivate Institution'),
         ('delete_institution',     'Delete Institution'),
+        ('approve_institution',    'Approve Institution'),
+        ('reject_institution',     'Reject Institution'),
         ('activate_user',          'Activate User'),
         ('deactivate_user',        'Deactivate User'),
         ('change_password',        'Change Password'),

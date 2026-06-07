@@ -3,7 +3,7 @@ function PlatformOverviewSection({ modules, steps }) {
     <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
       <div
         id="platform"
-        className="rounded-[32px] border border-[#dbe4db] bg-[linear-gradient(180deg,#ffffff_0%,#f7faf6_100%)] p-8 shadow-[0_18px_40px_rgba(15,23,42,0.06)]"
+        className="rounded-3xl border border-[#dbe4db] bg-[linear-gradient(180deg,#ffffff_0%,#f7faf6_100%)] p-5 sm:p-8 shadow-[0_18px_40px_rgba(15,23,42,0.06)]"
       >
         <div id="about">
           <p className="text-sm uppercase tracking-[0.25em] text-[#56836c]">
@@ -39,7 +39,7 @@ function PlatformOverviewSection({ modules, steps }) {
 
       <div
         id="workflow"
-        className="rounded-[32px] border border-[#d6e2d8] bg-[linear-gradient(135deg,#214f39_0%,#184d35_42%,#102d1d_100%)] p-8 text-white shadow-[0_24px_60px_rgba(24,77,53,0.16)]"
+        className="rounded-3xl border border-[#d6e2d8] bg-[linear-gradient(135deg,#214f39_0%,#184d35_42%,#102d1d_100%)] p-5 sm:p-8 text-white shadow-[0_24px_60px_rgba(24,77,53,0.16)]"
       >
         <p className="text-sm uppercase tracking-[0.25em] text-[#d5eadc]">
           Workflow

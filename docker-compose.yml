@@ -19,7 +19,21 @@ services:
     ports:
       - "6379:6379"
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: thinkback_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - db
+
   backend:
+    profiles:
+      - app
     build: ./backend
     container_name: thinkback_backend
     restart: always
@@ -41,6 +55,8 @@ services:
       - ./backend:/app
 
   celery:
+    profiles:
+      - app
     build: ./backend
     container_name: thinkback_celery
     restart: always
@@ -61,6 +77,8 @@ services:
       - ./backend:/app
 
   frontend:
+    profiles:
+      - app
     build: ./frontend
     container_name: thinkback_frontend
     restart: always

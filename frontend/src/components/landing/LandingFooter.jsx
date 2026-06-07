@@ -49,7 +49,7 @@ function LandingFooter() {
           </div>
         </div>
 
-        <div className="grid gap-8 pt-8 md:grid-cols-4">
+        <div className="grid gap-8 pt-8 grid-cols-2 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3">
                

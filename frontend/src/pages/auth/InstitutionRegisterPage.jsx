@@ -5,8 +5,7 @@ import { toast } from 'sonner'
 import { FaChevronDown, FaCheck } from 'react-icons/fa'
 import brandLogo from '../../assets/Thinkback logo2-cropped.png'
 import { countries } from '../../data/countries'
-import { createInstitution } from '../../services/institutions'
-import { register } from '../../services/auth'
+import { registerInstitutionAtomic } from '../../services/institutions'
 
 const institutionTypes = [
   'University',
@@ -147,6 +146,8 @@ function InstitutionRegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   function updateField(name, value) {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -214,26 +215,40 @@ function InstitutionRegisterPage() {
       payload.append('address', formData.address.trim())
       if (formData.country) payload.append('country', formData.country)
       if (logoFile) payload.append('logo', logoFile)
+      
+      // Admin fields
+      payload.append('admin_name', formData.adminName.trim())
+      payload.append('admin_email', formData.adminEmail.trim())
+      payload.append('admin_phone', formData.adminPhone.trim())
+      payload.append('password', formData.password)
+      payload.append('password_confirm', formData.confirmPassword)
 
-      const institution = await createInstitution(payload)
-      await register({
-        full_name: formData.adminName.trim(),
-        email: formData.adminEmail.trim(),
-        password: formData.password,
-        password_confirm: formData.confirmPassword,
-        phone_number: formData.adminPhone.trim() || null,
-        role: 'institution_admin',
-        institution: institution.id,
+      await registerInstitutionAtomic(payload)
+
+      navigate('/institutions/registration-success', {
+        state: { 
+          email: formData.adminEmail.trim(), 
+          name: formData.institutionName.trim() 
+        }
       })
-
-      toast.success('Institution registered successfully!')
-      setTimeout(() => navigate('/login'), 1500)
     } catch (error) {
-      setSubmitError(getErrorMessage(error))
+      // The API returns errors as an object. Check if it's the specific atomic format.
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'object') {
+           const firstError = Object.values(data)[0];
+           setSubmitError(Array.isArray(firstError) ? firstError[0] : String(firstError))
+        } else {
+           setSubmitError(getErrorMessage(error))
+        }
+      } else {
+        setSubmitError(getErrorMessage(error))
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -452,25 +467,61 @@ function InstitutionRegisterPage() {
               <SectionCard title="Account Credentials" description="Create login credentials for the admin account.">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label="Password" required error={fieldErrors.password}>
-                    <input
-                      name="password"
-                      type="password"
-                      placeholder="At least 8 characters"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={fieldErrors.password ? INPUT_ERROR : INPUT}
-                    />
+                    <div className="relative">
+                      <input
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="At least 8 characters"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`${fieldErrors.password ? INPUT_ERROR : INPUT} pr-10`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showPassword ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </Field>
 
                   <Field label="Confirm Password" required error={fieldErrors.confirmPassword}>
-                    <input
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Repeat your password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className={fieldErrors.confirmPassword ? INPUT_ERROR : INPUT}
-                    />
+                    <div className="relative">
+                      <input
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Repeat your password"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`${fieldErrors.confirmPassword ? INPUT_ERROR : INPUT} pr-10`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showConfirmPassword ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </Field>
                 </div>
               </SectionCard>

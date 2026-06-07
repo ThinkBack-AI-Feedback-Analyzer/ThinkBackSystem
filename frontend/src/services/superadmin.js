@@ -9,8 +9,20 @@ export const getInstitutions = (params = {}) =>
 export const toggleInstitution = (id) =>
   api.patch(`/superadmin/institutions/${id}/toggle/`);
 
+export const getInstitutionDetails = (id) =>
+  api.get(`/superadmin/institutions/${id}/`);
+
 export const deleteInstitution = (id) =>
   api.delete(`/superadmin/institutions/${id}/delete/`);
+
+export const getPendingInstitutions = () =>
+  api.get('/superadmin/institutions/pending/');
+
+export const approveInstitution = (id) =>
+  api.post(`/superadmin/institutions/${id}/approve/`);
+
+export const rejectInstitution = (id) =>
+  api.post(`/superadmin/institutions/${id}/reject/`);
 
 export const getAdmins = (params = {}) =>
   api.get('/superadmin/admins/', { params });

@@ -32,20 +32,15 @@ from .serializers import (
 
 
 class RegisterView(APIView):
-    """Register a new user endpoint"""
+    """Register a new institution admin — account starts inactive until super admin approves."""
     permission_classes = [AllowAny]
 
     def post(self, request: Any) -> Response:
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = cast(User, serializer.save())
-            refresh = RefreshToken.for_user(user)
-
+            serializer.save()
             return Response({
-                'user': UserSerializer(user).data,
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'message': 'User registered successfully'
+                'message': 'Registration submitted successfully. Your account is pending approval by the system administrator. You will receive an email once your institution has been reviewed.'
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

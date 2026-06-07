@@ -29,6 +29,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
 
+        # Institution admins registering publicly start inactive until super admin approves
+        if validated_data.get('role') == 'institution_admin':
+            validated_data['is_active'] = False
+
         user: User = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
@@ -73,6 +77,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise serializers.ValidationError({"password": "Invalid password."})
 
         if not user.is_active:
+            # Check if this is a pending institution admin
+            if hasattr(user, 'institution') and user.institution and user.institution.approval_status == 'pending':
+                raise serializers.ValidationError({
+                    "pending_approval": True,
+                    "institution_name": user.institution.institution_name,
+                    "email": user.email
+                })
             raise serializers.ValidationError({"detail": "User account is inactive."})
 
         # Generate tokens

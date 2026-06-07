@@ -1,14 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FaChartBar, FaBuilding, FaUserShield, FaUsers,
-  FaHistory, FaUserCircle,
-  FaShieldAlt, FaSignOutAlt, FaBars, FaTimes,
+  FaHistory, FaUserCircle, FaCheckCircle,
+  FaSignOutAlt, FaBars, FaTimes,
   FaChevronLeft, FaChevronRight,
 } from 'react-icons/fa'
+import logo from '../../assets/Logo_4.png'
+import { getPendingInstitutions } from '../../services/superadmin'
 
 const NAV_MAIN = [
   { key: 'dashboard',    label: 'Dashboard',    icon: FaChartBar,    path: '/superadmin' },
+  { key: 'approvals',    label: 'Approvals',    icon: FaCheckCircle, path: '/superadmin/approvals' },
   { key: 'institutions', label: 'Institutions', icon: FaBuilding,    path: '/superadmin/institutions' },
   { key: 'admins',       label: 'Admins',       icon: FaUserShield,  path: '/superadmin/admins' },
   { key: 'users',        label: 'All Users',    icon: FaUsers,       path: '/superadmin/users' },
@@ -25,6 +28,14 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
   const navigate  = useNavigate()
   const location  = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (user?.role === 'system_admin') {
+      getPendingInstitutions().then(data => setPendingCount(data.length)).catch(() => {})
+    }
+  }, [location.pathname])
 
   const activeKey = ALL_NAV.find(n => n.path === location.pathname)?.key ?? 'dashboard'
 
@@ -38,6 +49,7 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
   const NavBtn = ({ item }) => {
     const Icon     = item.icon
     const isActive = activeKey === item.key
+    const hasBadge = item.key === 'approvals' && pendingCount > 0
     return (
       <button
         type="button"
@@ -51,11 +63,27 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
             : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800',
         ].join(' ')}
       >
-        <Icon className={`shrink-0 text-base ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
+        <div className="relative">
+          <Icon className={`shrink-0 text-base ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
+          {hasBadge && collapsed && (
+            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+          )}
+        </div>
+        
         {!collapsed && <span className="truncate">{item.label}</span>}
+        
+        {hasBadge && !collapsed && (
+          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+            {pendingCount}
+          </span>
+        )}
+
         {collapsed && (
           <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
-            {item.label}
+            {item.label} {hasBadge && `(${pendingCount} pending)`}
           </span>
         )}
       </button>
@@ -65,8 +93,8 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
   const Content = () => (
     <div className="flex flex-col h-full">
       <div className={`flex items-center mb-6 ${collapsed ? 'justify-center px-2 pt-5' : 'gap-3 px-4 pt-5'}`}>
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center">
-          <FaShieldAlt className="text-white text-sm" />
+        <div className="shrink-0 w-9 h-9 rounded-xl overflow-hidden bg-white border border-slate-200 flex items-center justify-center">
+          <img src={logo} alt="Think Back logo" className="w-full h-full object-contain" />
         </div>
         {!collapsed && (
           <div className="min-w-0">

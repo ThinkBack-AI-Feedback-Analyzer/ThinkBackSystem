@@ -102,7 +102,7 @@ function HeroSection({ stats: staticStats }) {
                     <span className="h-2 w-2 rounded-full bg-[#c7dfce]" />
                     {item}
                   </span>
-                  {index < 3 ? <span className="opacity-40">/</span> : null}
+                  {index < 3 ? <span className="hidden sm:inline opacity-40">/</span> : null}
                 </div>
               ))}
             </div>
@@ -116,7 +116,7 @@ function HeroSection({ stats: staticStats }) {
                 image={feedbackLoopImage}
                 alt="Feedback workflow"
                 label="Feedback loop"
-                wrapperClassName="left-2 top-8 sm:left-4 lg:left-0 lg:top-10"
+                wrapperClassName="hidden sm:block absolute left-2 top-8 sm:left-4 lg:left-0 lg:top-10"
                 cardClassName="rotate-[-9deg] group-hover:rotate-[-2deg]"
               />
 
@@ -124,7 +124,7 @@ function HeroSection({ stats: staticStats }) {
                 image={insightImage}
                 alt="Insight discovery"
                 label="Insight scan"
-                wrapperClassName="right-2 top-0 sm:right-4 lg:right-0 lg:top-6"
+                wrapperClassName="hidden sm:block absolute right-2 top-0 sm:right-4 lg:right-0 lg:top-6"
                 cardClassName="rotate-[8deg] group-hover:rotate-[2deg]"
               />
 
@@ -132,7 +132,7 @@ function HeroSection({ stats: staticStats }) {
                 image={analyticsImage}
                 alt="Analytics insights"
                 label="Trend analysis"
-                wrapperClassName="bottom-10 right-6 sm:right-10 lg:right-2 lg:bottom-12"
+                wrapperClassName="hidden sm:block absolute bottom-10 right-6 sm:right-10 lg:right-2 lg:bottom-12"
                 cardClassName="rotate-[4deg] group-hover:rotate-0"
               />
 
@@ -140,7 +140,7 @@ function HeroSection({ stats: staticStats }) {
                 image={intelligenceImage}
                 alt="AI intelligence engine"
                 label="AI engine"
-                wrapperClassName="left-2 top-1/2 -translate-y-1/2 sm:left-7 lg:left-1 lg:top-[56%]"
+                wrapperClassName="hidden sm:block absolute left-2 top-1/2 -translate-y-1/2 sm:left-7 lg:left-1 lg:top-[56%]"
                 cardClassName="rotate-[-5deg] group-hover:rotate-[-1deg]"
               />
 

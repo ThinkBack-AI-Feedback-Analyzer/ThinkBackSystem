@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaBuilding, FaUserShield, FaUsers, FaCheckCircle,
-  FaTimesCircle, FaShieldAlt, FaComments,
+  FaTimesCircle, FaShieldAlt, FaComments, FaClock,
 } from 'react-icons/fa'
 import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
-import { getSuperAdminStats, getInstitutions, getAnalytics } from '../../services/superadmin'
+import { getSuperAdminStats, getInstitutions, getAnalytics, getPendingInstitutions } from '../../services/superadmin'
 import { toast } from 'sonner'
 
 /* ── 3-D stat card styles ────────────────────────────────────── */
@@ -212,12 +212,18 @@ export default function SuperAdminDashboardPage() {
   const [analytics, setAnalytics] = useState(null)
   const [loading,   setLoading]   = useState(true)
   const [collapsed, setCollapsed] = useState(false)
+  const [pending,   setPending]   = useState([])
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     if (user?.role !== 'system_admin') { navigate('/login'); return }
-    Promise.all([getSuperAdminStats(), getInstitutions(), getAnalytics()])
-      .then(([s, inst, a]) => { setStats(s); setRecent(inst.slice(0, 5)); setAnalytics(a) })
+    Promise.all([getSuperAdminStats(), getInstitutions(), getAnalytics(), getPendingInstitutions()])
+      .then(([s, inst, a, pend]) => {
+        setStats(s)
+        setRecent(inst.slice(0, 5))
+        setAnalytics(a)
+        setPending(pend)
+      })
       .catch(() => toast.error('Failed to load dashboard data'))
       .finally(() => setLoading(false))
   }, [navigate])
@@ -268,6 +274,30 @@ export default function SuperAdminDashboardPage() {
           </div>
 
           <div className="p-6 space-y-6">
+
+            {/* Pending Approvals Widget */}
+            {!loading && pending.length > 0 && (
+              <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                    <FaClock className="text-xl text-amber-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800">Pending Approvals Action Required</h2>
+                    <p className="text-sm text-slate-600 mt-0.5">You have <strong className="text-amber-700">{pending.length}</strong> institution registrations waiting for review.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/superadmin/approvals')}
+                  className="relative z-10 whitespace-nowrap rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 hover:shadow-md"
+                >
+                  Review Approvals →
+                </button>
+              </div>
+            )}
+
             {/* Stat cards */}
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
