@@ -5,7 +5,7 @@ function PlatformOverviewSection({ modules, steps }) {
         id="platform"
         className="rounded-3xl border border-[#dbe4db] bg-[linear-gradient(180deg,#ffffff_0%,#f7faf6_100%)] p-5 sm:p-8 shadow-[0_18px_40px_rgba(15,23,42,0.06)]"
       >
-        <div id="about">
+        <div>
           <p className="text-sm uppercase tracking-[0.25em] text-[#56836c]">
             Why ThinkBack AI
           </p>

@@ -144,3 +144,18 @@ class UpdateStaffSerializer(serializers.Serializer):
         if not data:
             raise serializers.ValidationError("Nothing to update.")
         return data
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, min_length=8)
+    password_confirm = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({"password": "Passwords do not match."})
+        return data

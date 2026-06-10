@@ -18,4 +18,7 @@ urlpatterns = [
     path('audit/',                               views.SuperAdminAuditLogView.as_view(),              name='superadmin-audit'),
     path('profile/',                             views.SuperAdminProfileView.as_view(),               name='superadmin-profile'),
     path('change-password/',                     views.SuperAdminChangePasswordView.as_view(),        name='superadmin-change-password'),
+    path('contact-messages/',                    views.ContactMessageListView.as_view(),              name='superadmin-contact-messages'),
+    path('contact-messages/<int:pk>/read/',      views.ContactMessageDetailView.as_view(),            name='superadmin-contact-message-read'),
+    path('contact-messages/<int:pk>/delete/',    views.ContactMessageDetailView.as_view(),            name='superadmin-contact-message-delete'),
 ]

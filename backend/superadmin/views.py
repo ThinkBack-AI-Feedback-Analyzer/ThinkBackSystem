@@ -5,7 +5,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count
@@ -14,9 +14,11 @@ from feedback.models import FormResponse
 from institutions.models import Institution
 from users.models import User
 from users.permissions import IsSystemAdmin
-from .models import AuditLog
+from .models import AuditLog, ContactMessage
 from .serializers import (
     AuditLogSerializer,
+    ContactMessageCreateSerializer,
+    ContactMessageSerializer,
     SuperAdminInstitutionSerializer,
     SuperAdminUserSerializer,
     SuperAdminStatsSerializer,
@@ -353,3 +355,37 @@ class SuperAdminChangePasswordView(APIView):
         user.save()
         _log(user, 'change_password', 'profile', user.id, user.full_name)
         return Response({'message': 'Password changed successfully'})
+
+
+# ── Contact Messages ──────────────────────────────────────────────────────────
+
+class ContactMessageListView(APIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [AllowAny()]
+        return [IsAuthenticated(), IsSystemAdmin()]
+
+    def get(self, request):
+        qs = ContactMessage.objects.all()
+        return Response(ContactMessageSerializer(qs, many=True).data)
+
+    def post(self, request):
+        serializer = ContactMessageCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response({'message': 'Message received. We will get back to you within 24 hours.'}, status=status.HTTP_201_CREATED)
+
+
+class ContactMessageDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsSystemAdmin]
+
+    def patch(self, request, pk):
+        msg = get_object_or_404(ContactMessage, pk=pk)
+        msg.is_read = True
+        msg.save()
+        return Response(ContactMessageSerializer(msg).data)
+
+    def delete(self, request, pk):
+        get_object_or_404(ContactMessage, pk=pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

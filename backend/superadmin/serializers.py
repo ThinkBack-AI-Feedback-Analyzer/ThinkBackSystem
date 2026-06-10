@@ -1,7 +1,20 @@
 from rest_framework import serializers
 from institutions.models import Institution
 from users.models import User
-from .models import AuditLog
+from .models import AuditLog, ContactMessage
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ('id', 'name', 'email', 'subject', 'message', 'is_read', 'created_at')
+        read_only_fields = ('id', 'is_read', 'created_at')
+
+
+class ContactMessageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ('name', 'email', 'subject', 'message')
 
 
 class SuperAdminInstitutionSerializer(serializers.ModelSerializer):

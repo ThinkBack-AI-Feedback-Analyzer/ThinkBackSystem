@@ -4,6 +4,8 @@ import LandingFooter from '../../components/landing/LandingFooter'
 import LandingHeader from '../../components/landing/LandingHeader'
 import HeroSection from '../../components/landing/HeroSection'
 import PlatformOverviewSection from '../../components/landing/PlatformOverviewSection'
+import AboutSection from '../../components/landing/AboutSection'
+import ContactSection from '../../components/landing/ContactSection'
 import { modules, navItems, stats, steps } from '../../data/landingPage'
 
 function LandingPage() {
@@ -33,6 +35,14 @@ function LandingPage() {
 
         <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
           <PlatformOverviewSection modules={modules} steps={steps} />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+          <AboutSection />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+          <ContactSection />
         </div>
       </main>
 

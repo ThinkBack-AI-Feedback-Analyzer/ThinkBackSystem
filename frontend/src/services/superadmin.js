@@ -50,3 +50,12 @@ export const updateProfile = (data) =>
 
 export const changePassword = (data) =>
   api.post('/superadmin/change-password/', data);
+
+export const getContactMessages = () =>
+  api.get('/superadmin/contact-messages/');
+
+export const markMessageRead = (id) =>
+  api.patch(`/superadmin/contact-messages/${id}/read/`);
+
+export const deleteContactMessage = (id) =>
+  api.delete(`/superadmin/contact-messages/${id}/delete/`);

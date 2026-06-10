@@ -9,6 +9,8 @@ import LoginPage                from './pages/auth/LoginPage'
 import InstitutionRegisterPage  from './pages/auth/InstitutionRegisterPage'
 import InstitutionRegistrationSuccessPage from './pages/auth/InstitutionRegistrationSuccessPage'
 import SetPasswordPage          from './pages/auth/SetPasswordPage'
+import ForgotPasswordPage       from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage        from './pages/auth/ResetPasswordPage'
 
 import InstitutionDashboardPage from './pages/dashboard/InstitutionDashboardPage'
 import StaffDashboardPage       from './pages/dashboard/StaffDashboardPage'
@@ -54,6 +56,8 @@ function App() {
         <Route path="/institutions/registration-success" element={<InstitutionRegistrationSuccessPage />} />
         <Route path="/register"              element={<Navigate to="/institutions/register" replace />} />
         <Route path="/set-password"          element={<SetPasswordPage />} />
+        <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"        element={<ResetPasswordPage />} />
 
         <Route path="/institution-dashboard" element={<InstitutionDashboardPage />} />
         <Route path="/staff-dashboard"       element={<StaffDashboardPage />} />

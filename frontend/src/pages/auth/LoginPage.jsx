@@ -157,10 +157,16 @@ const LoginPage = () => {
               required
             />
 
+            <div className="mb-4 -mt-2 text-right">
+              <Link to="/forgot-password" className="text-[10px] font-medium text-slate-400 hover:text-[#13462D] transition">
+                Forgot password?
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full rounded-xl bg-[#13462D] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3a26] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full rounded-xl bg-[#13462D] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0f3a26] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In to Dashboard"}
             </button>
