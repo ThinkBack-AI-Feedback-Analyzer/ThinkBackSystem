@@ -220,11 +220,11 @@ function ManageUsersPage() {
         <section className="px-4 pb-4 md:px-6 md:pb-6">
           <div className="mx-auto max-w-7xl pt-6">
             {isLoading ? (
-              <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-slate-400">
+              <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-12 text-center text-sm text-slate-400">
                 Loading staff members…
               </div>
             ) : fetchError ? (
-              <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-red-500">
+              <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-12 text-center text-sm text-red-500">
                 {fetchError}
               </div>
             ) : (
@@ -234,6 +234,10 @@ function ManageUsersPage() {
                 searchPlaceholder="Search by name, email, role…"
                 pageSize={10}
                 onDeleteSelected={handleBulkDelete}
+                filterDefs={[
+                  { column: 'role',   label: 'Role',   options: [{ value: 'coordinator', label: 'Coordinator' }, { value: 'lecturer', label: 'Lecturer' }] },
+                  { column: 'status', label: 'Status', options: [{ value: 'Active', label: 'Active' }, { value: 'Invited', label: 'Invited' }] },
+                ]}
               />
             )}
           </div>

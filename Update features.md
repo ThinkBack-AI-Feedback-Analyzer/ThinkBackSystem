@@ -27,7 +27,7 @@ Check number cards in landing
 Footer elements link - done 
 
 
-Profile Setting- (Lectures) 
+Profile Setting- (Lectures)  done 
 
 Number cards in landing
 

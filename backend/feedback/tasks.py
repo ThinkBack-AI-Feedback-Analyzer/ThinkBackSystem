@@ -35,12 +35,34 @@ def send_feedback_email(token_id):
 
 
 @shared_task
-def run_ai_analysis(form_id):
-    from .models import FeedbackForm, FormAnswer, AnalysisResult
+def run_ai_analysis(form_id, job_id=None):
+    from .models import FeedbackForm, FormAnswer, AnalysisResult, AnalysisJob
+
+    # ── Resolve job record ────────────────────────────────────────────────────
+    job = None
+    if job_id:
+        try:
+            job = AnalysisJob.objects.get(id=job_id)
+        except AnalysisJob.DoesNotExist:
+            pass
+
+    def _fail(msg):
+        if job:
+            job.status        = 'failed'
+            job.error_message = msg
+            job.completed_at  = timezone.now()
+            job.save(update_fields=['status', 'error_message', 'completed_at'])
+
+    # ── Mark as running ───────────────────────────────────────────────────────
+    if job:
+        job.status     = 'running'
+        job.started_at = timezone.now()
+        job.save(update_fields=['status', 'started_at'])
 
     try:
         form = FeedbackForm.objects.get(id=form_id)
     except FeedbackForm.DoesNotExist:
+        _fail('Form not found.')
         return
 
     answers = (
@@ -51,6 +73,12 @@ def run_ai_analysis(form_id):
         .prefetch_related('response__token__student__courses')
     )
 
+    # Record how many responses are being processed
+    response_count = answers.values('response').distinct().count()
+    if job:
+        job.response_count = response_count
+        job.save(update_fields=['response_count'])
+
     course_texts = defaultdict(list)
     for ans in answers:
         student = ans.response.token.student
@@ -59,17 +87,22 @@ def run_ai_analysis(form_id):
             for course in courses:
                 course_texts[f"{course.code} — {course.title}"].append(ans.answer)
         else:
-            course_texts['All Responses'].append(ans.answer)
+            course_texts['General (No Course)'].append(ans.answer)
 
     if not course_texts:
         AnalysisResult.objects.update_or_create(
             form=form,
-            course_name='All Responses',
+            course_name='General (No Course)',
             defaults={'results': []},
         )
+        if job:
+            job.status       = 'completed'
+            job.completed_at = timezone.now()
+            job.save(update_fields=['status', 'completed_at'])
         return
 
     ai_url = getattr(settings, 'AI_SERVICE_URL', 'http://127.0.0.1:8001')
+    any_success = False
 
     for course_name, texts in course_texts.items():
         try:
@@ -84,5 +117,17 @@ def run_ai_analysis(form_id):
                     course_name=course_name,
                     defaults={'results': resp.json().get('results', [])},
                 )
+                any_success = True
         except Exception:
             pass
+
+    # ── Mark job complete or failed ───────────────────────────────────────────
+    if job:
+        if any_success:
+            job.status       = 'completed'
+            job.error_message = ''
+        else:
+            job.status        = 'failed'
+            job.error_message = 'AI service unreachable or returned no results.'
+        job.completed_at = timezone.now()
+        job.save(update_fields=['status', 'error_message', 'completed_at'])

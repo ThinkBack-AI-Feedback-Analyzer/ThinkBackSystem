@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaUsers, FaChartLine, FaClipboardList, FaCheckCircle,
-  FaBook, FaFileAlt,
+  FaBook, FaFileAlt, FaExclamationTriangle, FaArrowRight,
+  FaFire, FaThumbsUp,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { getDashboardStats } from '../../services/feedback'
@@ -150,10 +151,49 @@ const InstitutionDashboardPage = () => {
   const sentiment  = stats?.sentiment  ?? { positive: 0, neutral: 0, negative: 0 }
   const topTopics  = stats?.top_topics ?? []
   const sentTotal  = sentiment.positive + sentiment.neutral + sentiment.negative
+  const negPct     = sentTotal > 0 ? Math.round((sentiment.negative / sentTotal) * 100) : 0
+  const posPct     = sentTotal > 0 ? Math.round((sentiment.positive / sentTotal) * 100) : 0
+  const topTopic   = topTopics[0]?.topic ?? null
+  const isHighNeg  = sentTotal > 0 && negPct > 40
+  const isHealthy  = sentTotal > 0 && posPct >= 65
 
   return (
     <DashboardLayout activeNav="dashboard">
       <style>{CARD_STYLES}</style>
+
+          {/* ── AI Alert Banner ── */}
+          {!loading && isHighNeg && (
+            <div className="mx-6 mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+              <FaFire className="text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-700">
+                  AI Alert: High student dissatisfaction detected
+                </p>
+                <p className="text-xs text-red-500 mt-0.5">
+                  {negPct}% negative sentiment across analysed forms
+                  {topTopic ? ` — most discussed topic: ${topTopic}` : ''}.
+                  Review AI insights to take action.
+                </p>
+              </div>
+              <button type="button" onClick={() => navigate('/reports')}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 whitespace-nowrap mt-0.5">
+                View AI Insights <FaArrowRight className="text-[9px]" />
+              </button>
+            </div>
+          )}
+          {!loading && isHealthy && (
+            <div className="mx-6 mt-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5">
+              <FaThumbsUp className="text-emerald-500 shrink-0" />
+              <p className="text-sm text-emerald-700">
+                <span className="font-semibold">AI Report: Student satisfaction is healthy</span>
+                {' '}— {posPct}% positive sentiment{topTopic ? `. Top topic: ${topTopic}` : ''}.
+              </p>
+              <button type="button" onClick={() => navigate('/reports')}
+                className="ml-auto text-xs font-semibold text-emerald-700 flex items-center gap-1 whitespace-nowrap hover:gap-2 transition-all">
+                Full Report <FaArrowRight className="text-[9px]" />
+              </button>
+            </div>
+          )}
 
           {/* ── Stat cards ── */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 p-6">

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import {
   FaBook, FaDownload, FaGraduationCap,
   FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
-  FaUsers, FaFilter,
+  FaUsers, FaFilter, FaInfoCircle,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -109,6 +109,51 @@ function ImportPanel({ courses, isAdmin, onImported }) {
 
   return (
     <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+
+      {/* CSV Format Instructions */}
+      <div className="p-5 bg-amber-50 border-b border-amber-100">
+        <div className="flex items-start gap-3">
+          <FaInfoCircle className="text-amber-500 text-base mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 mb-2">CSV Format Requirements</p>
+            <div className="overflow-x-auto rounded-lg border border-amber-200">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-amber-100">
+                    <th className="px-3 py-2 text-left font-semibold text-amber-900">Column Name</th>
+                    <th className="px-3 py-2 text-left font-semibold text-amber-900">Required</th>
+                    <th className="px-3 py-2 text-left font-semibold text-amber-900">Example</th>
+                    <th className="px-3 py-2 text-left font-semibold text-amber-900">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-amber-100">
+                  {[
+                    { name: 'student_id', required: true,  example: 'STU001',           desc: 'Unique student identifier' },
+                    { name: 'full_name',  required: true,  example: 'John Smith',       desc: "Student's full name" },
+                    { name: 'email',      required: false, example: 'john@example.com', desc: 'For sending feedback links' },
+                  ].map(col => (
+                    <tr key={col.name}>
+                      <td className="px-3 py-1.5 font-mono font-semibold text-amber-900">{col.name}</td>
+                      <td className="px-3 py-1.5">
+                        {col.required
+                          ? <span className="inline-flex px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold text-[10px]">Required</span>
+                          : <span className="inline-flex px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px]">Optional</span>}
+                      </td>
+                      <td className="px-3 py-1.5 font-mono text-slate-600">{col.example}</td>
+                      <td className="px-3 py-1.5 text-slate-500">{col.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-2.5 p-2.5 bg-amber-100 rounded-lg">
+              <p className="text-[10px] font-semibold text-amber-800 mb-1">Sample CSV:</p>
+              <pre className="text-[10px] font-mono text-amber-900 whitespace-pre-wrap">{`student_id,full_name,email\nSTU001,John Smith,john@example.com\nSTU002,Jane Doe,jane@example.com`}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Step 1 + 2: Course picker & file upload — always visible */}
       <div className="p-6 space-y-4">
         <div>
@@ -244,6 +289,9 @@ export default function StudentsPage() {
   const [filterYear,    setFilterYear]    = useState('')
   const [currentPage,   setCurrentPage]   = useState(1)
   const [showImport,    setShowImport]    = useState(false)
+  const [showAddModal,  setShowAddModal]  = useState(false)
+  const [addForm,       setAddForm]       = useState({ student_id: '', full_name: '', email: '' })
+  const [isAdding,      setIsAdding]      = useState(false)
   const [deleteTarget,  setDeleteTarget]  = useState(null)
   const [selectedIds,     setSelectedIds]     = useState(new Set())
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
@@ -303,6 +351,26 @@ export default function StudentsPage() {
     } finally {
       setIsBulkDeleting(false)
       setBulkConfirmOpen(false)
+    }
+  }
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault()
+    setIsAdding(true)
+    try {
+      const result = await bulkCreate({ students: [addForm] })
+      if (result.errors?.length) {
+        toast.error(result.errors[0])
+      } else {
+        toast.success('Student added successfully')
+        setAddForm({ student_id: '', full_name: '', email: '' })
+        setShowAddModal(false)
+        loadStudents(filterCourse)
+      }
+    } catch {
+      toast.error('Failed to add student')
+    } finally {
+      setIsAdding(false)
     }
   }
 
@@ -393,14 +461,26 @@ export default function StudentsPage() {
                 <StatPill icon={FaBook}          label="Courses Covered"  value={stats.courses} />
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowImport((v) => !v)}
-              className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50 lg:self-auto"
-            >
-              {showImport ? <FaTimes className="text-xs" /> : <FaUpload className="text-xs" />}
-              {showImport ? 'Close Import' : 'Import CSV'}
-            </button>
+            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-400/20 border border-white/30 backdrop-blur-sm px-5 py-3 text-sm font-semibold text-white shadow transition hover:bg-white/20"
+                >
+                  <FaPlus className="text-xs" />
+                  Add Student
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowImport((v) => !v)}
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50"
+              >
+                {showImport ? <FaTimes className="text-xs" /> : <FaUpload className="text-xs" />}
+                {showImport ? 'Close Import' : 'Import CSV'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -597,6 +677,94 @@ export default function StudentsPage() {
         confirmLabel={isBulkDeleting ? 'Removing…' : `Remove ${selectedIds.size}`}
         onConfirm={handleBulkDelete}
       />
+
+      {/* ── Add Student Modal ─────────────────────────────────────── */}
+      {showAddModal && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false) }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <FaGraduationCap className="text-[#13462D] text-sm" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800">Add Student</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStudent} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Student ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={addForm.student_id}
+                  onChange={(e) => setAddForm((f) => ({ ...f, student_id: e.target.value }))}
+                  placeholder="e.g. STU001"
+                  required
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Must be unique within your institution</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={addForm.full_name}
+                  onChange={(e) => setAddForm((f) => ({ ...f, full_name: e.target.value }))}
+                  placeholder="e.g. John Smith"
+                  required
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Email <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="email"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="e.g. john@example.com"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Used to send feedback form links</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdding}
+                  className="flex-1 rounded-xl bg-[#13462D] py-2.5 text-sm font-semibold text-white hover:bg-[#0f3a26] disabled:opacity-60 transition-colors"
+                >
+                  {isAdding ? 'Adding…' : 'Add Student'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }

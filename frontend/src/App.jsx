@@ -1,5 +1,6 @@
 import { Route, Routes, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { NotificationProvider } from './context/NotificationContext'
 
 import LandingPage              from './pages/landing/LandingPage'
 import AboutPage                from './pages/landing/AboutPage'
@@ -46,7 +47,7 @@ import ProfilePage              from './pages/superadmin/ProfilePage'
 
 function App() {
   return (
-    <>
+    <NotificationProvider>
       <Toaster position="top-right" richColors closeButton />
       <Routes>
         <Route path="/"                      element={<LandingPage />} />
@@ -96,7 +97,7 @@ function App() {
 
         <Route path="*"                      element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </NotificationProvider>
   )
 }
 

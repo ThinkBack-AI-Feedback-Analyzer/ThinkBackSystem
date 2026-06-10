@@ -205,7 +205,7 @@ function FeedbackFormsPage() {
         <div className="px-4 py-6 md:px-6 md:py-8">
           <div className="mx-auto max-w-7xl">
             {isLoading ? (
-              <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-slate-400">
+              <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-12 text-center text-sm text-slate-400">
                 Loading forms…
               </div>
             ) : (
@@ -216,6 +216,10 @@ function FeedbackFormsPage() {
                 pageSize={8}
                 onDeleteSelected={handleBulkDelete}
                 onRowClick={(form) => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } })}
+                filterDefs={[
+                  { column: 'status',    label: 'Status', options: [{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }] },
+                  { column: 'form_type', label: 'Type' },
+                ]}
               />
             )}
           </div>

@@ -170,7 +170,7 @@ function AdminCoursesView({ courses, isLoading, stats, navigate, columns, onBulk
       <div className="px-4 py-6 md:px-6 md:py-8">
         <div className="mx-auto max-w-7xl">
           {isLoading ? (
-            <div className="rounded-[32px] bg-white shadow-md px-6 py-12 text-center text-sm text-slate-400">
+            <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-12 text-center text-sm text-slate-400">
               Loading courses…
             </div>
           ) : (
@@ -180,6 +180,10 @@ function AdminCoursesView({ courses, isLoading, stats, navigate, columns, onBulk
               searchPlaceholder="Search by title, code, faculty…"
               pageSize={8}
               onDeleteSelected={onBulkDelete}
+              filterDefs={[
+                { column: 'faculty_name',   label: 'Faculty' },
+                { column: 'academic_year',  label: 'Year' },
+              ]}
             />
           )}
         </div>

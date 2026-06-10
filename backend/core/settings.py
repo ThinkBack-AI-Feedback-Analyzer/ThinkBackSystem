@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'institutions',
     'students',
     'superadmin',
+    'notifications',
 ]
 
 MIDDLEWARE = [

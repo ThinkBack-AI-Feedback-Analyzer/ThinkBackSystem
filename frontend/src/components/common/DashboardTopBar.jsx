@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FaBell, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa'
+import { FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa'
+import NotificationCenter from './NotificationCenter'
 
 const ROLE_LABELS = {
   institution_admin: 'Institution Admin',
@@ -47,14 +48,7 @@ const DashboardTopBar = ({ userName, userEmail }) => {
     <header className="flex items-center justify-end gap-3 px-6 py-3 bg-white border-b border-slate-200 sticky top-0 z-30">
 
       {/* Notifications */}
-      <button
-        type="button"
-        aria-label="Notifications"
-        className="relative w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-      >
-        <FaBell className="text-sm" />
-        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-      </button>
+      <NotificationCenter />
 
       <div className="w-px h-6 bg-slate-200" />
 

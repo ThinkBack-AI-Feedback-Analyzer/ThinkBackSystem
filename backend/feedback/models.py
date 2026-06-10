@@ -80,8 +80,34 @@ class AnalysisResult(models.Model):
     form        = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='analysis_results')
     course_name = models.CharField(max_length=255, default='All Responses')
     results     = models.JSONField()
-    analyzed_at = models.DateTimeField(auto_now_add=True)
+    analyzed_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table        = 'analysis_results'
         constraints     = [models.UniqueConstraint(fields=['form', 'course_name'], name='unique_form_course_analysis')]
+
+
+class AnalysisJob(models.Model):
+    STATUS_CHOICES = [
+        ('queued',    'Queued'),
+        ('running',   'Running'),
+        ('completed', 'Completed'),
+        ('failed',    'Failed'),
+    ]
+    SOURCE_CHOICES = [
+        ('manual', 'Manual'),
+        ('auto',   'Auto'),
+    ]
+
+    form           = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='analysis_jobs')
+    trigger_source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='manual')
+    status         = models.CharField(max_length=10, choices=STATUS_CHOICES, default='queued')
+    response_count = models.PositiveIntegerField(null=True, blank=True)
+    triggered_at   = models.DateTimeField(auto_now_add=True)
+    started_at     = models.DateTimeField(null=True, blank=True)
+    completed_at   = models.DateTimeField(null=True, blank=True)
+    error_message  = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'analysis_jobs'
+        ordering = ['-triggered_at']

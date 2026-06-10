@@ -6,7 +6,7 @@ from rest_framework import status
 
 from users.permissions import IsInstitutionAdmin
 from students.models import Student
-from .models import FeedbackForm, FeedbackQuestion, FormToken, FormResponse, FormAnswer, AnalysisResult
+from .models import FeedbackForm, FeedbackQuestion, FormToken, FormResponse, FormAnswer, AnalysisResult, AnalysisJob
 from .serializers import (
     FeedbackFormSerializer, FeedbackFormWriteSerializer,
     FormResponseWriteSerializer,
@@ -49,12 +49,14 @@ class DashboardStatsView(APIView):
         topics_agg  = {}
 
         for ar in analysis_qs:
-            sent = ar.results.get('sentiment_distribution', {})
-            for k in sentiment:
-                sentiment[k] += sent.get(k, 0)
-            for t in ar.results.get('topics', []):
-                name = t.get('topic', '')
-                topics_agg[name] = topics_agg.get(name, 0) + t.get('count', 0)
+            results_list = ar.results if isinstance(ar.results, list) else []
+            for item in results_list:
+                ss = item.get('sentiment_summary', {})
+                for k in sentiment:
+                    sentiment[k] += ss.get(k, 0)
+                topic_name = item.get('topic', '')
+                if topic_name:
+                    topics_agg[topic_name] = topics_agg.get(topic_name, 0) + item.get('feedback_count', 0)
 
         top_topics = sorted(
             [{'topic': k, 'count': v} for k, v in topics_agg.items()],
@@ -222,6 +224,18 @@ class FeedbackRespondView(APIView):
         ft.used_at = timezone.now()
         ft.save(update_fields=['is_used', 'used_at'])
 
+        # Auto-trigger AI analysis after submission.
+        # Uses a 5-minute countdown so burst submissions don't spawn many tasks.
+        # Only queues if there are open-ended answers to analyse.
+        has_open_ended = FormAnswer.objects.filter(
+            response=form_response,
+            question__question_type='open_ended',
+        ).exclude(answer='').exists()
+        if has_open_ended:
+            from .tasks import run_ai_analysis
+            job = AnalysisJob.objects.create(form=ft.form, trigger_source='auto', status='queued')
+            run_ai_analysis.apply_async(args=[ft.form.id], kwargs={'job_id': job.id}, countdown=300)
+
         return Response({'detail': 'Thank you for your feedback!'}, status=status.HTTP_201_CREATED)
 
 
@@ -242,20 +256,67 @@ class FormAnalyzeView(APIView):
         if not self._get_form(form_id, request.user.institution):
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
         from .tasks import run_ai_analysis
-        run_ai_analysis.delay(form_id)
-        return Response({'detail': 'Analysis queued.'}, status=status.HTTP_202_ACCEPTED)
+        job = AnalysisJob.objects.create(form_id=form_id, trigger_source='manual', status='queued')
+        run_ai_analysis.delay(form_id, job_id=job.id)
+        return Response({'detail': 'Analysis queued.', 'job_id': job.id}, status=status.HTTP_202_ACCEPTED)
 
     def get(self, request, form_id):
         if request.user.role not in self._allowed:
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         if not self._get_form(form_id, request.user.institution):
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        from institutions.models import Course as CourseModel
+        course_map = {
+            f"{c.code} — {c.title}": {
+                'course_code':   c.code,
+                'course_title':  c.title,
+                'faculty_name':  c.faculty_name,
+                'academic_year': c.academic_year,
+                'lecturer':      c.lecturer,
+            }
+            for c in CourseModel.objects.filter(institution=request.user.institution)
+        }
+
         results = AnalysisResult.objects.filter(form_id=form_id).order_by('course_name')
         return Response([
             {
-                'course_name': r.course_name,
-                'results':     r.results,
-                'analyzed_at': r.analyzed_at,
+                'course_name':   r.course_name,
+                'results':       r.results,
+                'analyzed_at':   r.analyzed_at,
+                'course_code':   course_map.get(r.course_name, {}).get('course_code',   ''),
+                'course_title':  course_map.get(r.course_name, {}).get('course_title',  r.course_name),
+                'faculty_name':  course_map.get(r.course_name, {}).get('faculty_name',  ''),
+                'academic_year': course_map.get(r.course_name, {}).get('academic_year', ''),
+                'lecturer':      course_map.get(r.course_name, {}).get('lecturer',      ''),
             }
             for r in results
+        ])
+
+
+class AnalysisJobListView(APIView):
+    permission_classes = [IsAuthenticated]
+    _allowed = ['institution_admin', 'coordinator', 'lecturer']
+
+    def get(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            FeedbackForm.objects.get(id=form_id, institution=request.user.institution)
+        except FeedbackForm.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        jobs = AnalysisJob.objects.filter(form_id=form_id).order_by('-triggered_at')[:20]
+        return Response([
+            {
+                'id':             j.id,
+                'trigger_source': j.trigger_source,
+                'status':         j.status,
+                'response_count': j.response_count,
+                'triggered_at':   j.triggered_at,
+                'started_at':     j.started_at,
+                'completed_at':   j.completed_at,
+                'error_message':  j.error_message,
+            }
+            for j in jobs
         ])

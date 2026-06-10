@@ -13,10 +13,12 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
     question_count     = serializers.SerializerMethodField()
     distributed_count  = serializers.SerializerMethodField()
     response_count     = serializers.SerializerMethodField()
+    institution_name   = serializers.SerializerMethodField()
+    last_response_at   = serializers.SerializerMethodField()
 
     class Meta:
         model  = FeedbackForm
-        fields = ('id', 'title', 'form_type', 'status', 'question_count', 'distributed_count', 'response_count', 'questions', 'created_at', 'updated_at')
+        fields = ('id', 'title', 'form_type', 'status', 'question_count', 'distributed_count', 'response_count', 'institution_name', 'last_response_at', 'questions', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def get_question_count(self, obj):
@@ -27,6 +29,13 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
 
     def get_response_count(self, obj):
         return obj.responses.count()
+
+    def get_institution_name(self, obj):
+        return obj.institution.institution_name if obj.institution_id else ''
+
+    def get_last_response_at(self, obj):
+        last = obj.responses.order_by('-submitted_at').values_list('submitted_at', flat=True).first()
+        return last
 
 
 class FeedbackFormWriteSerializer(serializers.ModelSerializer):

@@ -1,183 +1,522 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
+import {
+  FaPlus, FaUpload, FaTrash, FaSearch,
+  FaDownload, FaInfoCircle, FaTimes, FaUserGraduate,
+} from 'react-icons/fa'
+import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
 
-export default function StudentManagement() {
-  const [students, setStudents] = useState([]);
-  const [headers, setHeaders] = useState([]);
-  const [fileName, setFileName] = useState("");
-  const [search, setSearch] = useState("");
-  const fileInputRef = useRef();
+const CSV_COLUMNS = [
+  { name: 'student_id', required: true,  example: 'STU001',           description: 'Unique student identifier (no spaces)' },
+  { name: 'full_name',  required: true,  example: 'John Smith',       description: "Student's full name" },
+  { name: 'email',      required: false, example: 'john@example.com', description: 'Email address for feedback delivery' },
+]
 
-  // Normalize header names (e.g., "Student ID" -> "student_id")
-  const normalize = (str) =>
-    str
-      ?.toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_|_$/g, "");
+const TEMPLATE_CSV =
+  'student_id,full_name,email\n' +
+  'STU001,John Smith,john@example.com\n' +
+  'STU002,Jane Doe,jane@example.com\n' +
+  'STU003,Ahmed Ali,ahmed@example.com'
+
+export default function StudentManagementPage() {
+  const [students,    setStudents]    = useState([])
+  const [loading,     setLoading]     = useState(false)
+  const [search,      setSearch]      = useState('')
+
+  // CSV state
+  const [csvStudents, setCsvStudents] = useState([])
+  const [csvFileName, setCsvFileName] = useState('')
+  const [csvErrors,   setCsvErrors]   = useState([])
+  const [importing,   setImporting]   = useState(false)
+  const fileInputRef = useRef()
+
+  // Manual add modal
+  const [showModal,   setShowModal]   = useState(false)
+  const [form,        setForm]        = useState({ student_id: '', full_name: '', email: '' })
+  const [submitting,  setSubmitting]  = useState(false)
+
+  const fetchStudents = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getStudents()
+      setStudents(data)
+    } catch {
+      toast.error('Failed to load students')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchStudents() }, [fetchStudents])
+
+  // ── CSV Parsing ───────────────────────────────────────────────────────────
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]
+    if (!file) return
 
-    setFileName(file.name);
+    setCsvFileName(file.name)
+    setCsvErrors([])
+    setCsvStudents([])
 
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onload = (event) => {
-      const text = event.target.result;
-      const lines = text.split("\n").filter(Boolean);
+      const text  = event.target.result
+      const lines = text.split('\n').filter(l => l.trim())
 
-      if (lines.length === 0) return;
+      if (lines.length === 0) {
+        setCsvErrors(['The file is empty.'])
+        return
+      }
 
-      // Read header row dynamically
-      const rawHeaders = lines[0].split(",");
-      const normalizedHeaders = rawHeaders.map((h) => normalize(h));
+      const rawHeaders = lines[0].split(',').map(h => h.trim())
+      const headers    = rawHeaders.map(h =>
+        h.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+      )
 
-      setHeaders(rawHeaders); // keep original for UI
+      const missing = ['student_id', 'full_name'].filter(c => !headers.includes(c))
+      if (missing.length > 0) {
+        setCsvErrors([`Missing required column(s): ${missing.join(', ')}`])
+        return
+      }
 
-      const rows = lines.slice(1);
+      const parsed = []
+      const errs   = []
 
-      const parsed = rows.map((row) => {
-        const cols = row.split(",");
-        let obj = {};
+      lines.slice(1).forEach((row, i) => {
+        const cols = row.split(',')
+        const obj  = {}
+        headers.forEach((key, idx) => { obj[key] = cols[idx]?.trim() ?? '' })
 
-        normalizedHeaders.forEach((key, index) => {
-          obj[key] = cols[index]?.trim();
-        });
+        if (!obj.student_id) { errs.push(`Row ${i + 2}: Missing student_id`); return }
+        if (!obj.full_name)  { errs.push(`Row ${i + 2}: Missing full_name`);  return }
+        parsed.push(obj)
+      })
 
-        return obj;
-      });
+      setCsvStudents(parsed)
+      if (errs.length) setCsvErrors(errs)
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
-      setStudents(parsed);
-    };
+  const handleImport = async () => {
+    if (csvStudents.length === 0) return
+    setImporting(true)
+    try {
+      const result = await bulkCreate({ students: csvStudents })
+      toast.success(`Imported: ${result.created} new, ${result.updated} updated`)
+      if (result.errors?.length) toast.warning(`${result.errors.length} row(s) skipped`)
+      setCsvStudents([])
+      setCsvFileName('')
+      setCsvErrors([])
+      fetchStudents()
+    } catch {
+      toast.error('Import failed. Please try again.')
+    } finally {
+      setImporting(false)
+    }
+  }
 
-    reader.readAsText(file);
-  };
+  // ── Delete ────────────────────────────────────────────────────────────────
 
-  const handleDelete = (index) => {
-    setStudents(students.filter((_, i) => i !== index));
-  };
+  const handleDelete = async (id) => {
+    try {
+      await deleteStudent(id)
+      setStudents(prev => prev.filter(s => s.id !== id))
+      toast.success('Student removed')
+    } catch {
+      toast.error('Failed to delete student')
+    }
+  }
 
-  const handleAddAll = () => {
-    console.log("All students added:", students);
-    alert("All students added successfully!");
-  };
+  // ── Manual Add ────────────────────────────────────────────────────────────
 
-  // Try to find id & name fields dynamically
-  const getId = (s) => s.student_id || s.id || s.registration_number || "";
-  const getName = (s) => s.name || s.full_name || "";
+  const handleManualAdd = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const result = await bulkCreate({ students: [form] })
+      if (result.errors?.length) {
+        toast.error(result.errors[0])
+      } else {
+        toast.success('Student added successfully')
+        setForm({ student_id: '', full_name: '', email: '' })
+        setShowModal(false)
+        fetchStudents()
+      }
+    } catch {
+      toast.error('Failed to add student')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-  const filteredStudents = students.filter((s) => {
-    const searchText = search.toLowerCase();
+  // ── Download Template ─────────────────────────────────────────────────────
 
-    // Search across all fields dynamically
-    return Object.values(s).some((value) =>
-      value?.toString().toLowerCase().includes(searchText)
-    );
-  });
+  const downloadTemplate = () => {
+    const blob = new Blob([TEMPLATE_CSV], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = Object.assign(document.createElement('a'), { href: url, download: 'students_template.csv' })
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const filtered = students.filter(s => {
+    const q = search.toLowerCase()
+    return (
+      s.student_id?.toLowerCase().includes(q) ||
+      s.full_name?.toLowerCase().includes(q)  ||
+      s.email?.toLowerCase().includes(q)
+    )
+  })
 
   return (
     <div className="min-h-screen bg-[#ebf6ec] p-6 text-[#0f172a]">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-[#13462D]">
-          Student Management
-        </h1>
 
+      {/* ── Page Header ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-[#13462D]">Student Management</h1>
+          <p className="text-sm text-slate-500 mt-1">Add students manually or import via CSV</p>
+        </div>
         <button
-          onClick={handleAddAll}
-          className="bg-[#13462D] text-white px-6 py-2 rounded-xl shadow hover:opacity-90"
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 bg-[#13462D] text-white px-5 py-2.5 rounded-xl shadow hover:opacity-90 font-semibold"
         >
-          Add All Students
+          <FaPlus className="text-xs" />
+          Add Student
         </button>
       </div>
 
-      {/* Upload Section */}
-      <div className="bg-gray-50 p-6 rounded-2xl shadow-md mb-6">
-        <h2 className="text-xl font-semibold text-[#13462D] mb-4">
-          Upload Student CSV
-        </h2>
+      {/* ── CSV Import Section ────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl shadow-md mb-6 border border-[#dae6dd] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#dae6dd]">
+          <h2 className="text-base font-semibold text-[#13462D]">Import Students via CSV</h2>
+        </div>
 
-        <input
-          type="file"
-          accept=".csv"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          className="hidden"
-        />
+        {/* Format Instructions */}
+        <div className="p-5 bg-amber-50 border-b border-amber-100">
+          <div className="flex items-start gap-3">
+            <FaInfoCircle className="text-amber-500 text-lg mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800 mb-3">CSV Format Requirements</p>
 
-        <button
-          onClick={() => fileInputRef.current.click()}
-          className="bg-[#13462D] text-white px-5 py-2 rounded-xl shadow hover:opacity-90"
-        >
-          Browse CSV File
-        </button>
+              {/* Column guide table */}
+              <div className="overflow-x-auto rounded-lg border border-amber-200">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-amber-100">
+                      <th className="text-left px-3 py-2 text-amber-900 font-semibold">Column Name</th>
+                      <th className="text-left px-3 py-2 text-amber-900 font-semibold">Required</th>
+                      <th className="text-left px-3 py-2 text-amber-900 font-semibold">Example Value</th>
+                      <th className="text-left px-3 py-2 text-amber-900 font-semibold">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-amber-100">
+                    {CSV_COLUMNS.map(col => (
+                      <tr key={col.name}>
+                        <td className="px-3 py-2 font-mono font-semibold text-amber-900">{col.name}</td>
+                        <td className="px-3 py-2">
+                          {col.required
+                            ? <span className="inline-flex px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold text-[10px]">Required</span>
+                            : <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px]">Optional</span>
+                          }
+                        </td>
+                        <td className="px-3 py-2 font-mono text-slate-600">{col.example}</td>
+                        <td className="px-3 py-2 text-slate-600">{col.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-        {fileName && (
-          <p className="text-sm text-gray-600 mt-3">Uploaded: {fileName}</p>
-        )}
-      </div>
+              {/* Sample preview */}
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-amber-800 mb-1">Sample CSV content:</p>
+                <pre className="text-xs bg-amber-100 text-amber-900 rounded-lg p-3 font-mono overflow-x-auto whitespace-pre-wrap">
+{`student_id,full_name,email
+STU001,John Smith,john@example.com
+STU002,Jane Doe,jane@example.com`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by ID or Name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 border border-[#c1d8c5] shadow-sm rounded-xl bg-white text-[#0f172a] placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D]"
-        />
-      </div>
+        {/* Upload Controls */}
+        <div className="p-5 flex flex-wrap items-center gap-3">
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current.click()}
+            className="flex items-center gap-2 bg-[#13462D] text-white px-5 py-2.5 rounded-xl hover:opacity-90 font-semibold text-sm"
+          >
+            <FaUpload className="text-xs" />
+            Browse CSV File
+          </button>
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center gap-2 border border-[#13462D] text-[#13462D] px-5 py-2.5 rounded-xl hover:bg-[#ebf6ec] font-semibold text-sm transition-colors"
+          >
+            <FaDownload className="text-xs" />
+            Download Template
+          </button>
+          {csvFileName && (
+            <span className="text-sm text-slate-500 flex items-center gap-1.5">
+              <span className="text-base">📄</span>
+              {csvFileName}
+            </span>
+          )}
+        </div>
 
-      {/* Table */}
-      <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-[#dae6dd]">
-        <table className="w-full text-left">
-          <thead className="bg-[#13462D] text-white">
-            <tr>
-              {headers.map((h, i) => (
-                <th key={i} className="p-3 border-b border-[#2f6f45]">{h}</th>
+        {/* Validation Errors */}
+        {csvErrors.length > 0 && (
+          <div className="mx-5 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-sm font-semibold text-red-700 mb-1.5">Issues found in CSV:</p>
+            <ul className="space-y-0.5">
+              {csvErrors.map((err, i) => (
+                <li key={i} className="text-xs text-red-600 flex items-start gap-1.5">
+                  <span className="mt-0.5 shrink-0">•</span>
+                  {err}
+                </li>
               ))}
-              <th className="p-3 border-b border-[#2f6f45]">Status</th>
-              <th className="p-3 border-b border-[#2f6f45]">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.map((student, index) => (
-              <tr key={index} className="border-b hover:bg-[#f4fbf5]" style={{ borderColor: '#d8e7d8' }}>
-                {headers.map((h, i) => {
-                  const key = normalize(h);
-                  return (
-                    <td key={i} className="p-3">
-                      {student[key]}
-                    </td>
-                  );
-                })}
+            </ul>
+          </div>
+        )}
 
-                <td className="p-3">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-[#d1fae5] text-[#065f46] font-semibold">
-                    <span className="text-xs">✔</span>
-                    Verified
-                  </span>
-                </td>
-
-                <td className="p-3">
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="inline-flex items-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white font-semibold px-3 py-1 rounded-lg shadow-sm transition"
-                  >
-                    <span className="text-base">✕</span>
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filteredStudents.length === 0 && (
-          <p className="text-center p-4 text-gray-500">
-            No students found
-          </p>
+        {/* CSV Preview */}
+        {csvStudents.length > 0 && (
+          <div className="px-5 pb-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-slate-700">
+                {csvStudents.length} student{csvStudents.length !== 1 ? 's' : ''} ready to import
+              </p>
+              <button
+                onClick={handleImport}
+                disabled={importing}
+                className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 font-semibold text-sm disabled:opacity-60 transition-colors"
+              >
+                {importing ? 'Importing…' : `Import ${csvStudents.length} Students`}
+              </button>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-[#dae6dd]">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-[#13462D] text-white text-xs uppercase">
+                  <tr>
+                    <th className="px-3 py-2.5">#</th>
+                    <th className="px-3 py-2.5">Student ID</th>
+                    <th className="px-3 py-2.5">Full Name</th>
+                    <th className="px-3 py-2.5">Email</th>
+                    <th className="px-3 py-2.5">Remove</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#dae6dd]">
+                  {csvStudents.map((s, i) => (
+                    <tr key={i} className="hover:bg-[#f4fbf5]">
+                      <td className="px-3 py-2 text-slate-400 text-xs">{i + 1}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{s.student_id}</td>
+                      <td className="px-3 py-2">{s.full_name}</td>
+                      <td className="px-3 py-2 text-slate-500">{s.email || '—'}</td>
+                      <td className="px-3 py-2">
+                        <button
+                          onClick={() => setCsvStudents(prev => prev.filter((_, j) => j !== i))}
+                          className="text-red-500 hover:text-red-700 text-xs font-semibold transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* ── Students Table ────────────────────────────────────────────────── */}
+      <div className="bg-white shadow-md rounded-2xl border border-[#dae6dd] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#dae6dd] flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <h2 className="text-base font-semibold text-[#13462D]">
+            All Students{' '}
+            <span className="text-sm font-normal text-slate-400">({students.length})</span>
+          </h2>
+          <div className="relative w-full sm:w-72">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+            <input
+              type="text"
+              placeholder="Search by ID, name or email…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 border border-[#c1d8c5] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D]"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-[#13462D] text-white text-xs uppercase">
+              <tr>
+                <th className="px-4 py-3">Student ID</th>
+                <th className="px-4 py-3">Full Name</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Courses</th>
+                <th className="px-4 py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#dae6dd]">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-slate-400">
+                    Loading students…
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-12">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <FaUserGraduate className="text-3xl opacity-30" />
+                      <p className="text-sm">
+                        {search ? 'No students match your search' : 'No students yet — add one or import a CSV'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(student => (
+                  <tr key={student.id} className="hover:bg-[#f4fbf5] transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-600">{student.student_id}</td>
+                    <td className="px-4 py-3 font-medium">{student.full_name}</td>
+                    <td className="px-4 py-3 text-slate-500">{student.email || '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {student.courses?.length > 0
+                          ? student.courses.map(c => (
+                              <span
+                                key={c.id}
+                                className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs rounded-full font-medium border border-emerald-100"
+                              >
+                                {c.code}
+                              </span>
+                            ))
+                          : <span className="text-slate-400 text-xs">No courses</span>
+                        }
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleDelete(student.id)}
+                        className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        <FaTrash className="text-[10px]" />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Add Student Modal ─────────────────────────────────────────────── */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#ebf6ec] flex items-center justify-center">
+                  <FaUserGraduate className="text-[#13462D] text-sm" />
+                </div>
+                <h3 className="text-base font-bold text-[#13462D]">Add Student Manually</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleManualAdd} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Student ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.student_id}
+                  onChange={e => setForm(f => ({ ...f, student_id: e.target.value }))}
+                  placeholder="e.g. STU001"
+                  required
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D] transition"
+                />
+                <p className="text-xs text-slate-400 mt-1">Must be unique within your institution</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.full_name}
+                  onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+                  placeholder="e.g. John Smith"
+                  required
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D] transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Email{' '}
+                  <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="e.g. john@example.com"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D] transition"
+                />
+                <p className="text-xs text-slate-400 mt-1">Used to send feedback form links</p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-[#13462D] text-white py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
+                >
+                  {submitting ? 'Adding…' : 'Add Student'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }
