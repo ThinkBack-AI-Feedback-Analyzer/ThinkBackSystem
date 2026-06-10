@@ -4,11 +4,9 @@ import {
   FaUsers, FaChartLine, FaClipboardList, FaCheckCircle,
   FaBook, FaFileAlt,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar  from '../../components/common/DashboardTopBar'
-import institutionLogo  from '../../assets/Logo_4.png'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { getDashboardStats } from '../../services/feedback'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 /* ── CSS for 3-D stat cards ─────────────────────────────────────────────────── */
 const CARD_STYLES = `
@@ -123,7 +121,7 @@ function TopicsBar({ topics }) {
 /* ── Main Page ───────────────────────────────────────────────────────────────── */
 const InstitutionDashboardPage = () => {
   const navigate = useNavigate()
-  const { navItems, handleNav, handleLogout, user } = useSidebarNav()
+  const user = useCurrentUser()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -154,20 +152,8 @@ const InstitutionDashboardPage = () => {
   const sentTotal  = sentiment.positive + sentiment.neutral + sentiment.negative
 
   return (
-    <>
+    <DashboardLayout activeNav="dashboard">
       <style>{CARD_STYLES}</style>
-      <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <DashboardSidebar
-          navItems={navItems}
-          activeNav="dashboard"
-          onNavChange={handleNav}
-          onLogout={handleLogout}
-          logoSrc={institutionLogo}
-          logoAlt="ThinkBack logo"
-        />
-
-        <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-          <DashboardTopBar userName={user.full_name} userEmail={user.email} />
 
           {/* ── Stat cards ── */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 p-6">
@@ -236,9 +222,7 @@ const InstitutionDashboardPage = () => {
               </button>
             ))}
           </div>
-        </main>
-      </div>
-    </>
+    </DashboardLayout>
   )
 }
 

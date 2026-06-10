@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { FaArrowLeft, FaBook, FaCloudUploadAlt, FaFile, FaTimes, FaUsers } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { Select } from '../../components/ui/Select'
 import { SearchSelect } from '../../components/ui/SearchSelect'
-import institutionLogo from '../../assets/Logo_4.png'
 import { toast } from 'sonner'
 import { getInstitutionUsers } from '../../services/users'
 import { createCourse, updateCourse } from '../../services/courses'
@@ -170,22 +168,7 @@ function CourseCreatePage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        activeNav="courses"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar
-          userName={authState.user.full_name}
-          userEmail={authState.user.email}
-          searchPlaceholder="Search courses"
-        />
-
+    <DashboardLayout activeNav="courses">
         {/* Hero banner */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
@@ -390,8 +373,7 @@ function CourseCreatePage() {
           </div>
 
         </form>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }
 

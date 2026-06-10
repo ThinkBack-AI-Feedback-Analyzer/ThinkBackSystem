@@ -19,3 +19,12 @@ export const updateStaff = (userId, data) =>
 
 export const deleteStaff = (userId) =>
   api.delete(`/auth/staff/${userId}/delete/`)
+
+export const getMyProfile = () =>
+  api.get('/auth/profile/')
+
+export const updateMyProfile = (data) =>
+  api.patch('/auth/profile/', data)
+
+export const changeMyPassword = (data) =>
+  api.post('/auth/profile/change-password/', data)

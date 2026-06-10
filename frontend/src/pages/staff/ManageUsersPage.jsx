@@ -5,14 +5,12 @@ import { FaEnvelope, FaPen, FaPlus, FaTrash, FaUsers, FaUserCheck, FaUserClock }
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { createColumnHelper } from '@tanstack/react-table'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import InviteUserModal from '../../components/modals/InviteUserModal'
 import EditStaffModal from '../../components/modals/EditStaffModal'
 import { DataTable } from '../../components/ui/DataTable'
-import institutionLogo from '../../assets/Logo_4.png'
 import { getInstitutionUsers, resendInvitation, deleteStaff } from '../../services/users'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 const ROLE_BADGE = {
   lecturer:    'bg-sky-50 text-sky-700 border-sky-200',
@@ -29,7 +27,7 @@ const columnHelper = createColumnHelper()
 function ManageUsersPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
 
   const [users, setUsers] = useState([])
@@ -174,22 +172,7 @@ function ManageUsersPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="users"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar
-          userName={authState.user.full_name}
-          userEmail={authState.user.email}
-          searchPlaceholder="Search staff"
-        />
+    <DashboardLayout activeNav="users">
 
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
@@ -255,7 +238,6 @@ function ManageUsersPage() {
             )}
           </div>
         </section>
-      </main>
 
       <InviteUserModal
         isOpen={isModalOpen}
@@ -278,7 +260,7 @@ function ManageUsersPage() {
         confirmLabel="Remove"
         onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </DashboardLayout>
   )
 }
 

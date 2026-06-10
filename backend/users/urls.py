@@ -11,6 +11,8 @@ from .views import (
     ResendInvitationView,
     ResetPasswordView,
     UpdateStaffView,
+    UserChangePasswordView,
+    UserProfileView,
 )
 
 urlpatterns = [
@@ -19,6 +21,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('invite/', InviteUserView.as_view(), name='invite_user'),
     path('accept-invitation/', AcceptInvitationView.as_view(), name='accept_invitation'),
+    path('profile/', UserProfileView.as_view(), name='user_profile'),
+    path('profile/change-password/', UserChangePasswordView.as_view(), name='user_change_password'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset_password'),
     path('institution-users/', InstitutionUsersView.as_view(), name='institution_users'),

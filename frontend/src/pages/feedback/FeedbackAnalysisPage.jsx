@@ -5,11 +5,9 @@ import {
   FaArrowLeft, FaSync, FaChartBar, FaUsers,
   FaCheckCircle, FaClock, FaLightbulb, FaQuoteLeft,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar  from '../../components/common/DashboardTopBar'
-import institutionLogo  from '../../assets/Logo_4.png'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { getFeedbackForm, analyzeForm, getAnalysis } from '../../services/feedback'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 // ── Donut chart (pure CSS conic-gradient) ─────────────────────────────────────
 function DonutChart({ positive, neutral, negative }) {
@@ -84,7 +82,7 @@ export default function FeedbackAnalysisPage() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const { formId, formTitle } = location.state ?? {}
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
 
   const [formStats, setFormStats] = useState({ distributed_count: 0, response_count: 0 })
@@ -166,22 +164,7 @@ export default function FeedbackAnalysisPage() {
   if (!authState.user) return null
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="feedback"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar
-          userName={authState.user.full_name}
-          userEmail={authState.user.email}
-          searchPlaceholder="Search"
-        />
+    <DashboardLayout activeNav="feedback">
 
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
@@ -405,7 +388,6 @@ export default function FeedbackAnalysisPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }

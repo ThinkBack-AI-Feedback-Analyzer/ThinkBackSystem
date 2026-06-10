@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom'
 import logo from '../../assets/Logo_4.png'
 
 const footerLinks = [
-  'Home',
-  'About Us',
-  'Workflow',
-  'Contact',
+  { label: 'Home',     to: '/#home' },
+  { label: 'About Us', to: '/#about' },
+  { label: 'Workflow', to: '/#workflow' },
+  { label: 'Contact',  to: '/#contact' },
 ]
 
 const featureLinks = [
@@ -24,28 +24,21 @@ function LandingFooter() {
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-8 border-b border-white/15 pb-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Launch a smarter feedback system for your institution
+            <h2 className="text-2xl font-semibold">
+              Ready to improve your institution's feedback?
             </h2>
-            <p className="mt-3 text-base leading-7 text-white/75">
-              Replace fragmented feedback collection with one intelligent
-              platform for students, lecturers, and administrators.
+            <p className="mt-2 text-sm leading-6 text-white/65">
+              One platform for students, lecturers, and administrators.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link
-              to="/institutions/register"
+              to="/#contact"
               className="rounded-2xl bg-[#f4f7f2] px-6 py-3 font-semibold text-[#184d35] transition hover:bg-white"
             >
-              Create Institution Account
+              Get Quote
             </Link>
-            <button
-              type="button"
-              className="rounded-2xl border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
-            >
-              Request Demo
-            </button>
           </div>
         </div>
 
@@ -66,9 +59,15 @@ function LandingFooter() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/60">
               Platform
             </p>
-            <div className="mt-4 space-y-2 text-sm text-white/75">
+            <div className="mt-4 space-y-2 text-sm">
               {footerLinks.map((item) => (
-                <p key={item}>{item}</p>
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className="block text-white/70 transition hover:text-white"
+                >
+                  {item.label}
+                </Link>
               ))}
             </div>
           </div>

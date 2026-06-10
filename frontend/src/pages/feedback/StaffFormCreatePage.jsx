@@ -5,11 +5,9 @@ import {
   FaArrowLeft, FaEye,
   FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
-import institutionLogo from '../../assets/Logo_4.png'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { createFeedbackForm, distributeForm } from '../../services/feedback'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
 const Q_TYPES      = ['open_ended', 'multiple_choice', 'yes_no', 'rating']
@@ -29,7 +27,7 @@ export default function StaffFormCreatePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const course   = location.state?.course ?? null
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
 
   const [title,           setTitle]           = useState(course ? `${course.title} Feedback` : '')
@@ -158,17 +156,7 @@ export default function StaffFormCreatePage() {
   /* ── Preview ── */
   if (previewMode) {
     return (
-      <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <DashboardSidebar
-          navItems={navItems}
-          activeNav="courses"
-          onNavChange={handleNav}
-          onLogout={handleLogout}
-          logoSrc={institutionLogo}
-          logoAlt="ThinkBack logo"
-        />
-        <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-          <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} />
+      <DashboardLayout activeNav="courses">
 
           <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
             <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
@@ -219,14 +207,13 @@ export default function StaffFormCreatePage() {
               )}
             </div>
           </div>
-        </main>
-      </div>
+      </DashboardLayout>
     )
   }
 
   /* ── Builder ── */
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <DashboardLayout activeNav="courses">
       {/* Distribution modal */}
       {distributeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -268,17 +255,6 @@ export default function StaffFormCreatePage() {
           </div>
         </div>
       )}
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="courses"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} />
 
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
@@ -632,7 +608,6 @@ export default function StaffFormCreatePage() {
 
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }

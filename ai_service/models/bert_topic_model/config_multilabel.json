@@ -1,0 +1,20 @@
+{
+  "labels": [
+    "Teaching",
+    "Assignment",
+    "Exam",
+    "LMS",
+    "Labs",
+    "CourseMaterials",
+    "DaySchoolOnline"
+  ],
+  "thresholds": {
+    "Teaching": 0.6,
+    "Assignment": 0.55,
+    "Exam": 0.55,
+    "LMS": 0.55,
+    "Labs": 0.5,
+    "CourseMaterials": 0.7,
+    "DaySchoolOnline": 0.65
+  }
+}

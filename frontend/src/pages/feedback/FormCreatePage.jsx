@@ -6,11 +6,9 @@ import {
   FaPlus, FaTrash, FaStar, FaRegStar, FaPaperPlane, FaTimes,
   FaChartBar, FaUsers, FaCheckCircle, FaClock,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
-import institutionLogo from '../../assets/Logo_4.png'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 import { getCourses } from '../../services/courses'
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
@@ -33,7 +31,7 @@ export default function FormCreatePage() {
   const location  = useLocation()
   const { mode = 'create', formId } = location.state ?? {}
 
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
 
   const [title,       setTitle]       = useState('')
@@ -211,10 +209,7 @@ export default function FormCreatePage() {
   // ── Preview mode ──
   if (previewMode) {
     return (
-      <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <DashboardSidebar navItems={navItems} activeNav="feedback" onNavChange={handleNav} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
-        <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-          <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} searchPlaceholder="Search feedback forms" />
+      <DashboardLayout activeNav="feedback">
 
           <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
             <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
@@ -269,14 +264,13 @@ export default function FormCreatePage() {
               )}
             </div>
           </div>
-        </main>
-      </div>
+      </DashboardLayout>
     )
   }
 
   // ── Builder ──
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <DashboardLayout activeNav="feedback">
       {/* ── Distribution modal ── */}
       {distributeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -338,11 +332,6 @@ export default function FormCreatePage() {
           </div>
         </div>
       )}
-      <DashboardSidebar navItems={navItems} activeNav="feedback" onNavChange={handleNav} onLogout={handleLogout} logoSrc={institutionLogo} logoAlt="ThinkBack logo" />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar userName={authState.user.full_name} userEmail={authState.user.email} searchPlaceholder="Search feedback forms" />
-
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
@@ -778,7 +767,6 @@ export default function FormCreatePage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }

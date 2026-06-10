@@ -1,4 +1,10 @@
 import { useCallback, useState } from 'react'
+
+export function useCurrentUser() {
+  return useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')) } catch { return null }
+  })[0]
+}
 import { useNavigate } from 'react-router-dom'
 import {
   FaHome, FaBook, FaGraduationCap, FaComments,
@@ -39,6 +45,7 @@ const ROUTES = {
   users:    '/manage-users',
   reports:  '/reports',
   settings: '/settings',
+  profile:  '/profile',
 }
 
 const DASHBOARD_ROUTE = {
@@ -71,5 +78,7 @@ export function useSidebarNav() {
     navigate('/login')
   }, [navigate])
 
-  return { navItems, handleNav, handleLogout, user }
+  const institutionName = user?.institution_name ?? null
+
+  return { navItems, handleNav, handleLogout, user, institutionName }
 }

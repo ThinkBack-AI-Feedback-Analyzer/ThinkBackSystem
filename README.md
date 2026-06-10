@@ -1,3 +1,13 @@
+
+# Project run single command 
+
+- run this in root folder 
+
+.\start-dev.ps1
+
+
+
+
 # ThinkBack - AI-Powered Feedback Analyzer
 
 A comprehensive feedback system designed for educational institutions. Lecturers can create feedback forms, and students provide feedback via unique links with AI-powered analytics.

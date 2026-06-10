@@ -4,25 +4,31 @@ Update aboutus and contact us UI - done
 
 message - done 
 
-Work on download reports section
+ai update - done 
 
-Enhance report page
+Work on download reports section -
 
-Remove Search
+Enhance report page -
 
-Change Create institution button in footer to Get Quote Button and link it to contact us page
+Remove Search - done 
 
-Create top bar in super admin
+Change Create institution button in footer to Get Quote Button and link it to contact us page - done
+
+Create top bar in super admin - 
 
 Add manual student adding feature for coodinator dashboard
 
-Fix side bar issue in coodinator dashboard
+Fix side bar issue in coodinator dashboard- done 
 
-AI model works
 
 Check number cards in landing
-Footer elements link
-Reset password
-Profile Setting- (Lectures)
+
+
+Footer elements link - done 
+
+
+Profile Setting- (Lectures) 
+
 Number cards in landing
-Contact us page enhance
+
+Contact us page enhance - done 

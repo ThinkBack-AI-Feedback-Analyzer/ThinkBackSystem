@@ -30,6 +30,7 @@ from .serializers import (
     ResetPasswordSerializer,
     UpdateStaffSerializer,
     UserSerializer,
+    UserProfileSerializer,
 )
 
 
@@ -213,6 +214,42 @@ class ResendInvitationView(APIView):
             )
 
         return Response({"message": "Invitation resent."}, status=status.HTTP_200_OK)
+
+
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any) -> Response:
+        return Response(UserProfileSerializer(request.user).data)
+
+    def patch(self, request: Any) -> Response:
+        user = request.user
+        user.full_name    = request.data.get('full_name',    user.full_name)
+        user.phone_number = request.data.get('phone_number', user.phone_number)
+        user.save()
+        updated = UserProfileSerializer(user).data
+        return Response(updated)
+
+
+class UserChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any) -> Response:
+        user    = request.user
+        current = request.data.get('current_password', '')
+        new_pw  = request.data.get('new_password', '')
+        confirm = request.data.get('confirm_password', '')
+
+        if not user.check_password(current):
+            return Response({'error': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new_pw) < 8:
+            return Response({'error': 'Password must be at least 8 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+        if new_pw != confirm:
+            return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_pw)
+        user.save()
+        return Response({'message': 'Password changed successfully.'})
 
 
 class ForgotPasswordView(APIView):

@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { FaCog, FaSave, FaBuilding, FaPhone, FaMapMarkerAlt, FaGlobe } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar  from '../../components/common/DashboardTopBar'
-import institutionLogo  from '../../assets/Logo_4.png'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { getInstitutionSettings, updateInstitutionSettings } from '../../services/institutions'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 function Field({ label, icon: Icon, children }) {
   return (
@@ -23,7 +21,7 @@ const INPUT = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5
 
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const { navItems, handleNav, handleLogout, user } = useSidebarNav()
+  const user = useCurrentUser()
   const [form, setForm]       = useState({ institution_name: '', institution_type: '', phone_number: '', address: '', country: '' })
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
@@ -66,18 +64,7 @@ export default function SettingsPage() {
   if (!user) return <div className="flex items-center justify-center min-h-screen text-slate-400 text-sm">Loading…</div>
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="settings"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar userName={user.full_name} userEmail={user.email} />
+    <DashboardLayout activeNav="settings">
 
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
@@ -185,7 +172,6 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }

@@ -4,10 +4,8 @@ import {
   FaBook, FaChartBar, FaClipboardList, FaComments, FaCheckCircle, FaChartLine,
   FaArrowUp, FaArrowDown,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
-import institutionLogo from '../../assets/Logo_4.png'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import DashboardLayout from '../../components/common/DashboardLayout'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 /* ── Same 3-D card styles as institution dashboard ── */
 const CARD_STYLES = `
@@ -172,7 +170,7 @@ function WelcomeHero({ user, meta }) {
 
 export default function StaffDashboardPage() {
   const navigate = useNavigate()
-  const { navItems, handleNav, handleLogout, user } = useSidebarNav()
+  const user = useCurrentUser()
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -230,24 +228,8 @@ export default function StaffDashboardPage() {
   ]
 
   return (
-    <>
+    <DashboardLayout activeNav="dashboard">
       <style>{CARD_STYLES}</style>
-
-      <div className="flex h-screen bg-slate-50 overflow-hidden">
-        <DashboardSidebar
-          navItems={navItems}
-          activeNav="dashboard"
-          onNavChange={handleNav}
-          onLogout={handleLogout}
-          logoSrc={institutionLogo}
-          logoAlt="ThinkBack logo"
-        />
-
-        <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-          <DashboardTopBar
-            userName={user.full_name}
-            userEmail={user.email}
-          />
 
           <WelcomeHero user={user} meta={meta} />
 
@@ -286,8 +268,6 @@ export default function StaffDashboardPage() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </>
+    </DashboardLayout>
   )
 }

@@ -6,14 +6,12 @@ import {
   FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
   FaUsers, FaFilter,
 } from 'react-icons/fa'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SearchSelect } from '../../components/ui/SearchSelect'
-import institutionLogo from '../../assets/Logo_4.png'
 import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
 import { getCourses } from '../../services/courses'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 /* ── CSV helpers ── */
 const normalize = (str) =>
@@ -233,7 +231,7 @@ function ImportPanel({ courses, isAdmin, onImported }) {
    ════════════════════════════════════════════ */
 export default function StudentsPage() {
   const navigate   = useNavigate()
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
 
   const isAdmin = authState.user?.role === 'institution_admin'
@@ -372,22 +370,7 @@ export default function StudentsPage() {
   if (!authState.user) return null
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="students"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar
-          userName={authState.user.full_name}
-          userEmail={authState.user.email}
-          searchPlaceholder="Search students"
-        />
+    <DashboardLayout activeNav="students">
 
         {/* ── Hero ── */}
         <div className="mx-4 mt-4 md:mx-6 md:mt-6 relative overflow-hidden rounded-2xl bg-[#13462D] px-6 py-5 md:px-10 md:py-6">
@@ -596,7 +579,6 @@ export default function StudentsPage() {
           </div>
 
         </div>
-      </main>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -615,6 +597,6 @@ export default function StudentsPage() {
         confirmLabel={isBulkDeleting ? 'Removing…' : `Remove ${selectedIds.size}`}
         onConfirm={handleBulkDelete}
       />
-    </div>
+    </DashboardLayout>
   )
 }

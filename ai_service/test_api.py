@@ -3,7 +3,6 @@ import requests
 url = "http://127.0.0.1:8001/analyze"
 
 data = {
-    "course_name": "Software Engineering",
     "texts": [
         "Lectures are boring",
         "Too many assignments",

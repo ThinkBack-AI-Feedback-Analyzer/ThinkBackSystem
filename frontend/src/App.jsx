@@ -32,6 +32,7 @@ import StudentsPage             from './pages/student/StudentsPage'
 
 import ReportsPage              from './pages/reports/ReportsPage'
 import SettingsPage             from './pages/settings/SettingsPage'
+import UserProfilePage          from './pages/profile/UserProfilePage'
 
 import SuperAdminDashboardPage  from './pages/superadmin/SuperAdminDashboardPage'
 import InstitutionsPage         from './pages/superadmin/InstitutionsPage'
@@ -81,6 +82,7 @@ function App() {
 
         <Route path="/reports"               element={<ReportsPage />} />
         <Route path="/settings"              element={<SettingsPage />} />
+        <Route path="/profile"               element={<UserProfilePage />} />
 
         <Route path="/superadmin"            element={<SuperAdminDashboardPage />} />
         <Route path="/superadmin/approvals"  element={<PendingApprovalsPage />} />

@@ -1,19 +1,43 @@
 import torch
 
-def generate_suggestion(comments, tokenizer, model):
+
+def clean_comments(comments):
+
+    cleaned = []
+
+    for c in comments:
+
+        c = c.strip()
+
+        if len(c.split()) < 3:
+            continue
+
+        cleaned.append(c)
+
+    return list(set(cleaned))
+
+
+def generate_suggestion(
+    topic,
+    comments,
+    tokenizer,
+    model
+):
 
     if not comments:
         return ""
 
-    # Remove duplicates
-    comments = list(set(comments))
+    comments = clean_comments(comments)
 
-    # Merge feedbacks
-    combined_feedback = " ".join(comments[:5])
+    if not comments:
+        return ""
 
-    # IMPORTANT:
-    # SAME PROMPT STYLE USED DURING TRAINING
-    input_text = "generate suggestion: " + combined_feedback
+    combined_feedback = ". ".join(comments[:3])
+
+    input_text = (
+        f"generate suggestion: "
+        f"{topic}: {combined_feedback}"
+    )
 
     inputs = tokenizer(
         input_text,
@@ -27,18 +51,13 @@ def generate_suggestion(comments, tokenizer, model):
     with torch.no_grad():
 
         outputs = model.generate(
-    **inputs,
-
-    max_new_tokens=250,
-
-    num_beams=5,
-
-    early_stopping=True,
-
-    no_repeat_ngram_size=3,
-
-    repetition_penalty=3.0
-)
+            **inputs,
+            max_new_tokens=80,
+            num_beams=5,
+            no_repeat_ngram_size=3,
+            repetition_penalty=2.5,
+            early_stopping=True
+        )
 
     suggestion = tokenizer.decode(
         outputs[0],

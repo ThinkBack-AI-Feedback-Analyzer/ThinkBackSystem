@@ -1,0 +1,16 @@
+{
+  "sentiments": [
+    "positive",
+    "negative",
+    "neutral"
+  ],
+  "aspects": [
+    "Teaching",
+    "Assignment",
+    "Exam",
+    "LMS",
+    "Labs",
+    "CourseMaterials",
+    "DaySchoolOnline"
+  ]
+}

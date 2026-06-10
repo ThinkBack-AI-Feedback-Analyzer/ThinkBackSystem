@@ -18,11 +18,12 @@ import {
 const DEFAULT_NAV_ITEMS = [];
 
 const DashboardSidebar = ({
-  logoText      = "TB",
+  logoText         = "TB",
   logoSrc,
   logoAlt,
-  brandName     = "Think Back",
-  navItems      = DEFAULT_NAV_ITEMS,
+  brandName        = "Think Back",
+  institutionName,
+  navItems         = DEFAULT_NAV_ITEMS,
   activeNav:    activeNavProp,
   onNavChange,
   onLogout,
@@ -110,7 +111,7 @@ const DashboardSidebar = ({
         {!isCollapsed && (
           <div className="min-w-0">
             <p className="font-semibold text-slate-800 text-sm truncate">{brandName}</p>
-            <p className="text-xs text-slate-400 truncate">Dashboard</p>
+            <p className="text-xs text-slate-400 truncate">{institutionName || 'Dashboard'}</p>
           </div>
         )}
       </div>

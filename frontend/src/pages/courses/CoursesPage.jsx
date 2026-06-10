@@ -9,12 +9,10 @@ import {
 import { createColumnHelper } from '@tanstack/react-table'
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
-import DashboardSidebar from '../../components/common/DashboardSidebar'
-import DashboardTopBar from '../../components/common/DashboardTopBar'
+import DashboardLayout from '../../components/common/DashboardLayout'
 import { DataTable } from '../../components/ui/DataTable'
-import institutionLogo from '../../assets/Logo_4.png'
 import { getCourses, deleteCourse } from '../../services/courses'
-import { useSidebarNav } from '../../hooks/useSidebarNav'
+import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 const columnHelper = createColumnHelper()
 
@@ -193,7 +191,7 @@ function AdminCoursesView({ courses, isLoading, stats, navigate, columns, onBulk
 /* ── Page ── */
 function CoursesPage() {
   const navigate = useNavigate()
-  const { navItems, handleNav, handleLogout, user: authUser } = useSidebarNav()
+  const authUser = useCurrentUser()
   const authState = { user: authUser }
   const [courses, setCourses]           = useState([])
   const [isLoading, setIsLoading]       = useState(true)
@@ -314,22 +312,7 @@ function CoursesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <DashboardSidebar
-        navItems={navItems}
-        activeNav="courses"
-        onNavChange={handleNav}
-        onLogout={handleLogout}
-        logoSrc={institutionLogo}
-        logoAlt="ThinkBack logo"
-      />
-
-      <main className="flex-1 overflow-y-auto min-w-0 max-md:pt-14">
-        <DashboardTopBar
-          userName={authState.user.full_name}
-          userEmail={authState.user.email}
-          searchPlaceholder="Search courses"
-        />
+    <DashboardLayout activeNav="courses">
 
         {isAdmin ? (
           <AdminCoursesView
@@ -349,7 +332,6 @@ function CoursesPage() {
             navigate={navigate}
           />
         )}
-      </main>
 
       {isAdmin && (
         <ConfirmDialog
@@ -361,7 +343,7 @@ function CoursesPage() {
           onConfirm={handleDeleteConfirm}
         />
       )}
-    </div>
+    </DashboardLayout>
   )
 }
 
