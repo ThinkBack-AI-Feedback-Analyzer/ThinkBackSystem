@@ -26,8 +26,10 @@ function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <div className="mx-auto max-w-7xl px-6 pt-6 lg:px-10">
-        <LandingHeader navItems={navItems} />
+      <div className="sticky top-0 z-50 w-full">
+        <div className="mx-auto max-w-7xl px-6 pt-4 lg:px-10">
+          <LandingHeader navItems={navItems} />
+        </div>
       </div>
 
       <main>

@@ -40,6 +40,7 @@ import PendingApprovalsPage     from './pages/superadmin/PendingApprovalsPage'
 import AdminsPage               from './pages/superadmin/AdminsPage'
 import UsersPage                from './pages/superadmin/UsersPage'
 import AuditLogPage             from './pages/superadmin/AuditLogPage'
+import ContactMessagesPage      from './pages/superadmin/ContactMessagesPage'
 import ProfilePage              from './pages/superadmin/ProfilePage'
 
 function App() {
@@ -88,6 +89,7 @@ function App() {
         <Route path="/superadmin/admins"     element={<AdminsPage />} />
         <Route path="/superadmin/users"      element={<UsersPage />} />
         <Route path="/superadmin/audit"      element={<AuditLogPage />} />
+        <Route path="/superadmin/messages"   element={<ContactMessagesPage />} />
         <Route path="/superadmin/profile"    element={<ProfilePage />} />
 
         <Route path="*"                      element={<Navigate to="/" replace />} />

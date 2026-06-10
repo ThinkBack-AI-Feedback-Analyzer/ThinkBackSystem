@@ -1,6 +1,8 @@
 Password reset - done
 
-Update aboutus and contact us UI
+Update aboutus and contact us UI - done 
+
+message - done 
 
 Work on download reports section
 
@@ -13,6 +15,7 @@ Change Create institution button in footer to Get Quote Button and link it to co
 Create top bar in super admin
 
 Add manual student adding feature for coodinator dashboard
+
 Fix side bar issue in coodinator dashboard
 
 AI model works

@@ -9,7 +9,7 @@ export const api = axios.create({
   },
 });
 
-const isPublicUrl = (url = '') =>
+const isPublicUrl = (url = '', method = '') =>
   (url.startsWith('/institutions/') && !url.startsWith('/institutions/settings')) ||
   url.startsWith('/auth/register/') ||
   url.startsWith('/auth/login/') ||
@@ -18,11 +18,11 @@ const isPublicUrl = (url = '') =>
   url.startsWith('/auth/forgot-password/') ||
   url.startsWith('/auth/reset-password/') ||
   url.startsWith('/feedback/respond') ||
-  url === '/superadmin/contact-messages/';
+  (url === '/superadmin/contact-messages/' && method === 'post');
 
 // Attach access token to every non-public request
 api.interceptors.request.use((config) => {
-  if (!isPublicUrl(config.url)) {
+  if (!isPublicUrl(config.url, config.method)) {
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -57,7 +57,7 @@ api.interceptors.response.use(
 
     const is401 = error.response?.status === 401;
     const alreadyRetried = original._retry;
-    const isRefreshCall = isPublicUrl(original.url);
+    const isRefreshCall = isPublicUrl(original.url, original.method);
 
     if (is401 && !alreadyRetried && !isRefreshCall) {
       original._retry = true;

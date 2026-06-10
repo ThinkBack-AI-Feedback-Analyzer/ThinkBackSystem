@@ -38,7 +38,7 @@ const values = [
 
 function AboutSection() {
   return (
-    <section id="about" className="scroll-mt-8">
+    <section id="about" className="scroll-mt-24">
 
       {/* Section heading */}
       <div className="mb-10 text-center">

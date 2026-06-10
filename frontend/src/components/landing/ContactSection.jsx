@@ -24,7 +24,7 @@ function ContactSection() {
   }
 
   return (
-    <section id="contact" className="scroll-mt-8">
+    <section id="contact" className="scroll-mt-24">
 
       {/* Section heading */}
       <div className="mb-10 text-center">

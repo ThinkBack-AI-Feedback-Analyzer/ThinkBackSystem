@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/Logo_4.png'
 
 function LandingHeader({ navItems }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const getNavTarget = (href) => (href.startsWith('#') ? `/${href}` : href)
 
@@ -25,7 +32,11 @@ function LandingHeader({ navItems }) {
   }
 
   return (
-    <header className="relative mb-8 overflow-hidden rounded-3xl border border-[#9ec4ab]/70 bg-[linear-gradient(135deg,rgba(232,247,237,0.92)_0%,rgba(186,223,198,0.78)_42%,rgba(108,169,130,0.58)_100%)] px-6 py-4 shadow-[0_28px_76px_rgba(24,77,53,0.22),0_0_54px_rgba(62,153,108,0.18)] backdrop-blur-3xl xl:rounded-[36px] lg:px-12 lg:py-2.5">
+    <header className={`relative mb-4 overflow-hidden rounded-3xl border border-[#9ec4ab]/70 bg-[linear-gradient(135deg,rgba(232,247,237,0.92)_0%,rgba(186,223,198,0.78)_42%,rgba(108,169,130,0.58)_100%)] backdrop-blur-3xl xl:rounded-[36px] lg:px-12 transition-all duration-300 ${
+      scrolled
+        ? 'px-6 py-2 shadow-[0_8px_32px_rgba(24,77,53,0.18),0_0_24px_rgba(62,153,108,0.14)]'
+        : 'px-6 py-4 shadow-[0_28px_76px_rgba(24,77,53,0.22),0_0_54px_rgba(62,153,108,0.18)] lg:py-2.5'
+    }`}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-12 top-0 h-36 w-36 rounded-full bg-[#ddf2e3] blur-3xl" />
         <div className="absolute left-1/3 top-0 h-28 w-44 rounded-full bg-[#f8fffa]/55 blur-3xl" />

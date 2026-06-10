@@ -55,7 +55,7 @@ function HeroSection({ stats: staticStats }) {
   return (
     <section
       id="home"
-      className="bg-[linear-gradient(135deg,#214f39_0%,#184d35_42%,#102d1d_100%)] py-6 text-white shadow-[0_28px_70px_rgba(24,77,53,0.18)] lg:py-8"
+      className="scroll-mt-24 bg-[linear-gradient(135deg,#214f39_0%,#184d35_42%,#102d1d_100%)] py-6 text-white shadow-[0_28px_70px_rgba(24,77,53,0.18)] lg:py-8"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#d5eadc]">

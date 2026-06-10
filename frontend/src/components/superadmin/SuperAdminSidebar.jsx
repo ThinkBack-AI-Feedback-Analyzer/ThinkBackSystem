@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FaChartBar, FaBuilding, FaUserShield, FaUsers,
-  FaHistory, FaUserCircle, FaCheckCircle,
+  FaHistory, FaUserCircle, FaCheckCircle, FaEnvelope,
   FaSignOutAlt, FaBars, FaTimes,
   FaChevronLeft, FaChevronRight,
 } from 'react-icons/fa'
 import logo from '../../assets/Logo_4.png'
-import { getPendingInstitutions } from '../../services/superadmin'
+import { getPendingInstitutions, getContactMessages } from '../../services/superadmin'
 
 const NAV_MAIN = [
   { key: 'dashboard',    label: 'Dashboard',    icon: FaChartBar,    path: '/superadmin' },
@@ -16,6 +16,7 @@ const NAV_MAIN = [
   { key: 'admins',       label: 'Admins',       icon: FaUserShield,  path: '/superadmin/admins' },
   { key: 'users',        label: 'All Users',    icon: FaUsers,       path: '/superadmin/users' },
   { key: 'audit',        label: 'Audit Log',    icon: FaHistory,     path: '/superadmin/audit' },
+  { key: 'messages',     label: 'Messages',     icon: FaEnvelope,    path: '/superadmin/messages' },
 ]
 
 const NAV_ACCOUNT = [
@@ -28,12 +29,14 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
   const navigate  = useNavigate()
   const location  = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [pendingCount, setPendingCount] = useState(0)
+  const [pendingCount, setPendingCount]   = useState(0)
+  const [unreadCount, setUnreadCount]     = useState(0)
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     if (user?.role === 'system_admin') {
       getPendingInstitutions().then(data => setPendingCount(data.length)).catch(() => {})
+      getContactMessages().then(data => setUnreadCount(data.filter(m => !m.is_read).length)).catch(() => {})
     }
   }, [location.pathname])
 
@@ -49,7 +52,8 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
   const NavBtn = ({ item }) => {
     const Icon     = item.icon
     const isActive = activeKey === item.key
-    const hasBadge = item.key === 'approvals' && pendingCount > 0
+    const badgeCount = item.key === 'approvals' ? pendingCount : item.key === 'messages' ? unreadCount : 0
+    const hasBadge = badgeCount > 0
     return (
       <button
         type="button"
@@ -77,13 +81,13 @@ export default function SuperAdminSidebar({ collapsed, onCollapse }) {
         
         {hasBadge && !collapsed && (
           <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-            {pendingCount}
+            {badgeCount}
           </span>
         )}
 
         {collapsed && (
           <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 z-50">
-            {item.label} {hasBadge && `(${pendingCount} pending)`}
+            {item.label} {hasBadge && `(${badgeCount})`}
           </span>
         )}
       </button>
