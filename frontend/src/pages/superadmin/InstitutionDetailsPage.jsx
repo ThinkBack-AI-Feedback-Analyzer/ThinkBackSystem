@@ -4,7 +4,7 @@ import {
   FaArrowLeft, FaBuilding, FaUsers, FaFileAlt, FaChartBar,
   FaCheckCircle, FaBan, FaEnvelope, FaPhone, FaUserTie,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getInstitutionDetails } from '../../services/superadmin'
 import { toast } from 'sonner'
 
@@ -12,7 +12,6 @@ export default function InstitutionDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   
-  const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [institution, setInstitution] = useState(null)
   const [activeTab, setActiveTab] = useState('users') // 'users' or 'forms'
@@ -34,30 +33,19 @@ export default function InstitutionDetailsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-        <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        </main>
-      </div>
-    )
-  }
-
-  if (!institution) return null
-
-  const stats = institution.stats || { total_forms: 0, total_responses: 0, response_rate: 0 }
-  const users = institution.users || []
-  const forms = institution.feedback_forms || []
+  const stats = institution?.stats || { total_forms: 0, total_responses: 0, response_rate: 0 }
+  const users = institution?.users || []
+  const forms = institution?.feedback_forms || []
 
   return (
-    <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-      <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-      <main className="flex-1 overflow-y-auto">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
+    <SuperAdminLayout>
+      {loading ? (
+        <div className="flex items-center justify-center py-32">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : !institution ? null : (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/superadmin/institutions')}
             className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition"
@@ -79,8 +67,6 @@ export default function InstitutionDetailsPage() {
             </p>
           </div>
         </div>
-
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
           
           {/* Top Row: Profile Card + Quick Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -279,8 +265,8 @@ export default function InstitutionDetailsPage() {
             </div>
           </div>
           
-        </div>
-      </main>
-    </div>
+      </div>
+      )}
+    </SuperAdminLayout>
   )
 }

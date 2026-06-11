@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
+from superadmin.utils import log_action
 from users.permissions import IsInstitutionAdmin
 from students.models import Student
 from .models import FeedbackForm, FeedbackQuestion, FormToken, FormResponse, FormAnswer, AnalysisResult, AnalysisJob
@@ -103,7 +104,9 @@ class FeedbackFormListCreateView(APIView):
         serializer = FeedbackFormWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(institution=request.user.institution)
-        return Response(FeedbackFormSerializer(serializer.instance).data, status=status.HTTP_201_CREATED)
+        form = serializer.instance
+        log_action(request.user, 'create_form', 'form', form.id, form.title)
+        return Response(FeedbackFormSerializer(form).data, status=status.HTTP_201_CREATED)
 
 
 class FeedbackFormDetailView(APIView):
@@ -128,12 +131,14 @@ class FeedbackFormDetailView(APIView):
         serializer = FeedbackFormWriteSerializer(form, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        log_action(request.user, 'update_form', 'form', form.id, form.title)
         return Response(FeedbackFormSerializer(serializer.instance).data)
 
     def delete(self, request, form_id):
         form = self._get_form(form_id, request.user.institution)
         if not form:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        log_action(request.user, 'delete_form', 'form', form.id, form.title)
         form.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -265,30 +270,12 @@ class FormAnalyzeView(APIView):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         if not self._get_form(form_id, request.user.institution):
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        from institutions.models import Course as CourseModel
-        course_map = {
-            f"{c.code} — {c.title}": {
-                'course_code':   c.code,
-                'course_title':  c.title,
-                'faculty_name':  c.faculty_name,
-                'academic_year': c.academic_year,
-                'lecturer':      c.lecturer,
-            }
-            for c in CourseModel.objects.filter(institution=request.user.institution)
-        }
-
         results = AnalysisResult.objects.filter(form_id=form_id).order_by('course_name')
         return Response([
             {
-                'course_name':   r.course_name,
-                'results':       r.results,
-                'analyzed_at':   r.analyzed_at,
-                'course_code':   course_map.get(r.course_name, {}).get('course_code',   ''),
-                'course_title':  course_map.get(r.course_name, {}).get('course_title',  r.course_name),
-                'faculty_name':  course_map.get(r.course_name, {}).get('faculty_name',  ''),
-                'academic_year': course_map.get(r.course_name, {}).get('academic_year', ''),
-                'lecturer':      course_map.get(r.course_name, {}).get('lecturer',      ''),
+                'course_name': r.course_name,
+                'results':     r.results,
+                'analyzed_at': r.analyzed_at,
             }
             for r in results
         ])

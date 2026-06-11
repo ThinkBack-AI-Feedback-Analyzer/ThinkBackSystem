@@ -2,9 +2,9 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaBuilding, FaUserShield, FaUsers, FaCheckCircle,
-  FaTimesCircle, FaShieldAlt, FaComments, FaClock,
+  FaTimesCircle, FaShieldAlt, FaComments, FaClock, FaHourglassHalf,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getSuperAdminStats, getInstitutions, getAnalytics, getPendingInstitutions } from '../../services/superadmin'
 import { toast } from 'sonner'
 
@@ -211,7 +211,6 @@ export default function SuperAdminDashboardPage() {
   const [recent,    setRecent]    = useState([])
   const [analytics, setAnalytics] = useState(null)
   const [loading,   setLoading]   = useState(true)
-  const [collapsed, setCollapsed] = useState(false)
   const [pending,   setPending]   = useState([])
 
   useEffect(() => {
@@ -247,33 +246,22 @@ export default function SuperAdminDashboardPage() {
     { label: 'Total Users',          value: stats.total_users,
       icon: <FaUsers />,        bg: 'bg-amber-50',   color: 'text-amber-500',
       badge: 'Users',           badgeBg: 'bg-amber-50',   badgeColor: 'text-amber-600',  progress: 80 },
+    { label: 'Pending Approvals',    value: stats.pending_institutions,
+      icon: <FaHourglassHalf />, bg: 'bg-orange-50', color: 'text-orange-500',
+      badge: stats.pending_institutions > 0 ? 'Action needed' : 'All clear',
+      badgeBg: stats.pending_institutions > 0 ? 'bg-orange-50' : 'bg-slate-50',
+      badgeColor: stats.pending_institutions > 0 ? 'text-orange-600' : 'text-slate-400',
+      progress: 0 },
   ] : []
 
   return (
-    <>
+    <SuperAdminLayout>
       <style>{CARD_STYLES}</style>
-      <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-        <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-        <main className="flex-1 overflow-y-auto">
-          {/* Top bar */}
-          <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">Super Admin Dashboard</h1>
-              <p className="text-xs text-slate-400 mt-0.5">System-wide overview</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-                <FaShieldAlt className="text-white text-xs" />
-              </div>
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-slate-700">Super Admin</p>
-                <p className="text-xs text-slate-400">System Administrator</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Super Admin Dashboard</h1>
+          <p className="text-xs text-slate-400 mt-0.5">System-wide overview</p>
+        </div>
 
             {/* Pending Approvals Widget */}
             {!loading && pending.length > 0 && (
@@ -301,7 +289,7 @@ export default function SuperAdminDashboardPage() {
             {/* Stat cards */}
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {[...Array(5)].map((_, i) => <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse h-36" />)}
+                {[...Array(6)].map((_, i) => <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse h-36" />)}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -366,9 +354,7 @@ export default function SuperAdminDashboardPage() {
                 </div>
               )}
             </div>
-          </div>
-        </main>
       </div>
-    </>
+    </SuperAdminLayout>
   )
 }

@@ -82,7 +82,7 @@ function TabButton({ active, onClick, children }) {
 }
 
 /* ─── PDF generation ──────────────────────────────────────────────────────── */
-function buildPDFHtml({ forms, enrichedMap, user, overallSent, institutionName }) {
+function buildPDFHtml({ forms, enrichedMap, user, overallSent }) {
   const date  = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const total = overallSent.positive + overallSent.neutral + overallSent.negative
   const posPct = total > 0 ? Math.round((overallSent.positive / total) * 100) : 0
@@ -205,23 +205,22 @@ function buildPDFHtml({ forms, enrichedMap, user, overallSent, institutionName }
   <div style="position:absolute;top:-100px;right:-100px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>
   <div style="position:absolute;bottom:-120px;left:200px;width:480px;height:480px;border-radius:50%;background:rgba(255,255,255,0.03)"></div>
   <div style="position:relative;z-index:1">
-    <div style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">AI Feedback Intelligence Platform</div>
-    ${institutionName ? `<div style="color:rgba(255,255,255,0.75);font-size:15px;font-weight:600;margin-bottom:28px">${institutionName}</div>` : '<div style="margin-bottom:28px"></div>'}
+    <div style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;margin-bottom:48px">AI Feedback Intelligence Platform</div>
     <div style="font-size:56px;font-weight:900;color:white;letter-spacing:-2px;margin-bottom:6px">Think<span style="color:#34d399">Back</span></div>
     <div style="color:rgba(255,255,255,0.45);font-size:14px;margin-bottom:72px">Student Feedback Analysis System</div>
     <div style="font-size:38px;font-weight:700;color:white;line-height:1.2;margin-bottom:12px">Feedback Analysis Report</div>
     <div style="font-size:16px;color:rgba(255,255,255,0.55);margin-bottom:64px">Comprehensive AI-driven insights across all feedback forms</div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;gap:14px;align-items:center">
-        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;width:90px">Generated</span>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Generated</span>
         <span style="color:rgba(255,255,255,0.8);font-size:14px;font-weight:500">${date}</span>
       </div>
       <div style="display:flex;gap:14px;align-items:center">
-        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;width:90px">Prepared by</span>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Prepared by</span>
         <span style="color:rgba(255,255,255,0.8);font-size:14px;font-weight:500">${user?.full_name ?? 'ThinkBack System'}</span>
       </div>
       <div style="display:flex;gap:14px;align-items:center">
-        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:1px;width:90px">Forms</span>
+        <span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Forms</span>
         <span style="color:rgba(255,255,255,0.8);font-size:14px;font-weight:500">${forms.length} forms included</span>
       </div>
     </div>
@@ -314,8 +313,7 @@ ${allSuggestions.length > 0 ? `
 }
 
 function openPDF(forms, enrichedMap, user, overallSent) {
-  const institutionName = forms[0]?.institution_name ?? ''
-  const html = buildPDFHtml({ forms, enrichedMap, user, overallSent, institutionName })
+  const html = buildPDFHtml({ forms, enrichedMap, user, overallSent })
   const win  = window.open('', '_blank', 'width=960,height=760')
   if (!win) { toast.error('Pop-up blocked. Please allow pop-ups and try again.'); return }
   win.document.write(html)

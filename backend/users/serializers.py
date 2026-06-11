@@ -96,6 +96,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Generate tokens
         refresh = RefreshToken.for_user(user)
 
+        from django.utils import timezone
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),

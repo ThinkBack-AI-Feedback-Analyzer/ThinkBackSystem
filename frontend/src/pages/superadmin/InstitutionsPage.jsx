@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaBuilding, FaSearch, FaToggleOn, FaToggleOff, FaTrash,
-  FaFilter, FaShieldAlt, FaCheck, FaBan,
+  FaFilter, FaCheck, FaBan, FaEye,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getInstitutions, toggleInstitution, deleteInstitution } from '../../services/superadmin'
+import { Select } from '../../components/ui/Select'
+import { ActionMenu } from '../../components/common/ActionMenu'
 import { toast } from 'sonner'
 
 function ConfirmDeleteDialog({ institution, onConfirm, onCancel }) {
@@ -38,7 +40,6 @@ export default function InstitutionsPage() {
   const [loading,   setLoading]    = useState(true)
   const [search,    setSearch]     = useState('')
   const [filter,    setFilter]     = useState('')
-  const [collapsed, setCollapsed]  = useState(false)
   const [toDelete,  setToDelete]   = useState(null)
   const [toggling,  setToggling]   = useState(null)
 
@@ -82,21 +83,12 @@ export default function InstitutionsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-      <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Institutions</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Manage all registered institutions</p>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-            <FaShieldAlt className="text-white text-xs" />
-          </div>
+    <SuperAdminLayout>
+      <div className="p-6 space-y-5">
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Institutions</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Manage all registered institutions</p>
         </div>
-
-        <div className="p-6 space-y-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
@@ -106,12 +98,17 @@ export default function InstitutionsPage() {
             </div>
             <div className="flex items-center gap-2">
               <FaFilter className="text-slate-400 text-sm" />
-              <select value={filter} onChange={e => setFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <div className="w-40">
+                <Select
+                  value={filter || 'all'}
+                  onChange={e => setFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all',      label: 'All Status' },
+                    { value: 'active',   label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -172,25 +169,26 @@ export default function InstitutionsPage() {
                         </td>
                         <td className="px-5 py-3">
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => navigate(`/superadmin/institutions/${inst.id}`)} title="View Details"
-                              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            <button onClick={() => handleToggle(inst)} disabled={toggling === inst.id}
-                              title={inst.is_active ? 'Deactivate' : 'Activate'}
-                              className={`p-1.5 rounded-lg transition-colors ${inst.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'} disabled:opacity-50`}>
-                              {toggling === inst.id
-                                ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                : inst.is_active ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />
-                              }
-                            </button>
-                            <button onClick={() => setToDelete(inst)} title="Delete"
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors">
-                              <FaTrash size={13} />
-                            </button>
+                            <ActionMenu items={[
+                              {
+                                label: inst.is_active ? 'Deactivate' : 'Activate',
+                                icon: inst.is_active ? FaToggleOff : FaToggleOn,
+                                onClick: () => handleToggle(inst),
+                                disabled: toggling === inst.id,
+                                className: inst.is_active ? 'text-orange-500' : 'text-emerald-600',
+                              },
+                              {
+                                label: 'View Details',
+                                icon: FaEye,
+                                onClick: () => navigate(`/superadmin/institutions/${inst.id}`),
+                              },
+                              {
+                                label: 'Delete',
+                                icon: FaTrash,
+                                onClick: () => setToDelete(inst),
+                                className: 'text-red-500',
+                              },
+                            ]} />
                           </div>
                         </td>
                       </tr>
@@ -202,12 +200,11 @@ export default function InstitutionsPage() {
           </div>
 
           <p className="text-xs text-slate-400">{institutions.length} institution{institutions.length !== 1 ? 's' : ''} found</p>
-        </div>
-      </main>
+      </div>
 
       {toDelete && (
         <ConfirmDeleteDialog institution={toDelete} onConfirm={handleDelete} onCancel={() => setToDelete(null)} />
       )}
-    </div>
+    </SuperAdminLayout>
   )
 }

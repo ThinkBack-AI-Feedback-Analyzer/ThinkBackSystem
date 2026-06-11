@@ -223,7 +223,7 @@ function TopicCard({ item, formId, groupIdx }) {
 }
 
 /* ─── PDF generation ──────────────────────────────────────────────────────── */
-function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate, institutionName, preparedBy }) {
+function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate }) {
   const date   = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const total  = overall.positive + overall.neutral + overall.negative
   const posPct = total > 0 ? Math.round((overall.positive / total) * 100) : 0
@@ -270,19 +270,9 @@ function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate
       `
     }).join('')
 
-    const hasMeta = group.course_code || group.faculty_name || group.academic_year
     return `
       <div style="margin-bottom:32px">
-        <div style="margin-bottom:14px">
-          <div style="background:#f1f5f9;border-radius:8px;padding:6px 14px;display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#64748b;margin-bottom:${hasMeta ? '8px' : '0'}">${group.course_name}</div>
-          ${hasMeta ? `
-          <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:11px;color:#64748b;padding:0 2px">
-            ${group.course_code    ? `<span><strong>Code:</strong> ${group.course_code}</span>` : ''}
-            ${group.faculty_name   ? `<span><strong>Faculty:</strong> ${group.faculty_name}</span>` : ''}
-            ${group.academic_year  ? `<span><strong>Academic Year:</strong> ${group.academic_year}</span>` : ''}
-            ${group.lecturer       ? `<span><strong>Lecturer:</strong> ${group.lecturer}</span>` : ''}
-          </div>` : ''}
-        </div>
+        <div style="background:#f1f5f9;border-radius:8px;padding:6px 14px;display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#64748b;margin-bottom:16px">${group.course_name}</div>
         ${itemsHTML || '<p style="text-align:center;color:#94a3b8;font-size:12px;padding:16px">No open-ended responses for this course.</p>'}
       </div>
     `
@@ -294,16 +284,14 @@ function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate
 <div class="pb" style="height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:80px;background:linear-gradient(135deg,#0f3d27,#13462D,#1a5e3d);position:relative;overflow:hidden">
   <div style="position:absolute;top:-80px;right:-80px;width:350px;height:350px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>
   <div style="position:relative;z-index:1">
-    <div style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;margin-bottom:16px">AI Feedback Analysis</div>
-    ${institutionName ? `<div style="color:rgba(255,255,255,0.75);font-size:15px;font-weight:600;margin-bottom:28px">${institutionName}</div>` : '<div style="margin-bottom:28px"></div>'}
+    <div style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:700;letter-spacing:5px;text-transform:uppercase;margin-bottom:48px">AI Feedback Analysis</div>
     <div style="font-size:50px;font-weight:900;color:white;letter-spacing:-2px;margin-bottom:8px">Think<span style="color:#34d399">Back</span></div>
     <div style="color:rgba(255,255,255,0.45);font-size:14px;margin-bottom:60px">Student Feedback Analysis System</div>
     <div style="font-size:32px;font-weight:700;color:white;max-width:560px;line-height:1.3;margin-bottom:56px">${formTitle}</div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      ${preparedBy      ? `<div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:110px">Prepared By</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${preparedBy}</span></div>` : ''}
-      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:110px">Generated</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${date}</span></div>
-      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:110px">Distributed</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${formStats.distributed_count} students</span></div>
-      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:110px">Responded</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${formStats.response_count} (${responseRate}%)</span></div>
+      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Generated</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${date}</span></div>
+      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Distributed</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${formStats.distributed_count} students</span></div>
+      <div style="display:flex;gap:14px"><span style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:2px;width:90px">Responded</span><span style="color:rgba(255,255,255,0.8);font-size:14px">${formStats.response_count} (${responseRate}%)</span></div>
     </div>
   </div>
   <div style="position:absolute;bottom:36px;left:80px;right:80px;display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.1);padding-top:18px">
@@ -475,7 +463,7 @@ export default function FeedbackAnalysisPage() {
   const { formId, formTitle } = location.state ?? {}
   const authUser  = useCurrentUser()
 
-  const [formStats,   setFormStats]   = useState({ distributed_count: 0, response_count: 0, institution_name: '', last_response_at: null })
+  const [formStats,   setFormStats]   = useState({ distributed_count: 0, response_count: 0 })
   const [analysis,    setAnalysis]    = useState([])
   const [status,      setStatus]      = useState('loading')
   const [hasNewResps, setHasNewResps] = useState(false)
@@ -491,12 +479,7 @@ export default function FeedbackAnalysisPage() {
   useEffect(() => {
     if (!formId) return
     getFeedbackForm(formId)
-      .then((data) => setFormStats({
-        distributed_count: data.distributed_count ?? 0,
-        response_count:    data.response_count    ?? 0,
-        institution_name:  data.institution_name  ?? '',
-        last_response_at:  data.last_response_at  ?? null,
-      }))
+      .then((data) => setFormStats({ distributed_count: data.distributed_count ?? 0, response_count: data.response_count ?? 0 }))
       .catch(() => {})
 
     getAnalysis(formId)
@@ -608,7 +591,7 @@ export default function FeedbackAnalysisPage() {
           <div className="flex items-center gap-2 self-start sm:self-auto">
             {status === 'done' && (
               <button type="button"
-                onClick={() => openAnalysisPDF({ formTitle: formTitle ?? 'Analysis', formStats, analysis, overall, responseRate, institutionName: formStats.institution_name, preparedBy: authUser?.full_name ?? '' })}
+                onClick={() => openAnalysisPDF({ formTitle: formTitle ?? 'Analysis', formStats, analysis, overall, responseRate })}
                 className="flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
                 <FaDownload className="text-xs" /> Export PDF
               </button>

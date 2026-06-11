@@ -29,6 +29,12 @@ class AuditLog(models.Model):
         ('deactivate_user',        'Deactivate User'),
         ('change_password',        'Change Password'),
         ('update_profile',         'Update Profile'),
+        ('create_form',            'Create Form'),
+        ('update_form',            'Update Form'),
+        ('delete_form',            'Delete Form'),
+        ('invite_user',            'Invite User'),
+        ('update_user',            'Update User'),
+        ('delete_user',            'Delete User'),
     )
 
     performed_by = models.ForeignKey(

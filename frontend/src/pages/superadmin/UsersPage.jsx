@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaSearch, FaFilter, FaToggleOn, FaToggleOff,
-  FaCheck, FaBan, FaShieldAlt, FaUsers,
+  FaCheck, FaBan, FaUsers, FaBuilding,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getAllUsers, toggleUser, getInstitutions } from '../../services/superadmin'
+import { Select } from '../../components/ui/Select'
+import { ActionMenu } from '../../components/common/ActionMenu'
 import { toast } from 'sonner'
 
 /* ── Role display config ─────────────────────────────────────── */
@@ -59,7 +61,6 @@ export default function UsersPage() {
   const [roleFilter,  setRoleFilter]  = useState('')
   const [statusFilter,setStatusFilter]= useState('')
   const [instFilter,  setInstFilter]  = useState('')
-  const [collapsed,   setCollapsed]   = useState(false)
   const [toggling,    setToggling]    = useState(null)
 
   useEffect(() => {
@@ -102,12 +103,9 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-      <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-      <main className="flex-1 overflow-y-auto">
-        {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <SuperAdminLayout>
+      <div className="p-6 space-y-5">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-800">All Users</h1>
             <p className="text-xs text-slate-400 mt-0.5">Every user across all institutions</p>
@@ -122,13 +120,8 @@ export default function UsersPage() {
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-red-50 text-red-600 px-2.5 py-1 rounded-full">
               <FaBan size={9} /> {counts.inactive} inactive
             </span>
-            <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-              <FaShieldAlt className="text-white text-xs" />
-            </div>
           </div>
         </div>
-
-        <div className="p-6 space-y-5">
           {/* Role summary row */}
           <div className="flex flex-wrap gap-3">
             <SummaryChip label="Admins"       count={counts.admins}       bg="bg-purple-50" color="text-purple-700" />
@@ -150,28 +143,39 @@ export default function UsersPage() {
 
             <div className="flex items-center gap-2 flex-wrap">
               <FaFilter className="text-slate-400 text-sm shrink-0" />
-              <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">All Roles</option>
-                <option value="institution_admin">Admin</option>
-                <option value="lecturer">Lecturer</option>
-                <option value="coordinator">Coordinator</option>
-              </select>
-
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-
-              <select value={instFilter} onChange={e => setInstFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 max-w-[200px]">
-                <option value="">All Institutions</option>
-                {institutions.map(i => (
-                  <option key={i.id} value={i.id}>{i.institution_name}</option>
-                ))}
-              </select>
+              <div className="w-36">
+                <Select
+                  value={roleFilter || 'all'}
+                  onChange={e => setRoleFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all',               label: 'All Roles' },
+                    { value: 'institution_admin', label: 'Admin' },
+                    { value: 'lecturer',          label: 'Lecturer' },
+                    { value: 'coordinator',       label: 'Coordinator' },
+                  ]}
+                />
+              </div>
+              <div className="w-36">
+                <Select
+                  value={statusFilter || 'all'}
+                  onChange={e => setStatusFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all',      label: 'All Status' },
+                    { value: 'active',   label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                  ]}
+                />
+              </div>
+              <div className="w-52">
+                <Select
+                  value={instFilter || 'all'}
+                  onChange={e => setInstFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all', label: 'All Institutions' },
+                    ...institutions.map(i => ({ value: String(i.id), label: i.institution_name })),
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -194,7 +198,6 @@ export default function UsersPage() {
                       <th className="px-5 py-3">User</th>
                       <th className="px-5 py-3">Role</th>
                       <th className="px-5 py-3">Institution</th>
-                      <th className="px-5 py-3">Designation</th>
                       <th className="px-5 py-3">Last Login</th>
                       <th className="px-5 py-3">Joined</th>
                       <th className="px-5 py-3">Status</th>
@@ -219,14 +222,13 @@ export default function UsersPage() {
                         <td className="px-5 py-3 text-slate-500 max-w-[160px] truncate">
                           {user.institution_name || <span className="text-slate-300">—</span>}
                         </td>
-                        <td className="px-5 py-3 text-slate-400 text-xs">
-                          {user.designation || '—'}
-                        </td>
                         <td className="px-5 py-3 text-slate-400 text-xs whitespace-nowrap">
-                          {user.last_login
-                            ? new Date(user.last_login).toLocaleDateString()
-                            : <span className="text-slate-300">Never</span>
-                          }
+                          {user.last_login ? (
+                            <>
+                              <div>{new Date(user.last_login).toLocaleDateString()}</div>
+                              <div className="text-slate-300">{new Date(user.last_login).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </>
+                          ) : <span className="text-slate-300">Never</span>}
                         </td>
                         <td className="px-5 py-3 text-slate-400 text-xs whitespace-nowrap">
                           {new Date(user.created_at).toLocaleDateString()}
@@ -242,24 +244,21 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3">
-                          <div className="flex justify-end">
-                            <button
-                              onClick={() => handleToggle(user)}
-                              disabled={toggling === user.id}
-                              title={user.is_active ? 'Deactivate user' : 'Activate user'}
-                              className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-                                user.is_active
-                                  ? 'text-emerald-600 hover:bg-emerald-50'
-                                  : 'text-slate-400 hover:bg-slate-100'
-                              }`}
-                            >
-                              {toggling === user.id
-                                ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                : user.is_active
-                                  ? <FaToggleOn size={18} />
-                                  : <FaToggleOff size={18} />
-                              }
-                            </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <ActionMenu items={[
+                              {
+                                label: user.is_active ? 'Deactivate' : 'Activate',
+                                icon: user.is_active ? FaToggleOff : FaToggleOn,
+                                onClick: () => handleToggle(user),
+                                disabled: toggling === user.id,
+                                className: user.is_active ? 'text-orange-500' : 'text-emerald-600',
+                              },
+                              ...(user.institution_id ? [{
+                                label: 'View Institution',
+                                icon: FaBuilding,
+                                onClick: () => navigate(`/superadmin/institutions/${user.institution_id}`),
+                              }] : []),
+                            ]} />
                           </div>
                         </td>
                       </tr>
@@ -275,8 +274,7 @@ export default function UsersPage() {
             {roleFilter && ` · filtered by ${ROLE_META[roleFilter]?.label ?? roleFilter}`}
             {statusFilter && ` · ${statusFilter}`}
           </p>
-        </div>
-      </main>
-    </div>
+      </div>
+    </SuperAdminLayout>
   )
 }

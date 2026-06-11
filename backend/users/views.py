@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from superadmin.utils import log_action
 from .models import User
 from .permissions import IsInstitutionAdmin
 from .serializers import (
@@ -106,6 +107,7 @@ class InviteUserView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        log_action(request.user, 'invite_user', 'user', user.id, user.full_name)
         return Response(
             {"message": "Invitation sent.", "user_id": user.id},
             status=status.HTTP_201_CREATED,
@@ -359,7 +361,7 @@ class UpdateStaffView(APIView):
         if 'role' in data:
             user.role = data['role']
         user.save()
-
+        log_action(request.user, 'update_user', 'user', user.id, user.full_name)
         return Response(InstitutionUserSerializer(user).data, status=status.HTTP_200_OK)
 
 
@@ -378,5 +380,6 @@ class DeleteStaffView(APIView):
         if user.role == 'institution_admin':
             return Response({"detail": "Cannot delete this user."}, status=status.HTTP_403_FORBIDDEN)
 
+        log_action(request.user, 'delete_user', 'user', user.id, user.full_name)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

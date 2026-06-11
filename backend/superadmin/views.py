@@ -25,14 +25,7 @@ from .serializers import (
 )
 
 
-def _log(user, action, target_type, target_id, target_name):
-    AuditLog.objects.create(
-        performed_by=user,
-        action=action,
-        target_type=target_type,
-        target_id=target_id,
-        target_name=target_name,
-    )
+from .utils import log_action as _log
 
 
 # ── Stats ────────────────────────────────────────────────────────────────────
@@ -311,6 +304,11 @@ class SuperAdminAuditLogView(APIView):
     permission_classes = [IsAuthenticated, IsSystemAdmin]
 
     def get(self, request):
+        from datetime import timedelta
+        retention_days = getattr(settings, 'AUDIT_LOG_RETENTION_DAYS', 90)
+        cutoff = timezone.now() - timedelta(days=retention_days)
+        AuditLog.objects.filter(created_at__lt=cutoff).delete()
+
         action_filter = request.query_params.get('action', '')
         qs = AuditLog.objects.select_related('performed_by').order_by('-created_at')
         if action_filter:

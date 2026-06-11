@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import {
   FaHistory, FaFilter, FaSearch, FaShieldAlt,
   FaBuilding, FaUser, FaKey, FaEdit,
-  FaToggleOn, FaToggleOff, FaTrash,
+  FaToggleOn, FaToggleOff, FaTrash, FaWpforms, FaUserPlus,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getAuditLog } from '../../services/superadmin'
+import { Select } from '../../components/ui/Select'
 import { toast } from 'sonner'
 
 /* ── Action display config ───────────────────────────────────── */
@@ -14,10 +15,18 @@ const ACTION_META = {
   activate_institution:   { label: 'Activated Institution',   icon: FaToggleOn,  bg: 'bg-emerald-50', color: 'text-emerald-700', dot: 'bg-emerald-500' },
   deactivate_institution: { label: 'Deactivated Institution', icon: FaToggleOff, bg: 'bg-red-50',     color: 'text-red-600',     dot: 'bg-red-400'     },
   delete_institution:     { label: 'Deleted Institution',     icon: FaTrash,     bg: 'bg-red-50',     color: 'text-red-700',     dot: 'bg-red-600'     },
+  approve_institution:    { label: 'Approved Institution',    icon: FaBuilding,  bg: 'bg-emerald-50', color: 'text-emerald-700', dot: 'bg-emerald-500' },
+  reject_institution:     { label: 'Rejected Institution',    icon: FaBuilding,  bg: 'bg-red-50',     color: 'text-red-600',     dot: 'bg-red-400'     },
   activate_user:          { label: 'Activated User',          icon: FaToggleOn,  bg: 'bg-emerald-50', color: 'text-emerald-700', dot: 'bg-emerald-500' },
   deactivate_user:        { label: 'Deactivated User',        icon: FaToggleOff, bg: 'bg-orange-50',  color: 'text-orange-600',  dot: 'bg-orange-400'  },
   change_password:        { label: 'Changed Password',        icon: FaKey,       bg: 'bg-blue-50',    color: 'text-blue-700',    dot: 'bg-blue-500'    },
   update_profile:         { label: 'Updated Profile',         icon: FaEdit,      bg: 'bg-slate-50',   color: 'text-slate-600',   dot: 'bg-slate-400'   },
+  create_form:            { label: 'Created Form',            icon: FaWpforms,   bg: 'bg-violet-50',  color: 'text-violet-700',  dot: 'bg-violet-500'  },
+  update_form:            { label: 'Updated Form',            icon: FaWpforms,   bg: 'bg-indigo-50',  color: 'text-indigo-700',  dot: 'bg-indigo-400'  },
+  delete_form:            { label: 'Deleted Form',            icon: FaTrash,     bg: 'bg-red-50',     color: 'text-red-700',     dot: 'bg-red-600'     },
+  invite_user:            { label: 'Invited User',            icon: FaUserPlus,  bg: 'bg-teal-50',    color: 'text-teal-700',    dot: 'bg-teal-500'    },
+  update_user:            { label: 'Updated User',            icon: FaEdit,      bg: 'bg-slate-50',   color: 'text-slate-600',   dot: 'bg-slate-400'   },
+  delete_user:            { label: 'Deleted User',            icon: FaTrash,     bg: 'bg-red-50',     color: 'text-red-700',     dot: 'bg-red-600'     },
 }
 
 const TARGET_ICON = { institution: FaBuilding, user: FaUser, profile: FaShieldAlt }
@@ -46,7 +55,6 @@ export default function AuditLogPage() {
   const [loading,    setLoading]    = useState(true)
   const [actionFilter, setActionFilter] = useState('')
   const [search,     setSearch]     = useState('')
-  const [collapsed,  setCollapsed]  = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -70,27 +78,17 @@ export default function AuditLogPage() {
     : logs
 
   return (
-    <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-      <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-      <main className="flex-1 overflow-y-auto">
-        {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <SuperAdminLayout>
+      <div className="p-6 space-y-5">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-800">Audit Log</h1>
-            <p className="text-xs text-slate-400 mt-0.5">All super admin actions — last 200 entries</p>
+            <p className="text-xs text-slate-400 mt-0.5">All activity — last 200 entries · auto-cleared after 90 days</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
-              <FaHistory size={10} /> {filtered.length} entries
-            </span>
-            <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-              <FaShieldAlt className="text-white text-xs" />
-            </div>
-          </div>
+          <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+            <FaHistory size={10} /> {filtered.length} entries
+          </span>
         </div>
-
-        <div className="p-6 space-y-5">
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -101,17 +99,28 @@ export default function AuditLogPage() {
             </div>
             <div className="flex items-center gap-2">
               <FaFilter className="text-slate-400 text-sm" />
-              <select value={actionFilter} onChange={e => setActionFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">All Actions</option>
-                <option value="activate_institution">Activated Institution</option>
-                <option value="deactivate_institution">Deactivated Institution</option>
-                <option value="delete_institution">Deleted Institution</option>
-                <option value="activate_user">Activated User</option>
-                <option value="deactivate_user">Deactivated User</option>
-                <option value="change_password">Changed Password</option>
-                <option value="update_profile">Updated Profile</option>
-              </select>
+              <div className="w-56">
+                <Select
+                  value={actionFilter || 'all'}
+                  onChange={e => setActionFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all',                    label: 'All Actions' },
+                    { value: 'create_form',            label: 'Created Form' },
+                    { value: 'update_form',            label: 'Updated Form' },
+                    { value: 'delete_form',            label: 'Deleted Form' },
+                    { value: 'invite_user',            label: 'Invited User' },
+                    { value: 'update_user',            label: 'Updated User' },
+                    { value: 'delete_user',            label: 'Deleted User' },
+                    { value: 'activate_institution',   label: 'Activated Institution' },
+                    { value: 'deactivate_institution', label: 'Deactivated Institution' },
+                    { value: 'delete_institution',     label: 'Deleted Institution' },
+                    { value: 'activate_user',          label: 'Activated User' },
+                    { value: 'deactivate_user',        label: 'Deactivated User' },
+                    { value: 'change_password',        label: 'Changed Password' },
+                    { value: 'update_profile',         label: 'Updated Profile' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -172,8 +181,7 @@ export default function AuditLogPage() {
           </div>
 
           <p className="text-xs text-slate-400">{filtered.length} entr{filtered.length !== 1 ? 'ies' : 'y'} shown</p>
-        </div>
-      </main>
-    </div>
+      </div>
+    </SuperAdminLayout>
   )
 }

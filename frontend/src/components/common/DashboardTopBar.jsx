@@ -88,7 +88,7 @@ const DashboardTopBar = ({ userName, userEmail }) => {
             <div className="py-1">
               <button
                 type="button"
-                onClick={() => { setOpen(false); navigate('/profile') }}
+                onClick={() => { setOpen(false); navigate(role === 'system_admin' ? '/superadmin/profile' : '/profile') }}
                 className="flex w-full items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <FaUserCircle className="text-slate-400 text-sm" />

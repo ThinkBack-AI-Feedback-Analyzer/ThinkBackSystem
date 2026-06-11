@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaUserShield, FaSearch, FaToggleOn, FaToggleOff,
-  FaFilter, FaBuilding, FaShieldAlt, FaCheck, FaBan,
+  FaFilter, FaBuilding, FaCheck, FaBan,
 } from 'react-icons/fa'
-import SuperAdminSidebar from '../../components/superadmin/SuperAdminSidebar'
+import SuperAdminLayout from '../../components/common/SuperAdminLayout'
 import { getAdmins, toggleAdmin } from '../../services/superadmin'
+import { Select } from '../../components/ui/Select'
+import { ActionMenu } from '../../components/common/ActionMenu'
 import { toast } from 'sonner'
 
 function Avatar({ name }) {
@@ -26,7 +28,6 @@ export default function AdminsPage() {
   const [loading,   setLoading]   = useState(true)
   const [search,    setSearch]    = useState('')
   const [filter,    setFilter]    = useState('')
-  const [collapsed, setCollapsed] = useState(false)
   const [toggling,  setToggling]  = useState(null)
 
   const load = useCallback(() => {
@@ -60,29 +61,22 @@ export default function AdminsPage() {
   const inactiveCount = admins.filter(a => !a.is_active).length
 
   return (
-    <div className="flex h-screen bg-slate-50 font-[Sora,sans-serif]">
-      <SuperAdminSidebar collapsed={collapsed} onCollapse={() => setCollapsed(p => !p)} />
-
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+    <SuperAdminLayout>
+      <div className="p-6 space-y-5">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-800">Institution Admins</h1>
             <p className="text-xs text-slate-400 mt-0.5">Manage institution admin accounts</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">
               <FaCheck size={9} /> {activeCount} active
             </span>
             <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-red-50 text-red-600 px-2.5 py-1 rounded-full">
               <FaBan size={9} /> {inactiveCount} inactive
             </span>
-            <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center">
-              <FaShieldAlt className="text-white text-xs" />
-            </div>
           </div>
         </div>
-
-        <div className="p-6 space-y-5">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
@@ -92,12 +86,17 @@ export default function AdminsPage() {
             </div>
             <div className="flex items-center gap-2">
               <FaFilter className="text-slate-400 text-sm" />
-              <select value={filter} onChange={e => setFilter(e.target.value)}
-                className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <div className="w-40">
+                <Select
+                  value={filter || 'all'}
+                  onChange={e => setFilter(e.target.value === 'all' ? '' : e.target.value)}
+                  options={[
+                    { value: 'all',      label: 'All Status' },
+                    { value: 'active',   label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -116,7 +115,6 @@ export default function AdminsPage() {
                       <th className="px-5 py-3">Admin</th>
                       <th className="px-5 py-3">Institution</th>
                       <th className="px-5 py-3">Phone</th>
-                      <th className="px-5 py-3">Designation</th>
                       <th className="px-5 py-3">Status</th>
                       <th className="px-5 py-3">Joined</th>
                       <th className="px-5 py-3 text-right">Actions</th>
@@ -141,7 +139,6 @@ export default function AdminsPage() {
                           </div>
                         </td>
                         <td className="px-5 py-3 text-slate-500">{admin.phone_number || '—'}</td>
-                        <td className="px-5 py-3 text-slate-500">{admin.designation || '—'}</td>
                         <td className="px-5 py-3">
                           <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
                             admin.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
@@ -154,15 +151,21 @@ export default function AdminsPage() {
                           {new Date(admin.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-5 py-3">
-                          <div className="flex items-center justify-end">
-                            <button onClick={() => handleToggle(admin)} disabled={toggling === admin.id}
-                              title={admin.is_active ? 'Deactivate admin' : 'Activate admin'}
-                              className={`p-1.5 rounded-lg transition-colors ${admin.is_active ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'} disabled:opacity-50`}>
-                              {toggling === admin.id
-                                ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                : admin.is_active ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />
-                              }
-                            </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <ActionMenu items={[
+                              {
+                                label: admin.is_active ? 'Deactivate' : 'Activate',
+                                icon: admin.is_active ? FaToggleOff : FaToggleOn,
+                                onClick: () => handleToggle(admin),
+                                disabled: toggling === admin.id,
+                                className: admin.is_active ? 'text-orange-500' : 'text-emerald-600',
+                              },
+                              ...(admin.institution_id ? [{
+                                label: 'View Institution',
+                                icon: FaBuilding,
+                                onClick: () => navigate(`/superadmin/institutions/${admin.institution_id}`),
+                              }] : []),
+                            ]} />
                           </div>
                         </td>
                       </tr>
@@ -174,8 +177,7 @@ export default function AdminsPage() {
           </div>
 
           <p className="text-xs text-slate-400">{admins.length} admin{admins.length !== 1 ? 's' : ''} found</p>
-        </div>
-      </main>
-    </div>
+      </div>
+    </SuperAdminLayout>
   )
 }
