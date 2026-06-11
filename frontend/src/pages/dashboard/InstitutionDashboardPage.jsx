@@ -163,20 +163,18 @@ const InstitutionDashboardPage = () => {
 
           {/* ── AI Alert Banner ── */}
           {!loading && isHighNeg && (
-            <div className="mx-6 mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
-              <FaFire className="text-red-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-red-700">
-                  AI Alert: High student dissatisfaction detected
-                </p>
-                <p className="text-xs text-red-500 mt-0.5">
+            <div className="mx-6 mt-6 flex items-center gap-3 rounded-2xl bg-white border border-slate-200 pl-4 pr-5 py-3.5 shadow-sm overflow-hidden relative">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-2xl" />
+              <FaFire className="text-red-500 shrink-0 text-sm" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800">High student dissatisfaction detected</p>
+                <p className="text-xs text-slate-500 mt-0.5">
                   {negPct}% negative sentiment across analysed forms
                   {topTopic ? ` — most discussed topic: ${topTopic}` : ''}.
-                  Review AI insights to take action.
                 </p>
               </div>
               <button type="button" onClick={() => navigate('/reports')}
-                className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 whitespace-nowrap mt-0.5">
+                className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1 whitespace-nowrap shrink-0">
                 View AI Insights <FaArrowRight className="text-[9px]" />
               </button>
             </div>

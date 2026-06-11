@@ -8,23 +8,41 @@ from django.utils import timezone
 
 
 @shared_task
+def close_expired_forms():
+    from .models import FeedbackForm
+    now = timezone.now()
+    count = FeedbackForm.objects.filter(
+        status='published',
+        close_date__lte=now,
+    ).update(status='closed')
+    return f'Closed {count} expired form(s).'
+
+
+@shared_task
 def send_feedback_email(token_id):
     from .models import FormToken
     try:
-        ft = FormToken.objects.select_related('form', 'student').get(id=token_id)
+        ft = FormToken.objects.select_related('form', 'form__institution', 'student', 'course').get(id=token_id)
     except FormToken.DoesNotExist:
         return
 
-    link = f"{settings.FRONTEND_BASE_URL}/feedback/respond?token={ft.token}"
+    link         = f"{settings.FRONTEND_BASE_URL}/feedback/respond?token={ft.token}"
+    institution  = ft.form.institution.institution_name
+    course_line  = f"Course:      {ft.course.code}: {ft.course.title}\n" if ft.course else ""
+    course_subj  = f" ({ft.course.code})" if ft.course else ""
 
     send_mail(
-        subject=f"Feedback Request: {ft.form.title}",
+        subject=f"Feedback Request: {ft.form.title}{course_subj}",
         message=(
             f"Dear {ft.student.full_name},\n\n"
-            f"You have been invited to fill out the feedback form: {ft.form.title}\n\n"
-            f"Click the link below to respond:\n{link}\n\n"
-            f"This link is unique to you and can only be used once.\n\n"
-            f"Thank you,\nThinkBack Team"
+            f"{institution} has invited you to complete the following feedback form:\n\n"
+            f"Form:        {ft.form.title}\n"
+            f"{course_line}"
+            f"Type:        {ft.form.form_type}\n\n"
+            f"Please click the link below to respond:\n{link}\n\n"
+            f"This link is unique to you and can only be used once.\n"
+            f"{'Your responses will be kept anonymous.' if ft.form.is_anonymous else 'Your name will be recorded with your response.'}\n\n"
+            f"Thank you,\n{institution} via ThinkBack"
         ),
         from_email=settings.EMAIL_FROM,
         recipient_list=[ft.student.email],

@@ -4,8 +4,9 @@ import { toast } from 'sonner'
 import {
   FaBook, FaDownload, FaGraduationCap,
   FaPlus, FaSearch, FaTimes, FaTrash, FaUpload,
-  FaUsers, FaFilter, FaInfoCircle,
+  FaUsers, FaFilter, FaInfoCircle, FaChevronDown,
 } from 'react-icons/fa'
+import * as Select from '@radix-ui/react-select'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -279,7 +280,9 @@ export default function StudentsPage() {
   const authUser = useCurrentUser()
   const authState = { user: authUser }
 
-  const isAdmin = authState.user?.role === 'institution_admin'
+  const isAdmin      = authState.user?.role === 'institution_admin'
+  const isCoordinator = authState.user?.role === 'coordinator'
+  const canAddStudent = isAdmin || isCoordinator
 
   const [students,      setStudents]      = useState([])
   const [courses,       setCourses]       = useState([])
@@ -290,7 +293,7 @@ export default function StudentsPage() {
   const [currentPage,   setCurrentPage]   = useState(1)
   const [showImport,    setShowImport]    = useState(false)
   const [showAddModal,  setShowAddModal]  = useState(false)
-  const [addForm,       setAddForm]       = useState({ student_id: '', full_name: '', email: '' })
+  const [addForm,       setAddForm]       = useState({ student_id: '', full_name: '', email: '', course_id: '' })
   const [isAdding,      setIsAdding]      = useState(false)
   const [deleteTarget,  setDeleteTarget]  = useState(null)
   const [selectedIds,     setSelectedIds]     = useState(new Set())
@@ -358,12 +361,15 @@ export default function StudentsPage() {
     e.preventDefault()
     setIsAdding(true)
     try {
-      const result = await bulkCreate({ students: [addForm] })
+      const { course_id, ...studentData } = addForm
+      const payload = { students: [studentData] }
+      if (course_id) payload.course_id = course_id
+      const result = await bulkCreate(payload)
       if (result.errors?.length) {
         toast.error(result.errors[0])
       } else {
         toast.success('Student added successfully')
-        setAddForm({ student_id: '', full_name: '', email: '' })
+        setAddForm({ student_id: '', full_name: '', email: '', course_id: '' })
         setShowAddModal(false)
         loadStudents(filterCourse)
       }
@@ -462,7 +468,7 @@ export default function StudentsPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-              {isAdmin && (
+              {canAddStudent && (
                 <button
                   type="button"
                   onClick={() => setShowAddModal(true)}
@@ -743,6 +749,40 @@ export default function StudentsPage() {
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">Used to send feedback form links</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Assign to Course <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <Select.Root
+                  value={addForm.course_id || '__none__'}
+                  onValueChange={val => setAddForm(f => ({ ...f, course_id: val === '__none__' ? '' : val }))}
+                >
+                  <Select.Trigger className="w-full flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white text-left outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition">
+                    <Select.Value />
+                    <Select.Icon><FaChevronDown className="text-slate-400 text-xs" /></Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content position="popper" sideOffset={6} className="z-[9999] w-[var(--radix-select-trigger-width)] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+                      <Select.Viewport className="max-h-48 overflow-y-auto p-1">
+                        <Select.Item value="__none__" className="flex items-center px-3 py-2 text-sm text-slate-400 rounded-lg cursor-pointer select-none outline-none hover:bg-slate-50 data-[highlighted]:bg-slate-50">
+                          <Select.ItemText>No course</Select.ItemText>
+                        </Select.Item>
+                        {courses.map(c => (
+                          <Select.Item key={c.id} value={String(c.id)}
+                            className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg cursor-pointer select-none outline-none hover:bg-[#ebf6ec] data-[highlighted]:bg-[#ebf6ec] data-[state=checked]:font-semibold data-[state=checked]:text-[#13462D]">
+                            <Select.ItemText>
+                              <span className="font-mono text-xs text-slate-500 mr-1.5">{c.code}</span>
+                              {c.title}
+                            </Select.ItemText>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+                <p className="text-[11px] text-slate-400 mt-1">Student will be enrolled in this course</p>
               </div>
 
               <div className="flex gap-3 pt-2">

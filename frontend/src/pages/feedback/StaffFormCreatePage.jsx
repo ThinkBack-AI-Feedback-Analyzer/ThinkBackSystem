@@ -2,12 +2,36 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  FaArrowLeft, FaEye,
-  FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
+  FaArrowLeft, FaEye, FaChevronDown,
+  FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes, FaUserSecret,
 } from 'react-icons/fa'
+import * as Select from '@radix-ui/react-select'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { createFeedbackForm, distributeForm } from '../../services/feedback'
 import { useCurrentUser } from '../../hooks/useSidebarNav'
+
+function RadixSelect({ value, onValueChange, options, triggerClassName = '' }) {
+  return (
+    <Select.Root value={value} onValueChange={onValueChange}>
+      <Select.Trigger className={`flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 data-[placeholder]:text-slate-400 ${triggerClassName}`}>
+        <Select.Value />
+        <Select.Icon><FaChevronDown className="text-slate-400 text-xs ml-2 shrink-0" /></Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content position="popper" sideOffset={6} className="z-[9999] w-[var(--radix-select-trigger-width)] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+          <Select.Viewport className="max-h-52 overflow-y-auto p-1">
+            {options.map(({ value: v, label }) => (
+              <Select.Item key={v} value={v}
+                className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg cursor-pointer select-none outline-none hover:bg-[#ebf6ec] data-[highlighted]:bg-[#ebf6ec] data-[state=checked]:font-semibold data-[state=checked]:text-[#13462D]">
+                <Select.ItemText>{label}</Select.ItemText>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  )
+}
 
 const TYPE_OPTIONS = ['Exam', 'Lab', 'Course', 'Custom']
 const Q_TYPES      = ['open_ended', 'multiple_choice', 'yes_no', 'rating']
@@ -32,6 +56,8 @@ export default function StaffFormCreatePage() {
 
   const [title,           setTitle]           = useState(course ? `${course.title} Feedback` : '')
   const [formType,        setFormType]        = useState('Course')
+  const [closeDate,       setCloseDate]       = useState('')
+  const [isAnonymous,     setIsAnonymous]     = useState(false)
   const [questions,       setQuestions]       = useState([])
   const [isSaving,        setIsSaving]        = useState(false)
   const [previewMode,     setPreviewMode]     = useState(false)
@@ -115,10 +141,12 @@ export default function StaffFormCreatePage() {
     setIsSaving(true)
     try {
       const savedForm = await createFeedbackForm({
-        title:     title.trim(),
-        form_type: formType,
+        title:        title.trim(),
+        form_type:    formType,
         status,
-        questions: questions.map((q, i) => ({ ...q, order: i })),
+        close_date:   closeDate || null,
+        is_anonymous: isAnonymous,
+        questions:    questions.map((q, i) => ({ ...q, order: i })),
       })
       toast.success(status === 'published' ? 'Form published!' : 'Draft saved.')
       if (status === 'published') {
@@ -320,13 +348,38 @@ export default function StaffFormCreatePage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-500">Form Type</label>
-                    <select
+                    <RadixSelect
                       value={formType}
-                      onChange={(e) => setFormType(e.target.value)}
+                      onValueChange={setFormType}
+                      options={TYPE_OPTIONS.map(t => ({ value: t, label: t }))}
+                      triggerClassName="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">Auto-Close Date (optional)</label>
+                    <input
+                      type="datetime-local"
+                      value={closeDate}
+                      onChange={(e) => setCloseDate(e.target.value)}
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-400">Form will automatically close at this date and time.</p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <FaUserSecret className="text-slate-400 text-sm" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Anonymous Responses</p>
+                        <p className="text-[11px] text-slate-400">Student names will be hidden</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAnonymous((p) => !p)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAnonymous ? 'bg-[#13462D]' : 'bg-slate-200'}`}
                     >
-                      {TYPE_OPTIONS.map((t) => <option key={t}>{t}</option>)}
-                    </select>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isAnonymous ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -407,13 +460,12 @@ export default function StaffFormCreatePage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-500">Question Type</label>
-                    <select
+                    <RadixSelect
                       value={customType}
-                      onChange={(e) => setCustomType(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                    >
-                      {Q_TYPES.map((t) => <option key={t} value={t}>{Q_LABEL[t]}</option>)}
-                    </select>
+                      onValueChange={setCustomType}
+                      options={Q_TYPES.map(t => ({ value: t, label: Q_LABEL[t] }))}
+                      triggerClassName="w-full"
+                    />
                   </div>
 
                   {customType === 'multiple_choice' && (
@@ -494,13 +546,12 @@ export default function StaffFormCreatePage() {
                               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 resize-none"
                             />
                             <div className="flex flex-wrap items-center gap-2">
-                              <select
+                              <RadixSelect
                                 value={q.question_type}
-                                onChange={(e) => updateQuestion(idx, 'question_type', e.target.value)}
-                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-0.5 text-xs text-slate-600 outline-none focus:border-emerald-400"
-                              >
-                                {Q_TYPES.map((t) => <option key={t} value={t}>{Q_LABEL[t]}</option>)}
-                              </select>
+                                onValueChange={val => updateQuestion(idx, 'question_type', val)}
+                                options={Q_TYPES.map(t => ({ value: t, label: Q_LABEL[t] }))}
+                                triggerClassName="text-xs px-2.5 py-1.5 rounded-lg"
+                              />
                             </div>
 
                             {q.question_type === 'multiple_choice' && (

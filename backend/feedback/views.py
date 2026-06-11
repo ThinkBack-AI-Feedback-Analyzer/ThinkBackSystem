@@ -1,4 +1,6 @@
+import io
 from django.utils import timezone
+from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -110,7 +112,8 @@ class FeedbackFormListCreateView(APIView):
 
 
 class FeedbackFormDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsInstitutionAdmin]
+    permission_classes = [IsAuthenticated]
+    _allowed = ['institution_admin', 'coordinator', 'lecturer']
 
     def _get_form(self, form_id, institution):
         try:
@@ -119,12 +122,16 @@ class FeedbackFormDetailView(APIView):
             return None
 
     def get(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         form = self._get_form(form_id, request.user.institution)
         if not form:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(FeedbackFormSerializer(form).data)
 
     def patch(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         form = self._get_form(form_id, request.user.institution)
         if not form:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -135,6 +142,8 @@ class FeedbackFormDetailView(APIView):
         return Response(FeedbackFormSerializer(serializer.instance).data)
 
     def delete(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         form = self._get_form(form_id, request.user.institution)
         if not form:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -162,20 +171,45 @@ class FormDistributeView(APIView):
         course_ids = request.data.get('course_ids', [])
         send_all   = request.data.get('all', False)
 
-        students = Student.objects.filter(institution=request.user.institution).exclude(email='')
-        if not send_all and course_ids:
-            students = students.filter(courses__id__in=course_ids).distinct()
-
+        from institutions.models import Course as CourseModel
         from .tasks import send_feedback_email
 
         queued = 0
-        for student in students:
-            token, _ = FormToken.objects.get_or_create(form=form, student=student)
-            if not token.is_used and not token.sent_at:
-                send_feedback_email.delay(token.id)
-                queued += 1
 
-        return Response({'queued': queued, 'total_students': students.count()})
+        if send_all or not course_ids:
+            students = Student.objects.filter(institution=request.user.institution).exclude(email='')
+            for student in students:
+                token, created = FormToken.objects.get_or_create(form=form, student=student)
+                if not token.is_used and not token.sent_at:
+                    send_feedback_email.delay(token.id)
+                    queued += 1
+            total = students.count()
+        else:
+            courses = CourseModel.objects.filter(id__in=course_ids, institution=request.user.institution)
+            seen_students = set()
+            total = 0
+            for course in courses:
+                course_students = Student.objects.filter(
+                    institution=request.user.institution,
+                    courses=course,
+                ).exclude(email='')
+                for student in course_students:
+                    token, created = FormToken.objects.get_or_create(
+                        form=form, student=student,
+                        defaults={'course': course},
+                    )
+                    # if token already exists but has no course set, assign it
+                    if not created and token.course is None:
+                        token.course = course
+                        token.save(update_fields=['course'])
+                    if student.id not in seen_students:
+                        seen_students.add(student.id)
+                        total += 1
+                    if not token.is_used and not token.sent_at:
+                        send_feedback_email.delay(token.id)
+                        queued += 1
+
+        return Response({'queued': queued, 'total_students': total})
 
 
 class FeedbackRespondView(APIView):
@@ -183,7 +217,7 @@ class FeedbackRespondView(APIView):
 
     def _get_token(self, token_str):
         try:
-            return FormToken.objects.select_related('form', 'student').get(token=token_str)
+            return FormToken.objects.select_related('form', 'form__institution', 'student', 'course').get(token=token_str)
         except (FormToken.DoesNotExist, ValueError):
             return None
 
@@ -197,7 +231,9 @@ class FeedbackRespondView(APIView):
         if ft.is_used:
             return Response({'detail': 'This form has already been submitted.'}, status=status.HTTP_400_BAD_REQUEST)
         data = FeedbackFormSerializer(ft.form).data
-        data['student_name'] = ft.student.full_name
+        data['student_name']    = 'Anonymous' if ft.form.is_anonymous else ft.student.full_name
+        data['institution_name'] = ft.form.institution.institution_name
+        data['course_name']      = f"{ft.course.code}: {ft.course.title}" if ft.course else None
         return Response(data)
 
     def post(self, request):
@@ -307,3 +343,147 @@ class AnalysisJobListView(APIView):
             }
             for j in jobs
         ])
+
+
+class FormExportView(APIView):
+    permission_classes = [IsAuthenticated]
+    _allowed = ['institution_admin', 'coordinator', 'lecturer']
+
+    def get(self, request, form_id):
+        if request.user.role not in self._allowed:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            form = FeedbackForm.objects.get(id=form_id, institution=request.user.institution)
+        except FeedbackForm.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        fmt = request.query_params.get('format', 'excel').lower()
+        questions = list(form.questions.order_by('order'))
+        responses = (
+            FormResponse.objects
+            .filter(form=form)
+            .select_related('token__student')
+            .prefetch_related('answers__question')
+            .order_by('submitted_at')
+        )
+
+        if fmt == 'pdf':
+            return self._export_pdf(form, questions, responses)
+        return self._export_excel(form, questions, responses)
+
+    def _export_excel(self, form, questions, responses):
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Responses'
+
+        header_fill = PatternFill(start_color='13462D', end_color='13462D', fill_type='solid')
+        header_font = Font(color='FFFFFF', bold=True)
+
+        headers = ['#', 'Submitted At']
+        if not form.is_anonymous:
+            headers += ['Student Name', 'Student ID']
+        headers += [f'Q{i+1}: {q.text[:60]}' for i, q in enumerate(questions)]
+
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(wrap_text=True, vertical='center')
+
+        for row_idx, resp in enumerate(responses, 2):
+            answer_map = {a.question_id: a.answer for a in resp.answers.all()}
+            row = [row_idx - 1, resp.submitted_at.strftime('%Y-%m-%d %H:%M')]
+            if not form.is_anonymous:
+                row += [resp.token.student.full_name, resp.token.student.student_id]
+            row += [answer_map.get(q.id, '') for q in questions]
+            for col, val in enumerate(row, 1):
+                ws.cell(row=row_idx, column=col, value=val)
+
+        for col in ws.columns:
+            ws.column_dimensions[col[0].column_letter].width = 25
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        fname = f"{form.title[:40].replace(' ', '_')}_responses.xlsx"
+        resp = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+        return resp
+
+    def _export_pdf(self, form, questions, responses):
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        styles = getSampleStyleSheet()
+        green = colors.HexColor('#13462D')
+
+        title_style = ParagraphStyle('title', parent=styles['Title'], textColor=green, fontSize=16, spaceAfter=6)
+        meta_style  = ParagraphStyle('meta',  parent=styles['Normal'], fontSize=9, textColor=colors.grey, spaceAfter=12)
+        h2_style    = ParagraphStyle('h2',    parent=styles['Heading2'], textColor=green, fontSize=11, spaceBefore=12, spaceAfter=6)
+
+        story = [
+            Paragraph(form.title, title_style),
+            Paragraph(f'Type: {form.form_type}  |  Status: {form.status}  |  Responses: {responses.count()}  |  Anonymous: {"Yes" if form.is_anonymous else "No"}', meta_style),
+            Paragraph('Questions', h2_style),
+        ]
+
+        for i, q in enumerate(questions):
+            story.append(Paragraph(f'{i+1}. [{q.question_type.replace("_", " ").title()}] {q.text}', styles['Normal']))
+            story.append(Spacer(1, 4))
+
+        story.append(Spacer(1, 12))
+        story.append(Paragraph('Responses', h2_style))
+
+        col_headers = ['#', 'Submitted']
+        if not form.is_anonymous:
+            col_headers += ['Student', 'ID']
+        col_headers += [f'Q{i+1}' for i in range(len(questions))]
+
+        table_data = [col_headers]
+        for idx, resp in enumerate(responses, 1):
+            answer_map = {a.question_id: a.answer for a in resp.answers.all()}
+            row = [str(idx), resp.submitted_at.strftime('%Y-%m-%d')]
+            if not form.is_anonymous:
+                row += [resp.token.student.full_name, resp.token.student.student_id]
+            row += [answer_map.get(q.id, '')[:80] for q in questions]
+            table_data.append(row)
+
+        if len(table_data) > 1:
+            col_widths = [1*cm, 2.5*cm]
+            if not form.is_anonymous:
+                col_widths += [3.5*cm, 2*cm]
+            remaining = (17*cm - sum(col_widths))
+            per_q = remaining / max(len(questions), 1)
+            col_widths += [per_q] * len(questions)
+
+            tbl = Table(table_data, colWidths=col_widths, repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), green),
+                ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+                ('FONTSIZE',   (0, 0), (-1, 0), 8),
+                ('FONTSIZE',   (0, 1), (-1, -1), 7),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0fdf4')]),
+                ('GRID',       (0, 0), (-1, -1), 0.25, colors.HexColor('#e2e8f0')),
+                ('VALIGN',     (0, 0), (-1, -1), 'TOP'),
+                ('WORDWRAP',   (0, 0), (-1, -1), True),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ]))
+            story.append(tbl)
+        else:
+            story.append(Paragraph('No responses yet.', styles['Normal']))
+
+        doc.build(story)
+        buffer.seek(0)
+        fname = f"{form.title[:40].replace(' ', '_')}_responses.pdf"
+        resp = HttpResponse(buffer.read(), content_type='application/pdf')
+        resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+        return resp

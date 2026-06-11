@@ -24,8 +24,8 @@ services:
     container_name: thinkback_pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5051:80"
     depends_on:
@@ -61,6 +61,28 @@ services:
     container_name: thinkback_celery
     restart: always
     command: celery -A core worker --loglevel=info
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./backend:/app
+
+  celery-beat:
+    profiles:
+      - app
+    build: ./backend
+    container_name: thinkback_celery_beat
+    restart: always
+    command: celery -A core beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}

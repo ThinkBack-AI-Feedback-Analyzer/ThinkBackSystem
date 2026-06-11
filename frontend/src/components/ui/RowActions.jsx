@@ -4,16 +4,18 @@ import { FaEllipsisV } from 'react-icons/fa'
 
 export function RowActions({ actions }) {
   const [open, setOpen] = useState(false)
-  const [coords, setCoords] = useState({ top: 0, left: 0 })
+  const [coords, setCoords] = useState({ top: 0, bottom: 'auto', left: 0 })
   const btnRef = useRef(null)
   const menuRef = useRef(null)
 
   const openMenu = () => {
     const rect = btnRef.current.getBoundingClientRect()
-    setCoords({
-      top: rect.bottom + 6,
-      left: rect.right,
-    })
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUp = spaceBelow < 160
+    setCoords(openUp
+      ? { top: 'auto', bottom: window.innerHeight - rect.top + 6, left: rect.right }
+      : { top: rect.bottom + 6, bottom: 'auto', left: rect.right }
+    )
     setOpen(true)
   }
 
@@ -34,7 +36,7 @@ export function RowActions({ actions }) {
   const menu = open && createPortal(
     <div
       ref={menuRef}
-      style={{ position: 'fixed', top: coords.top, left: coords.left, transform: 'translateX(-100%)', zIndex: 9999 }}
+      style={{ position: 'fixed', top: coords.top, bottom: coords.bottom, left: coords.left, transform: 'translateX(-100%)', zIndex: 9999 }}
       className="w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
     >
       {actions.map((action) => (

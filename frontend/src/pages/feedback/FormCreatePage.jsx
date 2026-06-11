@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import {
   FaArrowLeft, FaEye, FaEdit, FaSave, FaGlobe,
   FaPlus, FaTrash, FaStar, FaRegStar, FaPaperPlane, FaTimes,
-  FaChartBar, FaUsers, FaCheckCircle, FaClock,
+  FaChartBar, FaUsers, FaCheckCircle, FaClock, FaUserSecret,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
@@ -34,14 +34,16 @@ export default function FormCreatePage() {
   const authUser = useCurrentUser()
   const authState = { user: authUser }
 
-  const [title,       setTitle]       = useState('')
-  const [formType,    setFormType]    = useState('Exam')
-  const [questions,   setQuestions]   = useState([])
-  const [previewMode, setPreviewMode] = useState(false)
-  const [answers,     setAnswers]     = useState({})
-  const [isSaving,    setIsSaving]    = useState(false)
-  const [isLoading,   setIsLoading]   = useState(mode !== 'create')
-  const [formStats,   setFormStats]   = useState({ distributed_count: 0, response_count: 0 })
+  const [title,        setTitle]        = useState('')
+  const [formType,     setFormType]     = useState('Exam')
+  const [closeDate,    setCloseDate]    = useState('')
+  const [isAnonymous,  setIsAnonymous]  = useState(false)
+  const [questions,    setQuestions]    = useState([])
+  const [previewMode,  setPreviewMode]  = useState(false)
+  const [answers,      setAnswers]      = useState({})
+  const [isSaving,     setIsSaving]     = useState(false)
+  const [isLoading,    setIsLoading]    = useState(mode !== 'create')
+  const [formStats,    setFormStats]    = useState({ distributed_count: 0, response_count: 0 })
 
   // Distribution modal
   const [distributeModal,   setDistributeModal]   = useState(false)
@@ -65,7 +67,8 @@ export default function FormCreatePage() {
 
   useEffect(() => {
     if (!authState.user) { navigate('/login'); return }
-    if (authState.user.role !== 'institution_admin') navigate('/')
+    const allowed = ['institution_admin', 'coordinator', 'lecturer']
+    if (!allowed.includes(authState.user.role)) navigate('/')
   }, [authState.user, navigate])
 
   useEffect(() => {
@@ -75,6 +78,8 @@ export default function FormCreatePage() {
       .then((data) => {
         setTitle(data.title)
         setFormType(data.form_type)
+        setCloseDate(data.close_date ? data.close_date.slice(0, 16) : '')
+        setIsAnonymous(data.is_anonymous ?? false)
         setQuestions(data.questions ?? [])
         setFormStats({ distributed_count: data.distributed_count ?? 0, response_count: data.response_count ?? 0 })
       })
@@ -150,10 +155,12 @@ export default function FormCreatePage() {
 
     setIsSaving(true)
     const payload = {
-      title: title.trim(),
-      form_type: formType,
+      title:        title.trim(),
+      form_type:    formType,
       status,
-      questions: questions.map((q, i) => ({ ...q, order: i })),
+      close_date:   closeDate || null,
+      is_anonymous: isAnonymous,
+      questions:    questions.map((q, i) => ({ ...q, order: i })),
     }
 
     try {
@@ -442,6 +449,34 @@ export default function FormCreatePage() {
                     >
                       {TYPE_OPTIONS.map((t) => <option key={t}>{t}</option>)}
                     </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">Auto-Close Date (optional)</label>
+                    <input
+                      type="datetime-local"
+                      disabled={isReadOnly}
+                      value={closeDate}
+                      onChange={(e) => setCloseDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50 disabled:text-slate-400"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-400">Form will automatically close at this date and time.</p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <FaUserSecret className="text-slate-400 text-sm" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">Anonymous Responses</p>
+                        <p className="text-[11px] text-slate-400">Student names will be hidden in responses and exports</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => setIsAnonymous((p) => !p)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAnonymous ? 'bg-[#13462D]' : 'bg-slate-200'} disabled:opacity-50`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isAnonymous ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -742,6 +777,16 @@ export default function FormCreatePage() {
                     <span className="text-xs font-medium text-slate-500">Type</span>
                     <span className="text-xs font-semibold text-slate-700">{formType}</span>
                   </div>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                    <span className="text-xs font-medium text-slate-500">Anonymous</span>
+                    <span className={`text-xs font-semibold ${isAnonymous ? 'text-[#13462D]' : 'text-slate-400'}`}>{isAnonymous ? 'Yes' : 'No'}</span>
+                  </div>
+                  {closeDate && (
+                    <div className="flex items-center justify-between rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
+                      <span className="text-xs font-medium text-amber-600">Closes</span>
+                      <span className="text-xs font-semibold text-amber-700">{new Date(closeDate).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )}
                   {Object.entries(
                     questions.reduce((acc, q) => { acc[q.question_type] = (acc[q.question_type] ?? 0) + 1; return acc }, {})
                   ).map(([type, count]) => (

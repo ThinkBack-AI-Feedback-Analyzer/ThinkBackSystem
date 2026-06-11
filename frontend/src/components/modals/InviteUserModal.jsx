@@ -1,6 +1,12 @@
 import { useCallback, useState } from 'react'
-import { FaTimes } from 'react-icons/fa'
+import { FaTimes, FaChevronDown } from 'react-icons/fa'
+import * as Select from '@radix-ui/react-select'
 import { inviteUser } from '../../services/users'
+
+const ROLES = [
+  { value: 'lecturer',    label: 'Lecturer' },
+  { value: 'coordinator', label: 'Coordinator' },
+]
 
 function InviteUserModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({ full_name: '', email: '', role: 'lecturer' })
@@ -102,19 +108,25 @@ function InviteUserModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           <div>
-            <label htmlFor="invite-role" className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Role
-            </label>
-            <select
-              id="invite-role"
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-            >
-              <option value="lecturer">Lecturer</option>
-              <option value="coordinator">Coordinator</option>
-            </select>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">Role</label>
+            <Select.Root value={form.role} onValueChange={val => { setForm(p => ({ ...p, role: val })); setError('') }}>
+              <Select.Trigger className="w-full flex items-center justify-between rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 bg-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition">
+                <Select.Value />
+                <Select.Icon><FaChevronDown className="text-slate-400 text-xs" /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content position="popper" sideOffset={6} className="z-[9999] w-[var(--radix-select-trigger-width)] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+                  <Select.Viewport className="p-1">
+                    {ROLES.map(r => (
+                      <Select.Item key={r.value} value={r.value}
+                        className="flex items-center px-3 py-2.5 text-sm text-slate-700 rounded-lg cursor-pointer select-none outline-none hover:bg-[#ebf6ec] data-[highlighted]:bg-[#ebf6ec] data-[state=checked]:font-semibold data-[state=checked]:text-[#13462D]">
+                        <Select.ItemText>{r.label}</Select.ItemText>
+                      </Select.Item>
+                    ))}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
           </div>
 
           <div className="flex gap-3 pt-2">

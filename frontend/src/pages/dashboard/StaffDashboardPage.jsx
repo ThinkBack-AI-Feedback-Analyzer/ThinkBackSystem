@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FaBook, FaChartBar, FaClipboardList, FaComments, FaCheckCircle,
-  FaArrowUp, FaArrowDown, FaBrain, FaExclamationTriangle, FaLightbulb,
-  FaArrowRight, FaFire,
+  FaArrowUp, FaArrowDown, FaBrain, FaLightbulb,
+  FaArrowRight, FaFire, FaUsers, FaFileAlt,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { getDashboardStats, getFeedbackForms } from '../../services/feedback'
@@ -180,13 +180,14 @@ export default function StaffDashboardPage() {
 
         {/* Alert: high negative sentiment */}
         {!loadingStats && isHighNeg && (
-          <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5">
-            <FaFire className="text-red-500 shrink-0" />
-            <div className="flex-1">
-              <span className="text-sm font-semibold text-red-700">High dissatisfaction detected</span>
-              <span className="text-sm text-red-500 ml-2">— {negPct}% negative across your forms.</span>
-            </div>
-            <button type="button" onClick={() => navigate('/reports')} className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 whitespace-nowrap">
+          <div className="flex items-center gap-3 rounded-2xl bg-white border border-slate-200 pl-4 pr-5 py-3.5 shadow-sm overflow-hidden relative">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-2xl" />
+            <FaFire className="text-red-500 shrink-0 text-sm" />
+            <p className="flex-1 text-sm text-slate-700">
+              <span className="font-semibold text-slate-800">High dissatisfaction detected</span>
+              <span className="text-slate-500"> — {negPct}% negative sentiment across your forms.</span>
+            </p>
+            <button type="button" onClick={() => navigate('/reports')} className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1 whitespace-nowrap shrink-0">
               See Report <FaArrowRight className="text-[9px]" />
             </button>
           </div>
@@ -194,109 +195,169 @@ export default function StaffDashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          {/* Sentiment overview card */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FaBrain className="text-emerald-500 text-sm" />
-              <h2 className="text-sm font-semibold text-slate-700">AI Sentiment Overview</h2>
-              {sentTotal > 0 && (
-                <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
-                  posPct >= 65 ? 'bg-emerald-50 text-emerald-700' : posPct >= 40 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'
-                }`}>
-                  {posPct >= 65 ? 'Healthy' : posPct >= 40 ? 'Mixed' : 'Needs Attention'}
-                </span>
+          {/* ── Sentiment Overview — redesigned ── */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                    <FaBrain className="text-emerald-500 text-xs" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-slate-700">Sentiment Overview</h2>
+                </div>
+                {sentTotal > 0 && (
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    posPct >= 65 ? 'bg-emerald-100 text-emerald-700'
+                    : posPct >= 40 ? 'bg-amber-100 text-amber-700'
+                    : 'bg-red-100 text-red-600'
+                  }`}>
+                    {posPct >= 65 ? '✓ Healthy' : posPct >= 40 ? '~ Mixed' : '⚠ Needs Attention'}
+                  </span>
+                )}
+              </div>
+
+              {loadingStats ? (
+                <p className="text-xs text-slate-400 py-8 text-center">Loading…</p>
+              ) : sentTotal === 0 ? (
+                <div className="py-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <FaBrain className="text-slate-300 text-lg" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-400 mb-1">No analysis data yet</p>
+                  <p className="text-xs text-slate-300 mb-4">Run AI analysis on a feedback form to see sentiment data here.</p>
+                  <button type="button" onClick={() => navigate('/feedback-forms')}
+                    className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl hover:bg-emerald-100 transition">
+                    Go to Feedback Forms →
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Big three metric pills */}
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    {[
+                      { label: 'Satisfied',   pct: posPct,                                                                              count: sentiment.positive, bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-400' },
+                      { label: 'Mixed',       pct: sentTotal > 0 ? Math.round((sentiment.neutral/sentTotal)*100) : 0, count: sentiment.neutral,  bg: 'bg-slate-50',   border: 'border-slate-100',   text: 'text-slate-500',   bar: 'bg-slate-300'   },
+                      { label: 'Unsatisfied', pct: negPct,                                                                              count: sentiment.negative, bg: 'bg-red-50',   border: 'border-red-100',   text: 'text-red-600',   bar: 'bg-red-400'   },
+                    ].map(({ label, pct, count, bg, border, text, bar }) => (
+                      <div key={label} className={`rounded-xl ${bg} border ${border} px-3 py-3 flex flex-col items-center gap-1`}>
+                        <span className={`text-xl font-bold ${text}`}>{pct}%</span>
+                        <span className="text-[10px] font-semibold text-slate-500">{label}</span>
+                        <div className="w-full h-1 bg-white/70 rounded-full overflow-hidden mt-1">
+                          <div className={`h-full ${bar} rounded-full`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[10px] text-slate-400">{count} resp.</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => navigate('/reports')}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-emerald-700 hover:border-emerald-200 transition">
+                    View Full Report <FaArrowRight className="text-[9px]" />
+                  </button>
+                </>
               )}
             </div>
-            {loadingStats ? (
-              <p className="text-xs text-slate-400 py-6 text-center">Loading…</p>
-            ) : sentTotal === 0 ? (
-              <div className="py-4 text-center">
-                <p className="text-sm text-slate-400 mb-3">No AI analysis data yet.</p>
-                <button type="button" onClick={() => navigate('/feedback-forms')}
-                  className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition">
-                  Run Analysis →
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[
-                  { label: 'Satisfied',   count: sentiment.positive, pct: posPct, bar: 'bg-emerald-400', text: 'text-emerald-700' },
-                  { label: 'Mixed',       count: sentiment.neutral,  pct: sentTotal > 0 ? Math.round((sentiment.neutral/sentTotal)*100) : 0,  bar: 'bg-slate-300',   text: 'text-slate-500' },
-                  { label: 'Unsatisfied', count: sentiment.negative, pct: negPct, bar: 'bg-red-400',     text: 'text-red-600' },
-                ].map(({ label, count, pct, bar, text }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500 w-20">{label}</span>
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${bar} rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className={`text-xs font-bold ${text} w-8 text-right`}>{pct}%</span>
-                    <span className="text-xs text-slate-400">{count}</span>
-                  </div>
-                ))}
-                <button type="button" onClick={() => navigate('/reports')}
-                  className="mt-2 text-xs font-semibold text-[#13462D] flex items-center gap-1 hover:gap-2 transition-all">
-                  View full report <FaArrowRight className="text-[9px]" />
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Top topics + AI insight */}
-          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FaLightbulb className="text-amber-500 text-sm" />
-              <h2 className="text-sm font-semibold text-slate-700">Top AI Insights</h2>
-            </div>
-            {loadingStats ? (
-              <p className="text-xs text-slate-400 py-6 text-center">Loading…</p>
-            ) : topTopics.length === 0 ? (
-              <p className="text-sm text-slate-400 py-4">Analyse feedback forms to discover what students are discussing most.</p>
-            ) : (
-              <div className="space-y-3">
-                {topTopic && (
-                  <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 mb-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600 mb-1">Top Discussion Topic</p>
-                    <p className="text-lg font-bold text-[#13462D]">{topTopic}</p>
-                    <p className="text-xs text-amber-700 mt-0.5">{topTopics[0]?.count ?? 0} student responses</p>
+          {/* Top topics */}
+          <div className="rounded-2xl bg-white border border-slate-100 shadow-sm">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <FaLightbulb className="text-amber-500 text-xs" />
+                </div>
+                <h2 className="text-sm font-semibold text-slate-700">Top AI Insights</h2>
+              </div>
+              {loadingStats ? (
+                <p className="text-xs text-slate-400 py-8 text-center">Loading…</p>
+              ) : topTopics.length === 0 ? (
+                <div className="py-6 text-center">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
+                    <FaLightbulb className="text-amber-300 text-lg" />
                   </div>
-                )}
-                {topTopics.slice(0, 5).map((t, i) => {
-                  const max = topTopics[0]?.count ?? 1
-                  return (
-                    <div key={i}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium text-slate-700 truncate max-w-[70%]">{t.topic}</span>
-                        <span className="text-slate-400">{t.count}</span>
+                  <p className="text-sm font-medium text-slate-400 mb-1">No topics yet</p>
+                  <p className="text-xs text-slate-300">Analyse feedback forms to discover what students are discussing most.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {topTopic && (
+                    <div className="flex items-center gap-3 rounded-xl bg-[#13462D] px-4 py-3 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                        <FaLightbulb className="text-amber-300 text-xs" />
                       </div>
-                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${(t.count / max) * 100}%` }} />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-white/50 mb-0.5">Top Topic</p>
+                        <p className="text-sm font-bold text-white truncate">{topTopic}</p>
+                        <p className="text-[10px] text-white/40">{topTopics[0]?.count ?? 0} responses</p>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
+                  )}
+                  {topTopics.slice(0, 4).map((t, i) => {
+                    const max = topTopics[0]?.count ?? 1
+                    return (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-slate-300 w-4">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="font-medium text-slate-700 truncate">{t.topic}</span>
+                            <span className="text-slate-400 shrink-0 ml-2">{t.count}</span>
+                          </div>
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${(t.count / max) * 100}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Quick actions */}
-        <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-6">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Quick Actions</h2>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={() => navigate('/feedback-forms')}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700">
-              <FaChartBar className="text-xs" /> View Feedback & Analysis
-            </button>
-            <button type="button" onClick={() => navigate('/reports')}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700">
-              <FaBook className="text-xs" /> Reports
-            </button>
-            {isCoordinator && (
-              <button type="button" onClick={() => navigate('/staff-form-create')}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700">
-                <FaClipboardList className="text-xs" /> Create Feedback Form
+        {/* ── Quick Actions — redesigned ── */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</p>
+          <div className={`grid gap-4 ${isCoordinator ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            {[
+              {
+                icon: FaChartBar,
+                iconBg: 'bg-emerald-50',
+                iconColor: 'text-emerald-600',
+                title: 'Feedback & Analysis',
+                sub: 'View responses and AI insights',
+                route: '/feedback-forms',
+              },
+              {
+                icon: FaFileAlt,
+                iconBg: 'bg-sky-50',
+                iconColor: 'text-sky-600',
+                title: 'Reports',
+                sub: 'Export and review detailed reports',
+                route: '/reports',
+              },
+              ...(isCoordinator ? [{
+                icon: FaClipboardList,
+                iconBg: 'bg-amber-50',
+                iconColor: 'text-amber-600',
+                title: 'Create Feedback Form',
+                sub: 'Build and publish a new form',
+                route: '/courses',
+              }] : []),
+            ].map((action) => (
+              <button key={action.route} type="button" onClick={() => navigate(action.route)}
+                className="group rounded-2xl bg-white border border-slate-100 shadow-sm p-5 text-left hover:shadow-md hover:border-emerald-200 transition-all duration-200">
+                <div className="flex items-start gap-4">
+                  <div className={`w-10 h-10 rounded-xl ${action.iconBg} flex items-center justify-center shrink-0`}>
+                    <action.icon className={`${action.iconColor} text-base`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-[#13462D] transition-colors">{action.title}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{action.sub}</p>
+                  </div>
+                  <FaArrowRight className="text-slate-300 text-xs mt-1 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+                </div>
               </button>
-            )}
+            ))}
           </div>
         </div>
       </div>

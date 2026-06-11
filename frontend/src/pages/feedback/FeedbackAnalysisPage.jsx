@@ -6,7 +6,7 @@ import {
   FaDownload, FaCheck, FaBrain,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
-import { getFeedbackForm, analyzeForm, getAnalysis, getAnalysisJobs } from '../../services/feedback'
+import { getFeedbackForm, analyzeForm, getAnalysis, getAnalysisJobs, exportForm } from '../../services/feedback'
 import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
@@ -547,6 +547,32 @@ export default function FeedbackAnalysisPage() {
   )
 
   const responseRate   = formStats.distributed_count > 0 ? Math.round((formStats.response_count / formStats.distributed_count) * 100) : 0
+
+  const [exporting, setExporting] = useState(null)
+
+  const handleExportResponses = async (format) => {
+    if (!formId) { toast.error('No form selected.'); return }
+    setExporting(format)
+    try {
+      const blob = await exportForm(formId, format)
+      const ext  = format === 'pdf' ? 'pdf' : 'xlsx'
+      const mime = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      const url  = URL.createObjectURL(new Blob([blob], { type: mime }))
+      const a    = document.createElement('a')
+      a.style.display = 'none'
+      a.href     = url
+      a.download = `${(formTitle ?? 'responses').replace(/\s+/g, '_')}_responses.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 150)
+      toast.success(`${format === 'pdf' ? 'PDF' : 'Excel'} downloaded.`)
+    } catch (err) {
+      const msg = err?.response?.status ? `Export failed (${err.response.status}).` : 'Export failed.'
+      toast.error(msg)
+    } finally {
+      setExporting(null)
+    }
+  }
   const overallScore   = calcScore(overall.positive, overall.neutral, overall.negative)
   const overallCol     = scoreColor(overallScore)
   const sentTotal      = overall.positive + overall.neutral + overall.negative
@@ -571,31 +597,25 @@ export default function FeedbackAnalysisPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-0.5">AI Feedback Analysis</p>
               <h1 className="text-xl font-bold text-white leading-tight">{formTitle ?? 'Analysis'}</h1>
-              {status === 'done' && overallScore !== null && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
-                    overallScore >= 65 ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30' :
-                    overallScore >= 40 ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' :
-                                         'bg-red-400/20 text-red-300 border border-red-400/30'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full inline-block ${
-                      overallScore >= 65 ? 'bg-emerald-400' : overallScore >= 40 ? 'bg-amber-400' : 'bg-red-400'
-                    }`} />
-                    {overallScore}% satisfaction — {overallCol.label}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
             {status === 'done' && (
               <button type="button"
                 onClick={() => openAnalysisPDF({ formTitle: formTitle ?? 'Analysis', formStats, analysis, overall, responseRate })}
                 className="flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
-                <FaDownload className="text-xs" /> Export PDF
+                <FaDownload className="text-xs" /> AI Report
               </button>
             )}
+            <button type="button" onClick={() => handleExportResponses('excel')} disabled={!!exporting}
+              className="flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-60">
+              {exporting === 'excel' ? <FaSync className="text-xs animate-spin" /> : <FaDownload className="text-xs" />} Excel
+            </button>
+            <button type="button" onClick={() => handleExportResponses('pdf')} disabled={!!exporting}
+              className="flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-60">
+              {exporting === 'pdf' ? <FaSync className="text-xs animate-spin" /> : <FaDownload className="text-xs" />} PDF
+            </button>
             <button type="button" disabled={status === 'running'} onClick={handleAnalyse}
               className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50 disabled:opacity-60">
               {status === 'running'

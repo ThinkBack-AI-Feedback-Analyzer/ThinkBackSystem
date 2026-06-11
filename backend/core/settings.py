@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
+    'django_celery_beat',
     
     # Local apps
     'users',
@@ -201,3 +202,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'close-expired-forms-every-hour': {
+        'task': 'feedback.tasks.close_expired_forms',
+        'schedule': crontab(minute=0),  # runs every hour on the hour
+    },
+}

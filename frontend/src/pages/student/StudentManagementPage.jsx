@@ -2,9 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import {
   FaPlus, FaUpload, FaTrash, FaSearch,
-  FaDownload, FaInfoCircle, FaTimes, FaUserGraduate,
+  FaDownload, FaInfoCircle, FaTimes, FaUserGraduate, FaChevronDown,
 } from 'react-icons/fa'
+import * as Select from '@radix-ui/react-select'
 import { getStudents, bulkCreate, deleteStudent } from '../../services/students'
+import { getCourses } from '../../services/courses'
 
 const CSV_COLUMNS = [
   { name: 'student_id', required: true,  example: 'STU001',           description: 'Unique student identifier (no spaces)' },
@@ -32,8 +34,10 @@ export default function StudentManagementPage() {
 
   // Manual add modal
   const [showModal,   setShowModal]   = useState(false)
-  const [form,        setForm]        = useState({ student_id: '', full_name: '', email: '' })
+  const [form,        setForm]        = useState({ student_id: '', full_name: '', email: '', course_id: '' })
   const [submitting,  setSubmitting]  = useState(false)
+  const [courses,     setCourses]     = useState([])
+  const [coursesLoading, setCoursesLoading] = useState(false)
 
   const fetchStudents = useCallback(async () => {
     setLoading(true)
@@ -48,6 +52,15 @@ export default function StudentManagementPage() {
   }, [])
 
   useEffect(() => { fetchStudents() }, [fetchStudents])
+
+  useEffect(() => {
+    if (!showModal) return
+    setCoursesLoading(true)
+    getCourses()
+      .then(data => setCourses(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setCoursesLoading(false))
+  }, [showModal])
 
   // ── CSV Parsing ───────────────────────────────────────────────────────────
 
@@ -136,12 +149,15 @@ export default function StudentManagementPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const result = await bulkCreate({ students: [form] })
+      const { course_id, ...studentData } = form
+      const payload = { students: [studentData] }
+      if (course_id) payload.course_id = course_id
+      const result = await bulkCreate(payload)
       if (result.errors?.length) {
         toast.error(result.errors[0])
       } else {
         toast.success('Student added successfully')
-        setForm({ student_id: '', full_name: '', email: '' })
+        setForm({ student_id: '', full_name: '', email: '', course_id: '' })
         setShowModal(false)
         fetchStudents()
       }
@@ -181,7 +197,7 @@ export default function StudentManagementPage() {
           <p className="text-sm text-slate-500 mt-1">Add students manually or import via CSV</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => { setForm({ student_id: '', full_name: '', email: '', course_id: '' }); setShowModal(true) }}
           className="flex items-center gap-2 bg-[#13462D] text-white px-5 py-2.5 rounded-xl shadow hover:opacity-90 font-semibold"
         >
           <FaPlus className="text-xs" />
@@ -430,7 +446,7 @@ STU002,Jane Doe,jane@example.com`}
       {showModal && (
         <div
           className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+          onClick={e => { if (e.target === e.currentTarget) { setForm({ student_id: '', full_name: '', email: '', course_id: '' }); setShowModal(false) } }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
 
@@ -495,6 +511,56 @@ STU002,Jane Doe,jane@example.com`}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D] transition"
                 />
                 <p className="text-xs text-slate-400 mt-1">Used to send feedback form links</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Assign to Course{' '}
+                  <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <Select.Root
+                  value={form.course_id || '__none__'}
+                  onValueChange={val => setForm(f => ({ ...f, course_id: val === '__none__' ? '' : val }))}
+                  disabled={coursesLoading}
+                >
+                  <Select.Trigger className="w-full flex items-center justify-between border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white text-left focus:outline-none focus:ring-2 focus:ring-[#13462D] focus:border-[#13462D] transition disabled:opacity-60">
+                    <Select.Value />
+                    <Select.Icon>
+                      <FaChevronDown className="text-slate-400 text-xs" />
+                    </Select.Icon>
+                  </Select.Trigger>
+
+                  <Select.Portal>
+                    <Select.Content
+                      position="popper"
+                      sideOffset={6}
+                      className="z-[9999] w-[var(--radix-select-trigger-width)] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden"
+                    >
+                      <Select.Viewport className="max-h-52 overflow-y-auto p-1">
+                        <Select.Item
+                          value="__none__"
+                          className="flex items-center px-3 py-2 text-sm text-slate-400 rounded-lg cursor-pointer select-none outline-none hover:bg-slate-50 data-[highlighted]:bg-slate-50"
+                        >
+                          <Select.ItemText>{coursesLoading ? 'Loading courses…' : 'No course'}</Select.ItemText>
+                        </Select.Item>
+                        {courses.map(c => (
+                          <Select.Item
+                            key={c.id}
+                            value={String(c.id)}
+                            className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg cursor-pointer select-none outline-none hover:bg-[#ebf6ec] data-[highlighted]:bg-[#ebf6ec] data-[state=checked]:font-semibold data-[state=checked]:text-[#13462D]"
+                          >
+                            <Select.ItemText>
+                              <span className="font-mono text-xs text-slate-500 mr-1.5">{c.code}</span>
+                              {c.title}
+                              <span className="ml-1.5 text-xs text-slate-400">({c.academic_year})</span>
+                            </Select.ItemText>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+                <p className="text-xs text-slate-400 mt-1">Student will be enrolled in this course</p>
               </div>
 
               <div className="flex gap-3 pt-2">

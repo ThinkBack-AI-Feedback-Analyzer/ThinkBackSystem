@@ -614,27 +614,32 @@ function AIInsightsTab({ forms, enrichedMap, navigate }) {
     <div className="space-y-5">
       {/* Alert: forms needing attention */}
       {alertForms.length > 0 && (
-        <div className="rounded-2xl border border-red-100 bg-red-50 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <FaExclamationTriangle className="text-red-500" />
-            <span className="font-semibold text-red-700">Forms Requiring Immediate Attention</span>
-            <span className="ml-auto text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">{alertForms.length} form{alertForms.length > 1 ? 's' : ''}</span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+              <FaExclamationTriangle className="text-red-500 text-xs" />
+            </div>
+            <span className="text-sm font-semibold text-slate-800">Forms Requiring Immediate Attention</span>
+            <span className="ml-auto text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {alertForms.length} form{alertForms.length > 1 ? 's' : ''}
+            </span>
           </div>
-          <div className="space-y-2">
+          <div className="divide-y divide-slate-50">
             {alertForms.map((f) => {
               const s = enrichedMap[f.id].sentiment
               const t = s.positive + s.neutral + s.negative
               const negPct = t > 0 ? Math.round((s.negative / t) * 100) : 0
               return (
-                <div key={f.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-red-100">
-                  <div>
-                    <span className="text-sm font-semibold text-slate-700">{f.title}</span>
-                    <span className="ml-2 text-xs text-red-500">{negPct}% negative sentiment</span>
+                <div key={f.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span className="text-sm font-medium text-slate-700 truncate">{f.title}</span>
+                    <span className="text-xs text-red-500 font-medium shrink-0">{negPct}% negative</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => navigate('/feedback-analysis', { state: { formId: f.id, formTitle: f.title } })}
-                    className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1"
+                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1 shrink-0 ml-4"
                   >
                     View Analysis <FaArrowRight className="text-[9px]" />
                   </button>
@@ -647,21 +652,30 @@ function AIInsightsTab({ forms, enrichedMap, navigate }) {
 
       {/* AI Suggestions */}
       {allSuggestions.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <FaLightbulb className="text-amber-500" />
-            <h3 className="font-semibold text-slate-700">AI-Generated Improvement Suggestions</h3>
-            <span className="ml-auto text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-semibold border border-amber-100">{allSuggestions.length} suggestions</span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
+            <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+              <FaLightbulb className="text-amber-500 text-xs" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-800">AI-Generated Improvement Suggestions</h3>
+            <span className="ml-auto text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              {allSuggestions.length} suggestion{allSuggestions.length > 1 ? 's' : ''}
+            </span>
           </div>
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-50">
             {allSuggestions.map((s, i) => (
-              <div key={i} className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3.5">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[10px] font-bold text-white bg-[#13462D] px-2.5 py-0.5 rounded-full">{s.topic}</span>
-                  <span className="text-xs text-slate-400">{s.formTitle}</span>
-                  {s.negative > 0 && <span className="ml-auto text-[10px] text-red-500 font-semibold">{s.negative} negative responses</span>}
+              <div key={i} className="px-5 py-4 flex gap-4 hover:bg-slate-50 transition-colors relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-400" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-white bg-[#13462D] px-2.5 py-0.5 rounded-full">{s.topic}</span>
+                    <span className="text-xs text-slate-400">{s.formTitle}</span>
+                    {s.negative > 0 && (
+                      <span className="ml-auto text-[10px] text-red-500 font-semibold shrink-0">{s.negative} negative responses</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">{s.text}</p>
                 </div>
-                <p className="text-sm text-amber-800 leading-relaxed">{s.text}</p>
               </div>
             ))}
           </div>
@@ -729,8 +743,15 @@ export default function ReportsPage() {
     { positive: 0, neutral: 0, negative: 0 },
   ), [enrichedMap])
 
-  const sentTotal  = overallSent.positive + overallSent.neutral + overallSent.negative
-  const health     = sentimentHealth(overallSent.positive, sentTotal)
+  const sentTotal   = overallSent.positive + overallSent.neutral + overallSent.negative
+  const health      = sentimentHealth(overallSent.positive, sentTotal)
+
+  const alertCount  = useMemo(() => forms.filter((f) => {
+    const s = enrichedMap[f.id]?.sentiment
+    if (!s) return false
+    const t = s.positive + s.neutral + s.negative
+    return t > 0 && s.negative / t > 0.4
+  }).length, [forms, enrichedMap])
 
   const filtered   = useMemo(() => {
     const q = search.toLowerCase()
@@ -798,13 +819,18 @@ export default function ReportsPage() {
 
       {/* ── AI Alert Banner ── */}
       {!loading && health === 'critical' && sentTotal > 0 && (
-        <div className="mx-4 mt-4 md:mx-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5">
-          <FaFire className="text-red-500 shrink-0" />
-          <div className="flex-1">
-            <span className="text-sm font-semibold text-red-700">High dissatisfaction detected</span>
-            <span className="text-sm text-red-500 ml-2">— less than 40% positive sentiment across analyzed forms.</span>
-          </div>
-          <button type="button" onClick={() => setActiveTab('insights')} className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 whitespace-nowrap">
+        <div className="mx-4 mt-4 md:mx-6 flex items-center gap-3 rounded-2xl bg-white border border-slate-200 pl-4 pr-5 py-3.5 shadow-sm overflow-hidden relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-2xl" />
+          <FaFire className="text-red-500 shrink-0 text-sm" />
+          <p className="flex-1 text-sm text-slate-700">
+            <span className="font-semibold text-slate-800">High dissatisfaction detected</span>
+            <span className="text-slate-500"> — less than 40% positive sentiment across analyzed forms.</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => setActiveTab('insights')}
+            className="text-xs font-semibold text-[#13462D] hover:underline flex items-center gap-1 whitespace-nowrap shrink-0"
+          >
             View AI Insights <FaArrowRight className="text-[9px]" />
           </button>
         </div>
@@ -817,9 +843,9 @@ export default function ReportsPage() {
           <TabButton active={activeTab === 'forms'}     onClick={() => setActiveTab('forms')}>All Forms</TabButton>
           <TabButton active={activeTab === 'insights'}  onClick={() => setActiveTab('insights')}>
             AI Insights
-            {!loading && Object.keys(enrichedMap).length > 0 && (
-              <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white">
-                {Object.keys(enrichedMap).length}
+            {!loading && alertCount > 0 && (
+              <span className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                {alertCount}
               </span>
             )}
           </TabButton>

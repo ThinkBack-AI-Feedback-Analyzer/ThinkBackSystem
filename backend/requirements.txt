@@ -10,3 +10,6 @@ numpy
 celery[redis]
 redis
 requests
+openpyxl
+reportlab
+django-celery-beat

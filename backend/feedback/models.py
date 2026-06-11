@@ -4,15 +4,17 @@ from institutions.models import Institution
 
 
 class FeedbackForm(models.Model):
-    STATUS_CHOICES = [('draft', 'Draft'), ('published', 'Published')]
+    STATUS_CHOICES = [('draft', 'Draft'), ('published', 'Published'), ('closed', 'Closed')]
     TYPE_CHOICES   = [('Exam', 'Exam'), ('Lab', 'Lab'), ('Course', 'Course'), ('Custom', 'Custom')]
 
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='feedback_forms')
-    title       = models.CharField(max_length=255)
-    form_type   = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Custom')
-    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    created_at  = models.DateTimeField(auto_now_add=True)
-    updated_at  = models.DateTimeField(auto_now=True)
+    institution  = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='feedback_forms')
+    title        = models.CharField(max_length=255)
+    form_type    = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Custom')
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    close_date   = models.DateTimeField(null=True, blank=True)
+    is_anonymous = models.BooleanField(default=False)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'feedback_forms'
@@ -44,6 +46,7 @@ class FeedbackQuestion(models.Model):
 class FormToken(models.Model):
     form       = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='tokens')
     student    = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='form_tokens')
+    course     = models.ForeignKey('institutions.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='form_tokens')
     token      = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     is_used    = models.BooleanField(default=False)
     sent_at    = models.DateTimeField(null=True, blank=True)

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash, FaUsers, FaChartBar } from 'react-icons/fa'
+import { FaClipboardList, FaCheckCircle, FaFileAlt, FaEye, FaPen, FaPlus, FaTrash, FaUsers, FaChartBar, FaDownload, FaLock } from 'react-icons/fa'
 import { createColumnHelper } from '@tanstack/react-table'
 import { RowActions } from '../../components/ui/RowActions'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { DataTable } from '../../components/ui/DataTable'
-import { getFeedbackForms, deleteFeedbackForm } from '../../services/feedback'
+import { getFeedbackForms, deleteFeedbackForm, exportForm } from '../../services/feedback'
 import { useCurrentUser } from '../../hooks/useSidebarNav'
 
 const columnHelper = createColumnHelper()
@@ -75,10 +75,31 @@ function FeedbackFormsPage() {
     toast.success(`${rows.length} form${rows.length > 1 ? 's' : ''} deleted.`)
   }, [])
 
+  const handleExport = useCallback(async (formId, formTitle, format) => {
+    try {
+      const blob = await exportForm(formId, format)
+      const ext  = format === 'pdf' ? 'pdf' : 'xlsx'
+      const mime = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      const url  = URL.createObjectURL(new Blob([blob], { type: mime }))
+      const a    = document.createElement('a')
+      a.style.display = 'none'
+      a.href     = url
+      a.download = `${formTitle.replace(/\s+/g, '_')}_responses.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 150)
+      toast.success(`${format === 'pdf' ? 'PDF' : 'Excel'} downloaded.`)
+    } catch (err) {
+      const msg = err?.response?.status ? `Export failed (${err.response.status}).` : 'Export failed.'
+      toast.error(msg)
+    }
+  }, [])
+
   const stats = useMemo(() => ({
     total:     forms.length,
     published: forms.filter((f) => f.status === 'published').length,
     drafts:    forms.filter((f) => f.status === 'draft').length,
+    closed:    forms.filter((f) => f.status === 'closed').length,
   }), [forms])
 
   const columns = useMemo(() => [
@@ -103,14 +124,17 @@ function FeedbackFormsPage() {
       header: 'Status',
       cell: (info) => {
         const s = info.getValue()
+        const cls =
+          s === 'published' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+          s === 'closed'    ? 'bg-slate-100 border-slate-200 text-slate-500' :
+                              'bg-amber-50 border-amber-100 text-amber-700'
+        const label = s === 'published' ? 'Published' : s === 'closed' ? 'Closed' : 'Draft'
         return (
-          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-            s === 'published'
-              ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-              : 'bg-amber-50 border-amber-100 text-amber-700'
-          }`}>
-            {s === 'published' ? 'Published' : 'Draft'}
-          </span>
+          <div className="flex flex-col gap-1">
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
+              {s === 'closed' && <FaLock className="mr-1 text-[9px]" />}{label}
+            </span>
+          </div>
         )
       },
     }),
@@ -122,14 +146,22 @@ function FeedbackFormsPage() {
     }),
     columnHelper.display({
       id: 'responses',
-      header: 'Responses',
+      header: 'Completion',
       cell: ({ row }) => {
         const { response_count, distributed_count } = row.original
+        const pct = distributed_count > 0 ? Math.round((response_count / distributed_count) * 100) : 0
+        const barColor = pct >= 75 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-400' : 'bg-slate-300'
         return (
-          <div className="flex items-center gap-1.5">
-            <FaUsers className="text-xs text-slate-400" />
-            <span className="text-sm font-semibold text-[#13462D]">{response_count}</span>
-            <span className="text-xs text-slate-400">/ {distributed_count}</span>
+          <div className="min-w-[100px]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-slate-500 flex items-center gap-1">
+                <FaUsers className="text-[10px]" />{response_count}/{distributed_count}
+              </span>
+              <span className="text-xs font-bold text-slate-700">{pct}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-slate-100">
+              <div className={`h-1.5 rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+            </div>
           </div>
         )
       },
@@ -150,15 +182,17 @@ function FeedbackFormsPage() {
         const form = row.original
         return (
           <RowActions actions={[
-            { label: 'View',     icon: FaEye,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'view', formId: form.id } }) },
-            { label: 'Analysis', icon: FaChartBar, onClick: () => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } }) },
-            { label: 'Edit',     icon: FaPen,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'edit', formId: form.id } }) },
-            { label: 'Delete',   icon: FaTrash,    variant: 'danger', onClick: () => setDeleteTarget({ id: form.id, title: form.title }) },
+            { label: 'View',            icon: FaEye,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'view', formId: form.id } }) },
+            { label: 'Analysis',        icon: FaChartBar, onClick: () => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } }) },
+            { label: 'Edit',            icon: FaPen,      onClick: () => navigate('/feedbackForm',      { state: { mode: 'edit', formId: form.id } }) },
+            { label: 'Export Excel',    icon: FaDownload, onClick: () => handleExport(form.id, form.title, 'excel') },
+            { label: 'Export PDF',      icon: FaDownload, onClick: () => handleExport(form.id, form.title, 'pdf') },
+            { label: 'Delete',          icon: FaTrash,    variant: 'danger', onClick: () => setDeleteTarget({ id: form.id, title: form.title }) },
           ]} />
         )
       },
     }),
-  ], [navigate])
+  ], [navigate, handleExport])
 
   if (!authState.user) {
     return <div className="flex items-center justify-center min-h-screen text-slate-400 text-sm">Loading...</div>
@@ -191,7 +225,14 @@ function FeedbackFormsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate('/feedbackForm', { state: { mode: 'create' } })}
+                onClick={() => {
+                  const role = authState.user?.role
+                  if (role === 'institution_admin') {
+                    navigate('/feedbackForm', { state: { mode: 'create' } })
+                  } else {
+                    navigate('/courses')
+                  }
+                }}
                 className="inline-flex items-center gap-2 self-start rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[#13462D] shadow-lg transition hover:bg-emerald-50 lg:self-auto"
               >
                 <FaPlus className="text-xs" />
@@ -217,7 +258,7 @@ function FeedbackFormsPage() {
                 onDeleteSelected={handleBulkDelete}
                 onRowClick={(form) => navigate('/feedback-analysis', { state: { formId: form.id, formTitle: form.title } })}
                 filterDefs={[
-                  { column: 'status',    label: 'Status', options: [{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }] },
+                  { column: 'status',    label: 'Status', options: [{ value: 'published', label: 'Published' }, { value: 'draft', label: 'Draft' }, { value: 'closed', label: 'Closed' }] },
                   { column: 'form_type', label: 'Type' },
                 ]}
               />
