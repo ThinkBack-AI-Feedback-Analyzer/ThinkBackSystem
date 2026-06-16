@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FaArrowLeft, FaBook, FaCloudUploadAlt, FaFile, FaTimes, FaUsers } from 'react-icons/fa'
+import { FaArrowLeft, FaBook, FaUsers } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { Select } from '../../components/ui/Select'
 import { SearchSelect } from '../../components/ui/SearchSelect'
@@ -80,7 +80,6 @@ function CourseCreatePage() {
     description:  prefill.description     ?? '',
     coordinator:  prefill.coordinatorName ?? '',
     lecturer:     prefill.lecturerName    ?? '',
-    studentFile:  null,
   })
   const [coordinators, setCoordinators] = useState([])
   const [lecturers,    setLecturers]    = useState([])
@@ -117,8 +116,8 @@ function CourseCreatePage() {
 
   const handleChange = useCallback((e) => {
     if (isView) return
-    const { name, value, files } = e.target
-    setForm((prev) => ({ ...prev, [name]: name === 'studentFile' ? (files?.[0] ?? null) : value }))
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
     setErrors((prev) => ({ ...prev, [name]: '' }))
     setSaved(false)
   }, [isView])
@@ -294,45 +293,6 @@ function CourseCreatePage() {
             )}
           </SectionCard>
 
-          {/* Section 3 — Student Roster */}
-          {!isView && (
-            <SectionCard number={3} icon={FaCloudUploadAlt} title={<>Student Roster <span className="ml-1.5 text-[11px] font-normal text-slate-400 normal-case tracking-normal">(optional)</span></>}>
-              <label
-                htmlFor="studentFile"
-                className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition ${
-                  form.studentFile
-                    ? 'border-emerald-300 bg-emerald-50'
-                    : 'border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/40'
-                }`}
-              >
-                {form.studentFile ? (
-                  <>
-                    <FaFile className="text-2xl text-emerald-600" />
-                    <span className="text-sm font-semibold text-emerald-700">{form.studentFile.name}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); setForm((p) => ({ ...p, studentFile: null })) }}
-                      className="inline-flex items-center gap-1 text-xs text-slate-500 transition hover:text-red-500"
-                    >
-                      <FaTimes className="text-[10px]" /> Remove
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                      <FaCloudUploadAlt className="text-xl text-slate-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-600">Click to upload student list</p>
-                      <p className="mt-0.5 text-xs text-slate-400">CSV, XLS or XLSX — student names, IDs, emails</p>
-                    </div>
-                  </>
-                )}
-                <input id="studentFile" name="studentFile" type="file" accept=".csv,.xls,.xlsx" className="hidden" onChange={handleChange} />
-              </label>
-            </SectionCard>
-          )}
-
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-3 pb-6">
             {!isView && (
@@ -345,7 +305,7 @@ function CourseCreatePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setForm({ courseTitle:'',courseCode:'',facultyName:'',academicYear:'',description:'',coordinator:'',lecturer:'',studentFile:null }); setErrors({}); setSaved(false) }}
+                  onClick={() => { setForm({ courseTitle:'',courseCode:'',facultyName:'',academicYear:'',description:'',coordinator:'',lecturer:'' }); setErrors({}); setSaved(false) }}
                   className="rounded-xl border border-slate-200 bg-white px-7 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                 >
                   Reset
