@@ -231,7 +231,7 @@ class FeedbackRespondView(APIView):
         if ft.is_used:
             return Response({'detail': 'This form has already been submitted.'}, status=status.HTTP_400_BAD_REQUEST)
         data = FeedbackFormSerializer(ft.form).data
-        data['student_name']    = 'Anonymous' if ft.form.is_anonymous else ft.student.full_name
+        data['student_name']    = 'Anonymous'
         data['institution_name'] = ft.form.institution.institution_name
         data['course_name']      = f"{ft.course.code}: {ft.course.title}" if ft.course else None
         return Response(data)
@@ -309,9 +309,10 @@ class FormAnalyzeView(APIView):
         results = AnalysisResult.objects.filter(form_id=form_id).order_by('course_name')
         return Response([
             {
-                'course_name': r.course_name,
-                'results':     r.results,
-                'analyzed_at': r.analyzed_at,
+                'course_name':    r.course_name,
+                'results':        r.results,
+                'rating_results': r.rating_results,
+                'analyzed_at':    r.analyzed_at,
             }
             for r in results
         ])
@@ -382,10 +383,7 @@ class FormExportView(APIView):
         header_fill = PatternFill(start_color='13462D', end_color='13462D', fill_type='solid')
         header_font = Font(color='FFFFFF', bold=True)
 
-        headers = ['#', 'Submitted At']
-        if not form.is_anonymous:
-            headers += ['Student Name', 'Student ID']
-        headers += [f'Q{i+1}: {q.text[:60]}' for i, q in enumerate(questions)]
+        headers = ['#', 'Submitted At'] + [f'Q{i+1}: {q.text[:60]}' for i, q in enumerate(questions)]
 
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
@@ -395,10 +393,7 @@ class FormExportView(APIView):
 
         for row_idx, resp in enumerate(responses, 2):
             answer_map = {a.question_id: a.answer for a in resp.answers.all()}
-            row = [row_idx - 1, resp.submitted_at.strftime('%Y-%m-%d %H:%M')]
-            if not form.is_anonymous:
-                row += [resp.token.student.full_name, resp.token.student.student_id]
-            row += [answer_map.get(q.id, '') for q in questions]
+            row = [row_idx - 1, resp.submitted_at.strftime('%Y-%m-%d %H:%M')] + [answer_map.get(q.id, '') for q in questions]
             for col, val in enumerate(row, 1):
                 ws.cell(row=row_idx, column=col, value=val)
 
@@ -431,7 +426,7 @@ class FormExportView(APIView):
 
         story = [
             Paragraph(form.title, title_style),
-            Paragraph(f'Type: {form.form_type}  |  Status: {form.status}  |  Responses: {responses.count()}  |  Anonymous: {"Yes" if form.is_anonymous else "No"}', meta_style),
+            Paragraph(f'Type: {form.form_type}  |  Status: {form.status}  |  Responses: {responses.count()}', meta_style),
             Paragraph('Questions', h2_style),
         ]
 
@@ -442,24 +437,16 @@ class FormExportView(APIView):
         story.append(Spacer(1, 12))
         story.append(Paragraph('Responses', h2_style))
 
-        col_headers = ['#', 'Submitted']
-        if not form.is_anonymous:
-            col_headers += ['Student', 'ID']
-        col_headers += [f'Q{i+1}' for i in range(len(questions))]
+        col_headers = ['#', 'Submitted'] + [f'Q{i+1}' for i in range(len(questions))]
 
         table_data = [col_headers]
         for idx, resp in enumerate(responses, 1):
             answer_map = {a.question_id: a.answer for a in resp.answers.all()}
-            row = [str(idx), resp.submitted_at.strftime('%Y-%m-%d')]
-            if not form.is_anonymous:
-                row += [resp.token.student.full_name, resp.token.student.student_id]
-            row += [answer_map.get(q.id, '')[:80] for q in questions]
+            row = [str(idx), resp.submitted_at.strftime('%Y-%m-%d')] + [answer_map.get(q.id, '')[:80] for q in questions]
             table_data.append(row)
 
         if len(table_data) > 1:
             col_widths = [1*cm, 2.5*cm]
-            if not form.is_anonymous:
-                col_widths += [3.5*cm, 2*cm]
             remaining = (17*cm - sum(col_widths))
             per_q = remaining / max(len(questions), 1)
             col_widths += [per_q] * len(questions)

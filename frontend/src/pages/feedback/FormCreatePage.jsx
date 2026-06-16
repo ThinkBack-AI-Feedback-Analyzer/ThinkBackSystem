@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import {
   FaArrowLeft, FaEye, FaEdit, FaSave, FaGlobe,
   FaPlus, FaTrash, FaStar, FaRegStar, FaPaperPlane, FaTimes,
-  FaChartBar, FaUsers, FaCheckCircle, FaClock, FaUserSecret,
+  FaChartBar, FaUsers, FaCheckCircle, FaClock,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { getFeedbackForm, createFeedbackForm, updateFeedbackForm, distributeForm } from '../../services/feedback'
@@ -37,7 +37,6 @@ export default function FormCreatePage() {
   const [title,        setTitle]        = useState('')
   const [formType,     setFormType]     = useState('Exam')
   const [closeDate,    setCloseDate]    = useState('')
-  const [isAnonymous,  setIsAnonymous]  = useState(false)
   const [questions,    setQuestions]    = useState([])
   const [previewMode,  setPreviewMode]  = useState(false)
   const [answers,      setAnswers]      = useState({})
@@ -79,7 +78,6 @@ export default function FormCreatePage() {
         setTitle(data.title)
         setFormType(data.form_type)
         setCloseDate(data.close_date ? data.close_date.slice(0, 16) : '')
-        setIsAnonymous(data.is_anonymous ?? false)
         setQuestions(data.questions ?? [])
         setFormStats({ distributed_count: data.distributed_count ?? 0, response_count: data.response_count ?? 0 })
       })
@@ -159,7 +157,6 @@ export default function FormCreatePage() {
       form_type:    formType,
       status,
       close_date:   closeDate || null,
-      is_anonymous: isAnonymous,
       questions:    questions.map((q, i) => ({ ...q, order: i })),
     }
 
@@ -461,23 +458,6 @@ export default function FormCreatePage() {
                     />
                     <p className="mt-1 text-[11px] text-slate-400">Form will automatically close at this date and time.</p>
                   </div>
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <FaUserSecret className="text-slate-400 text-sm" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">Anonymous Responses</p>
-                        <p className="text-[11px] text-slate-400">Student names will be hidden in responses and exports</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={isReadOnly}
-                      onClick={() => setIsAnonymous((p) => !p)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAnonymous ? 'bg-[#13462D]' : 'bg-slate-200'} disabled:opacity-50`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isAnonymous ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -776,10 +756,6 @@ export default function FormCreatePage() {
                   <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
                     <span className="text-xs font-medium text-slate-500">Type</span>
                     <span className="text-xs font-semibold text-slate-700">{formType}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                    <span className="text-xs font-medium text-slate-500">Anonymous</span>
-                    <span className={`text-xs font-semibold ${isAnonymous ? 'text-[#13462D]' : 'text-slate-400'}`}>{isAnonymous ? 'Yes' : 'No'}</span>
                   </div>
                   {closeDate && (
                     <div className="flex items-center justify-between rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">

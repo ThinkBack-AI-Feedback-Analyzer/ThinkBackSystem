@@ -99,7 +99,6 @@ export default function FeedbackRespondPage() {
 
   const [form,            setForm]           = useState(null)
   const [studentName,     setStudentName]    = useState('')
-  const [isAnonymous,     setIsAnonymous]    = useState(false)
   const [closeDate,       setCloseDate]      = useState(null)
   const [institutionName, setInstitutionName] = useState('')
   const [courseName,      setCourseName]     = useState(null)
@@ -116,7 +115,6 @@ export default function FeedbackRespondPage() {
       .then((data) => {
         setForm(data)
         setStudentName(data.student_name ?? '')
-        setIsAnonymous(data.is_anonymous ?? false)
         setCloseDate(data.close_date ?? null)
         setInstitutionName(data.institution_name ?? '')
         setCourseName(data.course_name ?? null)
@@ -263,16 +261,10 @@ export default function FeedbackRespondPage() {
             {/* Divider */}
             <hr className="my-4 border-slate-100" />
 
-            {/* Greeting + anonymous notice */}
+            {/* Greeting */}
             {studentName && (
               <p className="text-sm text-slate-700 mb-1">Hello, <span className="font-medium">{studentName}</span></p>
             )}
-            <p className={`text-sm ${isAnonymous ? 'text-violet-700' : 'text-slate-500'}`}>
-              {isAnonymous
-                ? <><strong>Anonymous form.</strong> Your identity will not be recorded with this response.</>
-                : <>Your name will be recorded with your response.</>
-              }
-            </p>
 
             {/* Close date */}
             {closeDate && new Date(closeDate) > new Date() && (

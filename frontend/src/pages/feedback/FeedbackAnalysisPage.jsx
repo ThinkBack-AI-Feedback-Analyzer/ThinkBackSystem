@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FaArrowLeft, FaSync, FaChartBar, FaUsers, FaCheckCircle, FaClock,
-  FaDownload, FaCheck, FaBrain,
+  FaDownload, FaCheck, FaBrain, FaStar,
 } from 'react-icons/fa'
 import DashboardLayout from '../../components/common/DashboardLayout'
 import { getFeedbackForm, analyzeForm, getAnalysis, getAnalysisJobs, exportForm } from '../../services/feedback'
@@ -222,6 +222,61 @@ function TopicCard({ item, formId, groupIdx }) {
   )
 }
 
+/* ─── Rating card ─────────────────────────────────────────────────────────── */
+function RatingCard({ item }) {
+  const max   = item.max ?? 5
+  const avg   = item.average ?? 0
+  const sat   = item.satisfaction ?? 0
+  const col   = scoreColor(sat)
+  const stars = Math.round(avg)
+
+  const scoreText =
+    sat >= 65 ? 'text-emerald-600'
+    : sat >= 40 ? 'text-amber-500'
+    :             'text-red-500'
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col gap-3.5 hover:border-slate-300 hover:shadow-sm transition-all duration-150">
+      {/* Header: question + average */}
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm font-semibold text-slate-800 leading-snug">{item.question}</p>
+        <div className="text-right shrink-0">
+          <p className={`text-2xl font-bold leading-none tabular-nums ${scoreText}`}>
+            {avg}<span className="text-sm font-medium text-slate-400">/{max}</span>
+          </p>
+          <p className="text-[10px] text-slate-400 mt-1">{item.count} response{item.count !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Stars + satisfaction */}
+      <div className="flex items-center gap-1">
+        {Array.from({ length: max }).map((_, i) => (
+          <FaStar key={i} className={`text-sm ${i < stars ? 'text-amber-400' : 'text-slate-200'}`} />
+        ))}
+        <span className={`ml-2 text-xs font-semibold ${scoreText}`}>{sat}% satisfaction</span>
+      </div>
+
+      {/* Distribution */}
+      <div className="border-t border-slate-100 pt-3 space-y-1">
+        {Array.from({ length: max }).map((_, idx) => {
+          const star = max - idx
+          const c    = item.distribution?.[String(star)] ?? 0
+          const pct  = item.count ? (c / item.count) * 100 : 0
+          return (
+            <div key={star} className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-400 w-7 text-right tabular-nums">{star}★</span>
+              <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-300 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="text-[10px] text-slate-400 w-4 tabular-nums">{c}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ─── PDF generation ──────────────────────────────────────────────────────── */
 function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate }) {
   const date   = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -270,10 +325,46 @@ function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate
       `
     }).join('')
 
+    const ratingsHTML = (Array.isArray(group.rating_results) ? group.rating_results : []).map((r) => {
+      const max      = r.max ?? 5
+      const avg      = r.average ?? 0
+      const sat      = r.satisfaction ?? 0
+      const satColor = sat >= 65 ? '#059669' : sat >= 40 ? '#d97706' : '#ef4444'
+      const stars    = Math.round(avg)
+      const starRow  = Array.from({ length: max }).map((_, i) =>
+        `<span style="color:${i < stars ? '#f59e0b' : '#e2e8f0'};font-size:14px">★</span>`).join('')
+      const distHTML = Array.from({ length: max }).map((_, idx) => {
+        const star = max - idx
+        const c    = r.distribution?.[String(star)] ?? 0
+        const pct  = r.count ? (c / r.count) * 100 : 0
+        return `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-size:9px;color:#94a3b8;width:20px;text-align:right">${star}★</span>
+            <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#fbbf24"></div></div>
+            <span style="font-size:9px;color:#94a3b8;width:14px">${c}</span>
+          </div>`
+      }).join('')
+      return `
+        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px;page-break-inside:avoid">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+            <span style="font-size:13px;font-weight:600;color:#1e293b;line-height:1.4">${r.question}</span>
+            <span style="font-size:20px;font-weight:800;color:${satColor};white-space:nowrap">${avg}<span style="font-size:12px;color:#94a3b8">/${max}</span></span>
+          </div>
+          <div style="margin-bottom:10px">${starRow}<span style="font-size:11px;font-weight:600;color:${satColor};margin-left:8px">${sat}% satisfaction · ${r.count} response${r.count !== 1 ? 's' : ''}</span></div>
+          ${distHTML}
+        </div>
+      `
+    }).join('')
+
+    const hasTopics  = itemsHTML.length > 0
+    const hasRatings = ratingsHTML.length > 0
+
     return `
       <div style="margin-bottom:32px">
         <div style="background:#f1f5f9;border-radius:8px;padding:6px 14px;display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#64748b;margin-bottom:16px">${group.course_name}</div>
-        ${itemsHTML || '<p style="text-align:center;color:#94a3b8;font-size:12px;padding:16px">No open-ended responses for this course.</p>'}
+        ${hasTopics ? `<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Text Feedback</div>${itemsHTML}` : ''}
+        ${hasRatings ? `<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:18px 0 10px">Rating Questions</div>${ratingsHTML}` : ''}
+        ${!hasTopics && !hasRatings ? '<p style="text-align:center;color:#94a3b8;font-size:12px;padding:16px">No responses for this course.</p>' : ''}
       </div>
     `
   }).join('')
@@ -325,7 +416,7 @@ function openAnalysisPDF({ formTitle, formStats, analysis, overall, responseRate
 <div style="padding:56px 60px">
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
     <div style="width:32px;height:32px;border-radius:8px;background:#13462D;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0">2</div>
-    <div><div style="font-size:20px;font-weight:800">Topic Analysis</div><div style="font-size:13px;color:#94a3b8">AI-analysed sentiment per topic</div></div>
+    <div><div style="font-size:20px;font-weight:800">Feedback Analysis</div><div style="font-size:13px;color:#94a3b8">AI sentiment by topic and rating scores</div></div>
   </div>
   ${courseSections}
 </div>
@@ -809,22 +900,51 @@ export default function FeedbackAnalysisPage() {
                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 px-1">{activeGroup.course_name}</h3>
                 )}
 
-                {(!Array.isArray(activeGroup.results) || activeGroup.results.length === 0) && (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center">
-                    <p className="text-sm text-slate-400">No open-ended responses found for this course.</p>
-                  </div>
-                )}
+                {(() => {
+                  const topicItems  = Array.isArray(activeGroup.results) ? activeGroup.results : []
+                  const ratingItems = Array.isArray(activeGroup.rating_results) ? activeGroup.rating_results : []
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(Array.isArray(activeGroup.results) ? activeGroup.results : []).map((item) => (
-                    <TopicCard
-                      key={item.topic}
-                      item={item}
-                      formId={formId}
-                      groupIdx={analysis.indexOf(activeGroup)}
-                    />
-                  ))}
-                </div>
+                  if (topicItems.length === 0 && ratingItems.length === 0) {
+                    return (
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center">
+                        <p className="text-sm text-slate-400">No responses found for this course.</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Text feedback (AI sentiment) */}
+                      {topicItems.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Text Feedback · AI Sentiment</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {topicItems.map((item) => (
+                              <TopicCard
+                                key={item.topic}
+                                item={item}
+                                formId={formId}
+                                groupIdx={analysis.indexOf(activeGroup)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rating questions (numeric) */}
+                      {ratingItems.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Rating Questions</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {ratingItems.map((item, i) => (
+                              <RatingCard key={item.question ?? i} item={item} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>

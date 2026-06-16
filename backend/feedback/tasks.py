@@ -83,16 +83,27 @@ def run_ai_analysis(form_id, job_id=None):
         _fail('Form not found.')
         return
 
+    # Question types whose answers carry natural-language sentiment.
+    # Numeric 'rating' answers are excluded — a bare "4" gives the BERT
+    # topic / ABSA sentiment models no aspect or polarity signal.
+    NLP_QUESTION_TYPES = ['open_ended', 'yes_no', 'multiple_choice']
+
     answers = (
         FormAnswer.objects
-        .filter(response__form=form, question__question_type='open_ended')
+        .filter(response__form=form, question__question_type__in=NLP_QUESTION_TYPES)
         .exclude(answer='')
-        .select_related('response__token__student')
+        .select_related('question', 'response__token__student')
         .prefetch_related('response__token__student__courses')
     )
 
-    # Record how many responses are being processed
-    response_count = answers.values('response').distinct().count()
+    # Record how many responses are being processed (text + rating answers)
+    response_count = (
+        FormAnswer.objects
+        .filter(response__form=form,
+                question__question_type__in=NLP_QUESTION_TYPES + ['rating'])
+        .exclude(answer='')
+        .values('response').distinct().count()
+    )
     if job:
         job.response_count = response_count
         job.save(update_fields=['response_count'])
@@ -100,18 +111,85 @@ def run_ai_analysis(form_id, job_id=None):
     course_texts = defaultdict(list)
     for ans in answers:
         student = ans.response.token.student
+
+        # Combine question + answer so short/closed answers ("Yes", an option
+        # label) carry the topic and polarity context the models need. Matches
+        # the trained input format: "How are the assignments - Too many assignments"
+        question_text = ans.question.text.strip()
+        answer_text   = ans.answer.strip()
+        text          = f"{question_text} - {answer_text}" if question_text else answer_text
+
         courses = list(student.courses.all())
         if courses:
             for course in courses:
-                course_texts[f"{course.code} — {course.title}"].append(ans.answer)
+                course_texts[f"{course.code} — {course.title}"].append(text)
         else:
-            course_texts['General (No Course)'].append(ans.answer)
+            course_texts['General (No Course)'].append(text)
 
-    if not course_texts:
+    # ── Collect rating answers for numeric aggregation ────────────────────────
+    # Ratings are quantitative — they skip the NLP models and are averaged.
+    rating_answers = (
+        FormAnswer.objects
+        .filter(response__form=form, question__question_type='rating')
+        .exclude(answer='')
+        .select_related('question', 'response__token__student')
+        .prefetch_related('response__token__student__courses')
+    )
+
+    # {course_name: {question_text: [float, ...]}}
+    course_ratings = defaultdict(lambda: defaultdict(list))
+    rating_scales  = {}  # question_text -> max value on its scale
+    for ans in rating_answers:
+        try:
+            value = float(ans.answer)
+        except (TypeError, ValueError):
+            continue
+
+        qtext = ans.question.text.strip()
+        options = ans.question.options or []
+        try:
+            rating_scales[qtext] = max(float(o) for o in options) if options else 5.0
+        except (TypeError, ValueError):
+            rating_scales[qtext] = 5.0
+
+        student = ans.response.token.student
+        courses = list(student.courses.all())
+        if courses:
+            for course in courses:
+                course_ratings[f"{course.code} — {course.title}"][qtext].append(value)
+        else:
+            course_ratings['General (No Course)'][qtext].append(value)
+
+    def build_rating_stats(question_map):
+        stats = []
+        for qtext, values in question_map.items():
+            if not values:
+                continue
+            n         = len(values)
+            avg       = sum(values) / n
+            max_scale = rating_scales.get(qtext, 5.0) or 5.0
+            distribution = {}
+            for v in values:
+                key = str(int(v)) if float(v).is_integer() else str(v)
+                distribution[key] = distribution.get(key, 0) + 1
+            stats.append({
+                'question':     qtext,
+                'average':      round(avg, 2),
+                'max':          max_scale,
+                'satisfaction': round((avg / max_scale) * 100) if max_scale else 0,
+                'count':        n,
+                'distribution': distribution,
+            })
+        # Worst-rated first, so problems surface at the top
+        stats.sort(key=lambda s: s['satisfaction'])
+        return stats
+
+    # ── Nothing to analyse at all ─────────────────────────────────────────────
+    if not course_texts and not course_ratings:
         AnalysisResult.objects.update_or_create(
             form=form,
             course_name='General (No Course)',
-            defaults={'results': []},
+            defaults={'results': [], 'rating_results': []},
         )
         if job:
             job.status       = 'completed'
@@ -119,25 +197,44 @@ def run_ai_analysis(form_id, job_id=None):
             job.save(update_fields=['status', 'completed_at'])
         return
 
-    ai_url = getattr(settings, 'AI_SERVICE_URL', 'http://127.0.0.1:8001')
+    ai_url      = getattr(settings, 'AI_SERVICE_URL', 'http://127.0.0.1:8001')
     any_success = False
 
-    for course_name, texts in course_texts.items():
-        try:
-            resp = requests.post(
-                f'{ai_url}/analyze',
-                json={'course_name': course_name, 'texts': texts},
-                timeout=120,
-            )
-            if resp.status_code == 200:
-                AnalysisResult.objects.update_or_create(
-                    form=form,
-                    course_name=course_name,
-                    defaults={'results': resp.json().get('results', [])},
+    # Process every course that has text and/or ratings
+    for course_name in set(course_texts) | set(course_ratings):
+        texts        = course_texts.get(course_name, [])
+        nlp_results  = []
+        nlp_ok       = True   # stays True when there's no text to send
+
+        if texts:
+            nlp_ok = False
+            try:
+                resp = requests.post(
+                    f'{ai_url}/analyze',
+                    json={'course_name': course_name, 'texts': texts},
+                    timeout=120,
                 )
-                any_success = True
-        except Exception:
-            pass
+                if resp.status_code == 200:
+                    nlp_results = resp.json().get('results', [])
+                    nlp_ok      = True
+                    any_success = True
+            except Exception:
+                pass
+
+        rating_stats = build_rating_stats(course_ratings.get(course_name, {}))
+        if rating_stats:
+            any_success = True
+
+        # Preserve a prior NLP result if this run's AI call failed
+        result_obj, _ = AnalysisResult.objects.get_or_create(
+            form=form,
+            course_name=course_name,
+            defaults={'results': [], 'rating_results': []},
+        )
+        if nlp_ok:
+            result_obj.results = nlp_results
+        result_obj.rating_results = rating_stats
+        result_obj.save()
 
     # ── Mark job complete or failed ───────────────────────────────────────────
     if job:

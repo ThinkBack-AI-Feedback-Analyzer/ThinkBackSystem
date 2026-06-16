@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FaArrowLeft, FaEye, FaChevronDown,
-  FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes, FaUserSecret,
+  FaGlobe, FaPlus, FaRegStar, FaSave, FaStar, FaTrash, FaPaperPlane, FaTimes,
 } from 'react-icons/fa'
 import * as Select from '@radix-ui/react-select'
 import DashboardLayout from '../../components/common/DashboardLayout'
@@ -57,7 +57,6 @@ export default function StaffFormCreatePage() {
   const [title,           setTitle]           = useState(course ? `${course.title} Feedback` : '')
   const [formType,        setFormType]        = useState('Course')
   const [closeDate,       setCloseDate]       = useState('')
-  const [isAnonymous,     setIsAnonymous]     = useState(false)
   const [questions,       setQuestions]       = useState([])
   const [isSaving,        setIsSaving]        = useState(false)
   const [previewMode,     setPreviewMode]     = useState(false)
@@ -145,7 +144,6 @@ export default function StaffFormCreatePage() {
         form_type:    formType,
         status,
         close_date:   closeDate || null,
-        is_anonymous: isAnonymous,
         questions:    questions.map((q, i) => ({ ...q, order: i })),
       })
       toast.success(status === 'published' ? 'Form published!' : 'Draft saved.')
@@ -364,22 +362,6 @@ export default function StaffFormCreatePage() {
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                     />
                     <p className="mt-1 text-[11px] text-slate-400">Form will automatically close at this date and time.</p>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <FaUserSecret className="text-slate-400 text-sm" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">Anonymous Responses</p>
-                        <p className="text-[11px] text-slate-400">Student names will be hidden</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsAnonymous((p) => !p)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAnonymous ? 'bg-[#13462D]' : 'bg-slate-200'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isAnonymous ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
                   </div>
                 </div>
               </div>

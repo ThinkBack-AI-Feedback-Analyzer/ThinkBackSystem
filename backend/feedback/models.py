@@ -12,7 +12,7 @@ class FeedbackForm(models.Model):
     form_type    = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Custom')
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     close_date   = models.DateTimeField(null=True, blank=True)
-    is_anonymous = models.BooleanField(default=False)
+    is_anonymous = models.BooleanField(default=True)
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
 
@@ -80,10 +80,11 @@ class FormAnswer(models.Model):
 
 
 class AnalysisResult(models.Model):
-    form        = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='analysis_results')
-    course_name = models.CharField(max_length=255, default='All Responses')
-    results     = models.JSONField()
-    analyzed_at = models.DateTimeField(auto_now=True)
+    form           = models.ForeignKey(FeedbackForm, on_delete=models.CASCADE, related_name='analysis_results')
+    course_name    = models.CharField(max_length=255, default='All Responses')
+    results        = models.JSONField()
+    rating_results = models.JSONField(default=list, blank=True)
+    analyzed_at    = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table        = 'analysis_results'

@@ -16,7 +16,7 @@ class FeedbackFormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = FeedbackForm
-        fields = ('id', 'title', 'form_type', 'status', 'close_date', 'is_anonymous', 'question_count', 'distributed_count', 'response_count', 'questions', 'created_at', 'updated_at')
+        fields = ('id', 'title', 'form_type', 'status', 'close_date', 'question_count', 'distributed_count', 'response_count', 'questions', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
     def get_question_count(self, obj):
@@ -34,7 +34,7 @@ class FeedbackFormWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = FeedbackForm
-        fields = ('id', 'title', 'form_type', 'status', 'close_date', 'is_anonymous', 'questions')
+        fields = ('id', 'title', 'form_type', 'status', 'close_date', 'questions')
 
     def create(self, validated_data):
         questions_data = validated_data.pop('questions', [])

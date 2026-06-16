@@ -120,19 +120,30 @@ def analyze(data: AnalyzeRequest):
             )
 
         # ── Step 2: Group by topic ──────────────────────────
-        grouped = group_feedback(analyzed)
+        grouped = group_feedback(
+            analyzed,
+            topic_predictor=lambda comment: predict_topics(clean_text(comment)),
+        )
 
         # ── Step 3: Build response ──────────────────────────
         final_results = []
 
         for topic, items in grouped.items():
 
-            # All feedback texts for this topic
-            all_comments = remove_duplicates([x["text"] for x in items])
+            # All feedback texts for this topic — use original (full question - answer)
+            # for display; x["text"] (answer-only) is kept for T5 suggestion input
+            all_comments = remove_duplicates([x.get("original", x["text"]) for x in items])
 
-            # Only negative comments go to suggestion
+            # Only negative comments go to suggestion.
+            # For short/Yes-No answers (< 6 words), use the original
+            # "question - answer" so T5 has real context instead of just "No".
+            # For longer clause-extracted text, use that (stays topic-focused).
+            def _t5_text(x):
+                t = x["text"]
+                return x.get("original", t) if len(t.split()) < 6 else t
+
             negative_comments = [
-                x["text"] for x in items
+                _t5_text(x) for x in items
                 if x["sentiment"] == "negative"
             ]
 
